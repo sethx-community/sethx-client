@@ -1,0 +1,2 @@
+export const ERC20_SPOT_FEE_CONTEXT = 'ERC20 Spot Trade';
+export const PRICE_MANAGER_CONTEXT_TRADE_VALUE = 1;

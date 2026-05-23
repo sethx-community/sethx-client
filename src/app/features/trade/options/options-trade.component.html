@@ -1,0 +1,253 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">Options</h1>
+    <p class="sethx-page-copy">
+      Trade onchain option markets through the options order book. Select a market to inspect orders and positions, then place, fill, cancel, exercise, or reclaim options.
+    </p>
+  </header>
+
+  <section class="sethx-table-card space-y-4">
+    <div class="sethx-toolbar">
+      <div class="sethx-view-tabs">
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'markets' || view() === 'orders'" (click)="backToMarkets()">Markets</button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'positions'" (click)="openPositions()">My Positions</button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'my-orders'" (click)="openMyOrders()">My Orders</button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="view() === 'markets'">
+      <app-spot-summary-header
+        eyebrow="Options markets"
+        title="Markets"
+        subtitle="Select an option market to view bids and asks. Market actions stay in the header; selected-order actions stay in the right panel."
+        [metrics]="marketsMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-section-title text-base">Markets</div>
+        <div class="sethx-toolbar-actions">
+          <input class="sethx-input !w-[260px] !py-1" [value]="ob.store.marketSearch()" (input)="setMarketSearch($any($event.target).value)" placeholder="Search market / token / key…" />
+          <label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.marketsWithMyOrdersOnly()" (change)="setMarketsWithMyOrdersOnly($any($event.target).checked)" /><span>Has my orders</span></label>
+          <span class="sethx-meta-text">Showing {{ ob.store.visibleMarkets().length }} markets</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px] text-xs">
+          <div class="sethx-table-header sethx-options-market-grid">
+            <div>Market</div>
+            <div class="text-right">Orders</div>
+            <div class="text-right">Total Size</div>
+            <div class="text-right">Strike</div>
+            <div class="text-right">Expiry</div>
+            <div class="text-right">Info</div>
+          </div>
+
+          <ng-container *ngFor="let m of ob.store.visibleMarkets(); trackBy: trackMarket">
+            <div
+              class="sethx-market-row-shell"
+              (mouseenter)="hoveredMarketKey.set(m.marketKey)"
+              (mouseleave)="hoveredMarketKey.set(null)"
+            >
+              <div class="sethx-table-row sethx-table-row-action sethx-options-market-grid" (click)="openMarket(m)">
+                <div class="truncate">
+                  <div class="sethx-readonly-value-strong truncate">{{ optionMarketTitle(m) }}</div>
+                  <div class="mt-1 flex items-center gap-2 min-w-0">
+                    <span class="sethx-address-value truncate text-[11px]" [title]="m.marketKey">{{ m.marketKey }}</span>
+                    <button
+                      type="button"
+                      class="sethx-copy-button shrink-0"
+                      [class.is-copied]="copiedValue() === m.marketKey"
+                      [title]="copiedValue() === m.marketKey ? 'Copied' : 'Copy market key'"
+                      (click)="copyValue(m.marketKey, $event)"
+                    >
+                      <i class="fa-regular" [class.fa-copy]="copiedValue() !== m.marketKey" [class.fa-circle-check]="copiedValue() === m.marketKey" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="text-right sethx-readonly-value">{{ m.orderCount }}</div>
+                <div class="text-right sethx-readonly-value">{{ m.market ? ob.store.formatSize(m.totalSize, m.market.assetToken) : m.derived ? ob.store.formatSize(m.totalSize, m.derived.assetToken) : m.totalSize }}</div>
+                <div class="text-right sethx-readonly-value-strong">{{ m.market ? ob.store.formatPriceFixed(m.market.strikePrice, m.market.assetToken, m.market.quoteToken) : m.derived ? ob.store.formatPriceFixed(m.derived.strikePrice, m.derived.assetToken, m.derived.quoteToken) : '—' }}</div>
+                <div class="text-right sethx-meta-text">{{ formatExpiry(m.market?.expiry ?? m.derived?.optionExpiry) }}</div>
+                <div class="text-right">
+                  <button type="button" class="sethx-action-link-primary" (click)="toggleMarketInfo(m.marketKey, $event)">Details</button>
+                </div>
+              </div>
+
+              <app-market-detail-panel
+                *ngIf="isMarketInfoOpen(m.marketKey)"
+                class="sethx-market-detail-popover"
+                title="Market details"
+                [subtitle]="optionMarketTitle(m)"
+                [items]="optionMarketDetailItems(m)"
+              ></app-market-detail-panel>
+            </div>
+          </ng-container>
+
+          <div class="sethx-table-empty" *ngIf="ob.store.visibleMarkets().length === 0">No active option markets found.</div>
+        </div>
+      </div>
+      <div class="sethx-toolbar border-t border-trade-border pt-3">
+        <div class="sethx-meta-text">Showing up to {{ ob.store.marketLimit() }} markets per page.</div>
+        <div class="sethx-toolbar-actions">
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="ob.store.marketOffset() === 0" (click)="previousMarketsPage()">Previous</button>
+          <span class="sethx-muted-value">Page {{ marketsPageLabel() }}</span>
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="ob.store.visibleMarkets().length < ob.store.marketLimit()" (click)="nextMarketsPage()">Next</button>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'orders'">
+      @let sel = ob.store.selectedMarket();
+      @let info = sel?.market ?? sel?.derived;
+
+      <app-spot-summary-header
+        eyebrow="Option market"
+        [title]="optionMarketTitle(sel)"
+        [subtitle]="sel?.marketKey ?? ''"
+        [subtitleMono]="true"
+        [metrics]="selectedMarketSummaryMetrics(sel, info)"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <section class="sethx-orderbook-panel">
+          <div class="sethx-toolbar mb-3"><div class="sethx-table-section">Bid Book</div><label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label></div>
+          <div class="sethx-table-header sethx-options-order-grid">
+            <div>ID</div><div class="text-right">Size</div><div class="text-right">Premium</div>
+          </div>
+          <ng-container *ngFor="let b of ob.store.bids(); trackBy: trackOrder">
+            <div class="sethx-table-row sethx-table-row-action sethx-options-order-grid items-center" [class.is-selected]="isSelectedOrder(b)" (click)="selectOrder(b, $event)">
+              <div class="sethx-address-value-muted truncate">{{ b.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="b.isMine">mine</span></div>
+              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(b.order.size - b.order.filled, b.order.assetToken) }}</div>
+              <div class="text-right sethx-orderbook-side-bid font-semibold">{{ ob.store.formatPriceFixed(b.order.askPrice, b.order.assetToken, b.order.quoteToken) }}</div>
+            </div>
+          </ng-container>
+          <div class="sethx-table-empty" *ngIf="ob.store.bids().length === 0">No bid orders.</div>
+        </section>
+
+        <section class="sethx-orderbook-panel">
+          <div class="sethx-toolbar mb-3"><div class="sethx-table-section">Ask Book</div><label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label></div>
+          <div class="sethx-table-header sethx-options-order-grid">
+            <div>ID</div><div class="text-right">Size</div><div class="text-right">Premium</div>
+          </div>
+          <ng-container *ngFor="let a of ob.store.asks(); trackBy: trackOrder">
+            <div class="sethx-table-row sethx-table-row-action sethx-options-order-grid items-center" [class.is-selected]="isSelectedOrder(a)" (click)="selectOrder(a, $event)">
+              <div class="sethx-address-value-muted truncate">{{ a.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="a.isMine">mine</span></div>
+              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(a.order.size - a.order.filled, a.order.assetToken) }}</div>
+              <div class="text-right sethx-orderbook-side-ask font-semibold">{{ ob.store.formatPriceFixed(a.order.askPrice, a.order.assetToken, a.order.quoteToken) }}</div>
+            </div>
+          </ng-container>
+          <div class="sethx-table-empty" *ngIf="ob.store.asks().length === 0">No ask orders.</div>
+        </section>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'my-orders'">
+      <app-spot-summary-header
+        eyebrow="Options orders"
+        title="My Orders"
+        subtitle="Selected-account option orders across all active markets. Select a row to fill or cancel from the right panel."
+        [metrics]="myOrdersMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px] text-xs">
+          <div class="sethx-table-header sethx-options-my-order-grid">
+            <div>Order ID</div><div>Market</div><div>Intent</div><div class="text-right">Size</div><div class="text-right">Premium</div><div class="text-right">Expiry</div><div class="text-right">Action</div>
+          </div>
+          <ng-container *ngFor="let r of ob.store.myOrders(); trackBy: trackOrder">
+            <div class="sethx-table-row sethx-table-row-action sethx-options-my-order-grid items-center" [class.is-selected]="isSelectedOrder(r)" (click)="selectMyOrder(r, $event)">
+              <div class="sethx-address-value-muted truncate">{{ r.orderId }}</div>
+              <div class="truncate">
+                <div class="sethx-readonly-value-strong truncate">{{ orderMarketTitle(r) }}</div>
+                <div class="mt-1 flex items-center gap-2 min-w-0">
+                  <span class="sethx-address-value truncate text-[11px]" [title]="r.order.marketKey">{{ r.order.marketKey }}</span>
+                  <button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === r.order.marketKey" [title]="copiedValue() === r.order.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(r.order.marketKey, $event)">
+                    <i class="fa-regular" [class.fa-copy]="copiedValue() !== r.order.marketKey" [class.fa-circle-check]="copiedValue() === r.order.marketKey" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div [ngClass]="r.side === 'bid' ? 'text-up' : 'text-down'">{{ optionIntentLabel(r.order.intent) }}</div>
+              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.order.size - r.order.filled, r.order.assetToken) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ ob.store.formatPriceFixed(r.order.askPrice, r.order.assetToken, r.order.quoteToken) }}</div>
+              <div class="text-right sethx-meta-text">{{ formatExpiry(r.order.expiry) }}</div>
+              <div class="text-right"><button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(r, $event)">Details</button></div>
+            </div>
+          </ng-container>
+          <div class="sethx-table-empty" *ngIf="ob.store.myOrders().length === 0">No option orders for the selected account.</div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'positions'">
+      <app-spot-summary-header
+        eyebrow="Options exposure"
+        title="My Positions"
+        subtitle="Selected-account holder and writer exposure across active option markets. Select a row to trade, exercise, or reclaim from the right panel."
+        [metrics]="positionsMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px] text-xs">
+          <div class="sethx-table-header sethx-options-position-grid">
+            <div>Market</div><div class="text-right">Role</div><div class="text-right">Writer</div><div class="text-right">Holder Avail.</div><div class="text-right">Exercise</div><div class="text-right">Reclaim</div>
+          </div>
+          <ng-container *ngFor="let r of ob.store.myPositions(); trackBy: trackMarket">
+            <div class="sethx-table-row sethx-table-row-action sethx-options-position-grid items-center" [class.is-selected]="isSelectedPosition(r)" (click)="selectPosition(r, $event)">
+              <div class="truncate">
+                <div class="sethx-readonly-value-strong truncate">{{ optionMarketTitle(r) }}</div>
+                <div class="mt-1 flex items-center gap-2 min-w-0">
+                  <span class="sethx-address-value truncate text-[11px]" [title]="r.marketKey">{{ r.marketKey }}</span>
+                  <button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === r.marketKey" [title]="copiedValue() === r.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(r.marketKey, $event)">
+                    <i class="fa-regular" [class.fa-copy]="copiedValue() !== r.marketKey" [class.fa-circle-check]="copiedValue() === r.marketKey" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="text-right sethx-readonly-value">{{ roleLabel(r) }}</div>
+              <div class="text-right sethx-readonly-value">{{ r.market ? ob.store.formatSize(r.writerSize, r.market.assetToken) : r.derived ? ob.store.formatSize(r.writerSize, r.derived.assetToken) : r.writerSize }}</div>
+              <div class="text-right sethx-readonly-value">{{ r.market ? ob.store.formatSize(r.holderAvail, r.market.assetToken) : r.derived ? ob.store.formatSize(r.holderAvail, r.derived.assetToken) : r.holderAvail }}</div>
+              <div class="text-right sethx-meta-text">{{ r.exerciseHint }}</div>
+              <div class="text-right sethx-meta-text">{{ r.reclaimHint }}</div>
+            </div>
+          </ng-container>
+          <div class="sethx-table-empty" *ngIf="ob.store.myPositions().length === 0">No positions found in active option markets.</div>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+</div>
+
+@if (ob.actions.confirmOpen()) {
+  <app-order-review-flow
+    [title]="ob.actions.confirmTitle()"
+    kind="transaction"
+    [confirmLabel]="ob.actions.confirmLabel()"
+    [fields]="ob.actions.confirmFields()"
+    [requirements]="ob.actions.confirmRequirements()"
+    [error]="ob.actions.confirmError()"
+    [receipt]="ob.actions.receipt()"
+    [explorerUrl]="ob.actions.explorerTxUrl()"
+    [loading]="ob.actions.status() === 'pending'"
+    [confirmDisabled]="ob.actions.confirmDisabled()"
+    riskNote="Options execution can lock premium, option collateral, and fee budgets. Verify option type, strike, expiry, side, size, and price before signing."
+    (cancel)="ob.actions.closeConfirmModal()"
+    (confirm)="ob.actions.onConfirmModalConfirm()"
+  />
+}

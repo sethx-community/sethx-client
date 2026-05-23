@@ -1,0 +1,112 @@
+<div class="flex h-full flex-col">
+    <div class="p-6 pb-3 flex justify-between items-center border-b border-trade-border/60">
+      <h2 class="sethx-section-title text-base">{{ modalTitle() }}</h2>
+      <button type="button" class="sethx-modal-close text-xs" (click)="close()">✕</button>
+    </div>
+
+    <div class="px-6 py-4 overflow-y-auto space-y-4 flex-1">
+      <div class="sethx-panel-copy">
+        NFT Spot orders are created against a specific NFT contract, token ID, and ERC20 quote token. A market is created by the first order, so you do not need to select an existing market first.
+      </div>
+
+      @if (isPlace() || isQuote()) {
+        <section class="space-y-4">
+          <div>
+            <div class="sethx-field-label">Market</div>
+            <select class="sethx-select" [ngModel]="selectedMarketKey()" (ngModelChange)="onMarketSelected($event)">
+              <option value="">Custom NFT market…</option>
+              @for (market of marketOptions(); track market.key) {
+                <option [value]="market.key">
+                  {{ market.metadataName || market.collection }} #{{ market.tokenId }} — {{ market.quoteSymbol }}
+                </option>
+              }
+            </select>
+            <div class="sethx-meta-text mt-1">
+              Choose an existing market to prefill NFT contract, token ID, and quote token, or leave custom to create the first order for a new market.
+            </div>
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Side</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="sethx-button-secondary w-full" [class.is-active]="side() === 0" (click)="selectSide(0)">Bid / Buy NFT</button>
+              <button type="button" class="sethx-button-secondary w-full" [class.is-active]="side() === 1" (click)="selectSide(1)">Ask / Sell NFT</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="sethx-field-label">NFT contract</div>
+            <input class="sethx-input font-mono" placeholder="0x..." [ngModel]="nftAddress()" (ngModelChange)="onNftAddressChanged($event)" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="sethx-field-label">Token ID</div>
+              <input class="sethx-input" placeholder="e.g. 2" [ngModel]="tokenIdHuman()" (ngModelChange)="onTokenIdChanged($event)" />
+            </div>
+            <div>
+              <div class="sethx-field-label">Price</div>
+              <input class="sethx-input" placeholder="0.0" [ngModel]="priceHuman()" (ngModelChange)="priceHuman.set($event); markDirty()" />
+            </div>
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Quote token</div>
+            <select class="sethx-input" [ngModel]="quoteToken()" (ngModelChange)="onQuoteTokenSelected($event)">
+              <option value="" disabled>Select ERC20 quote token…</option>
+              @for (token of tokenList(); track token.address) {
+                @if (token.symbol !== 'ETH') {
+                  <option [value]="token.address">{{ token.symbol }} — {{ token.address }}</option>
+                }
+              }
+            </select>
+            <input class="sethx-input mt-2 font-mono" placeholder="Or paste ERC20 quote token address" [ngModel]="quoteToken()" (ngModelChange)="onQuoteTokenSelected($event)" />
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Order expiry</div>
+            <input class="sethx-input" type="number" min="1" step="1" [ngModel]="expiryDays()" (ngModelChange)="expiryDays.set($event); markDirty()" />
+            <div class="sethx-meta-text mt-1">Days from now. The contract default is 30 days; this form sends an explicit expiry.</div>
+          </div>
+        </section>
+      } @else {
+        <section class="sethx-edit-panel text-xs space-y-2">
+          <div class="flex justify-between gap-4"><span class="sethx-field-label !mb-0">Order ID</span><span class="sethx-address-value">{{ selectedOrder()?.id || '—' }}</span></div>
+          <div class="flex justify-between gap-4"><span class="sethx-field-label !mb-0">NFT</span><span class="sethx-readonly-value-strong">{{ selectedOrder()?.nftLabel || '—' }}</span></div>
+          <div class="flex justify-between gap-4"><span class="sethx-field-label !mb-0">Side</span><span class="sethx-readonly-value-strong">{{ selectedOrder()?.side || '—' }}</span></div>
+          <div class="flex justify-between gap-4"><span class="sethx-field-label !mb-0">Price</span><span class="sethx-readonly-value-strong">{{ selectedOrder()?.price || '—' }}</span></div>
+        </section>
+      }
+
+      @if (validationError()) {
+        <div class="sethx-error-note">{{ validationError() }}</div>
+      }
+      @if (previewError()) {
+        <div class="sethx-error-note">{{ previewError() }}</div>
+      }
+
+      @if (!isCancel()) {
+        <button type="button" class="sethx-button-primary" [disabled]="!!validationError() || previewLoading()" (click)="preparePreview()">
+          {{ previewLoading() ? 'Quoting fees…' : previewReady() ? 'Refresh Fee Quote' : (isQuote() ? 'Get Fee Quote' : 'Preview / Quote Fees') }}
+        </button>
+      }
+
+      @if (reviewOpen()) {
+        <app-order-review-flow
+          [title]="modalTitle()"
+          [kind]="isQuote() ? 'quote' : 'transaction'"
+          [confirmLabel]="confirmLabel()"
+          [fields]="fields()"
+          [requirements]="requirements()"
+          [confirmDisabled]="confirmDisabled()"
+          [loading]="submitLoading()"
+          [error]="submitError()"
+          [receipt]="txReceipt.receipt()"
+          [explorerUrl]="txReceipt.explorerTxUrl()"
+          riskNote="NFT spot execution locks the NFT or quote token plus fee budgets. Verify ownership, balances, order side, and token ID before signing."
+          (cancel)="closeReview()"
+          (confirm)="confirm()"
+        />
+      }
+    </div>
+</div>

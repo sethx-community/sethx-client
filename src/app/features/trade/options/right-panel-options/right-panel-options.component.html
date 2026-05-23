@@ -1,0 +1,106 @@
+<div class="sethx-panel">
+  <div class="h-2"></div>
+
+  <aside class="h-full flex flex-col min-h-0 space-y-6">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Account Actions</div>
+      <div class="sethx-panel-section-title">Select Account / Fee Token</div>
+      <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
+    </section>
+
+    <section class="sethx-panel-section sethx-panel-card" *ngIf="isMarketOrderView()">
+      <div class="sethx-panel-heading">Market Actions</div>
+      <ng-container *ngIf="selectedMarket() as market; else noOptionsMarketSelected">
+        <div class="space-y-2 text-[11px]">
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market</span>
+            <span class="sethx-readonly-value-strong text-right">{{ selectedMarketLabel() }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market key</span>
+            <span class="flex min-w-0 items-center justify-end gap-2 text-right">
+              <span class="sethx-address-value break-all" [title]="market.marketKey">{{ market.marketKey }}</span>
+              <button
+                type="button"
+                class="sethx-copy-button shrink-0"
+                [class.is-copied]="copiedValue() === market.marketKey"
+                [attr.aria-label]="'Copy market key ' + market.marketKey"
+                [title]="copiedValue() === market.marketKey ? 'Copied' : 'Copy market key'"
+                (click)="copyValue(market.marketKey, $event)"
+              >
+                <i class="fa-regular" [class.fa-copy]="copiedValue() !== market.marketKey" [class.fa-circle-check]="copiedValue() === market.marketKey" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+        </div>
+        <div class="mt-4 space-y-2">
+          <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button>
+          <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button>
+        </div>
+      </ng-container>
+      <ng-template #noOptionsMarketSelected>
+        <p class="sethx-panel-copy">Select an option market in the center view to quote fees or place an order.</p>
+      </ng-template>
+    </section>
+
+    <ng-container *ngIf="isOrdersView()">
+      <app-selected-order-actions
+        [selectedOrder]="selected()"
+        [orderId]="selected()?.orderId || ''"
+        [sideLabel]="selected()?.side || ''"
+        [isMine]="!!selected()?.isMine"
+        [fillAmount]="fillAmount()"
+        [fillDisabled]="selectedFillSafety().disabled"
+        [fillDisabledReason]="selectedFillSafety().reason"
+        [cancelDisabled]="selectedCancelSafety().disabled"
+        [cancelDisabledReason]="selectedCancelSafety().reason"
+        (fillAmountChange)="setFillAmount($event)"
+        (fill)="fillSelected()"
+        (cancel)="cancelSelected()"
+        (clear)="clearSelected()"
+      ></app-selected-order-actions>
+    </ng-container>
+
+    <ng-container *ngIf="isPositionsView()">
+      <section class="sethx-panel-section sethx-panel-card" *ngIf="selectedPosition() as position; else noPositionSelected">
+        <div class="sethx-panel-heading">Selected Position</div>
+        <div class="space-y-2 text-[11px] text-frame">
+          <div class="flex justify-between gap-3">
+            <span>Market</span>
+            <span class="sethx-readonly-value text-right">{{ positionMarketLabel(position) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span>Role</span>
+            <span class="sethx-readonly-value text-right">{{ roleLabel(position) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span>Holder available</span>
+            <span class="sethx-readonly-value text-right">{{ holderAvailableLabel(position) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span>Writer size</span>
+            <span class="sethx-readonly-value text-right">{{ writerSizeLabel(position) }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2 text-xs">
+          <button type="button" class="sethx-button-primary w-full" title="Open the options order form. Use the Action dropdown to choose Buy, Sell Holder, Write, or Sell Writer." (click)="placeOrderForPosition(position)">
+            Place Order
+          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="sethx-button-secondary" [disabled]="!position.canExercise" [title]="position.exerciseHint" (click)="exercisePosition(position)">Exercise</button>
+            <button type="button" class="sethx-button-secondary" [disabled]="!position.canReclaim" [title]="position.reclaimHint" (click)="reclaimPosition(position)">Reclaim</button>
+          </div>
+          <button type="button" class="sethx-button-secondary w-full" (click)="clearPosition()">Clear Position</button>
+        </div>
+      </section>
+
+      <ng-template #noPositionSelected>
+        <section class="sethx-panel-section sethx-panel-card">
+          <div class="sethx-panel-heading">Selected Position</div>
+          <p class="sethx-panel-copy">Select a row in My Positions to trade, exercise, or reclaim from this panel.</p>
+        </section>
+      </ng-template>
+    </ng-container>
+  </aside>
+</div>

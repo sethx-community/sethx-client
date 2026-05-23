@@ -1,0 +1,10 @@
+.text-up {
+  color: #22c55e;
+} /* green */
+.text-down {
+  color: #ef4444;
+} /* red */
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}

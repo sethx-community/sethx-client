@@ -1,0 +1,22 @@
+<!-- Connected state -->
+<div
+  class="flex flex-col md:flex-row items-start md:items-center gap-2 px-4 py-2 rounded border border-frame bg-darkgray text-frame font-mono"
+>
+  @if (address()) {
+    <span>{{ "Wallet connected: " + shorten(address()) + "; " }}</span>
+
+    @if (!selectedId()) {
+      <span class="text-sm text-textlight">
+        No account selected, select or create account.
+      </span>
+    }
+
+    @if (selectedId()) {
+      <span>{{ "Account selected: " + selectedAccountLabel() }}</span>
+    }
+  }
+
+  @if (!address()) {
+    <span>{{ "No wallet connected" }}</span>
+  }
+</div>

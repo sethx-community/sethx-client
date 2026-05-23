@@ -1,0 +1,133 @@
+<div class="sethx-panel">
+  <aside class="h-full flex flex-col min-h-0 space-y-6">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Account Actions</div>
+      <div class="sethx-panel-section-title">Select Account / Fee Token</div>
+      <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
+    </section>
+
+    <section class="sethx-panel-section sethx-panel-card" *ngIf="isMarketOrderView()">
+      <div class="sethx-panel-heading">Market Actions</div>
+      <ng-container *ngIf="ob.store.selectedMarketRow() as market; else noFuturesMarketSelected">
+        <div class="space-y-2 text-[11px]">
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market</span>
+            <span class="sethx-readonly-value-strong text-right">{{ market.market?.ticker || market.marketKey }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market key</span>
+            <span class="flex min-w-0 items-center justify-end gap-2 text-right">
+              <span class="sethx-address-value break-all" [title]="market.marketKey">{{ market.marketKey }}</span>
+              <button
+                type="button"
+                class="sethx-copy-button shrink-0"
+                [class.is-copied]="copiedValue() === market.marketKey"
+                [attr.aria-label]="'Copy market key ' + market.marketKey"
+                [title]="copiedValue() === market.marketKey ? 'Copied' : 'Copy market key'"
+                (click)="copyValue(market.marketKey, $event)"
+              >
+                <i class="fa-regular" [class.fa-copy]="copiedValue() !== market.marketKey" [class.fa-circle-check]="copiedValue() === market.marketKey" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Orders</span>
+            <span class="sethx-readonly-value-strong text-right">{{ market.buyCount }} / {{ market.sellCount }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Status</span>
+            <span class="sethx-status-pill" [ngClass]="market.isActive ? 'is-ok' : 'is-warning'">{{ market.isActive ? 'Open' : 'Closed' }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2">
+          <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuoteForSelectedMarket()">Fee Quote</button>
+          <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrderForSelectedMarket()">Place Order</button>
+        </div>
+      </ng-container>
+      <ng-template #noFuturesMarketSelected>
+        <p class="sethx-panel-copy">Select a futures market in the center view to quote fees or place an order.</p>
+      </ng-template>
+    </section>
+
+    <ng-container *ngIf="isOrderManagementView()">
+      <app-selected-order-actions
+        [selectedOrder]="selected()"
+        [orderId]="selected()?.orderId || ''"
+        [sideLabel]="selected()?.side || ''"
+        [isMine]="!!selected()?.isMine"
+        [fillAmount]="fillAmount()"
+        fillAmountLabel="Contracts to fill"
+        fillAmountPlaceholder="Whole contracts"
+        fillButtonLabel="Fill Selected Order"
+        [fillDisabled]="selectedFillSafety().disabled"
+        [fillDisabledReason]="selectedFillSafety().reason"
+        [cancelDisabled]="selectedCancelSafety().disabled"
+        [cancelDisabledReason]="selectedCancelSafety().reason"
+        (fillAmountChange)="setFillAmount($event)"
+        (fill)="fillSelected()"
+        (cancel)="cancelSelected()"
+        (clear)="clearSelected()"
+      ></app-selected-order-actions>
+    </ng-container>
+
+    <ng-container *ngIf="isPositionsView()">
+      <section class="sethx-panel-section sethx-panel-card" *ngIf="selectedPosition() as position; else noPositionSelected">
+        <div class="sethx-panel-heading">Selected Position</div>
+        <div class="space-y-2 text-[11px]">
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market</span>
+            <span class="sethx-readonly-value-strong text-right">{{ position.market?.ticker || position.marketKey }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market key</span>
+            <span class="flex min-w-0 items-center justify-end gap-2 text-right">
+              <span class="sethx-address-value break-all" [title]="position.marketKey">{{ position.marketKey }}</span>
+              <button
+                type="button"
+                class="sethx-copy-button shrink-0"
+                [class.is-copied]="copiedValue() === position.marketKey"
+                [attr.aria-label]="'Copy market key ' + position.marketKey"
+                [title]="copiedValue() === position.marketKey ? 'Copied' : 'Copy market key'"
+                (click)="copyValue(position.marketKey, $event)"
+              >
+                <i class="fa-regular" [class.fa-copy]="copiedValue() !== position.marketKey" [class.fa-circle-check]="copiedValue() === position.marketKey" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Long size</span>
+            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatContracts(position.longSize) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Short size</span>
+            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatContracts(position.shortSize) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Margin</span>
+            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatSize(position.margin, position.market?.quoteTokenDecimals ?? 18) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Required margin</span>
+            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatSize(position.requiredMargin, position.market?.quoteTokenDecimals ?? 18) }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2 text-xs">
+          <button type="button" class="sethx-button-secondary w-full" (click)="feeQuoteForPosition(position)">Fee Quote</button>
+          <button type="button" class="sethx-button-primary w-full" title="Open the futures order form. Use the side toggle to buy or sell." (click)="placeOrderForPosition(position)">
+            Place Order
+          </button>
+          <button type="button" class="sethx-button-secondary w-full" (click)="clearPosition()">Clear Position</button>
+        </div>
+      </section>
+
+      <ng-template #noPositionSelected>
+        <section class="sethx-panel-section sethx-panel-card">
+          <div class="sethx-panel-heading">Selected Position</div>
+          <p class="sethx-panel-copy">Select a row in My Positions to manage futures exposure from this panel.</p>
+        </section>
+      </ng-template>
+    </ng-container>
+  </aside>
+</div>

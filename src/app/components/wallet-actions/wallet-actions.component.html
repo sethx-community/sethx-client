@@ -1,0 +1,78 @@
+<div class="sethx-panel-section-title">Deposit / withdraw</div>
+<p class="sethx-panel-copy">
+  Move ETH or supported ERC20 tokens between the selected account and the protocol vault.
+</p>
+
+@if (selectedAccountId()) {
+  <div class="sethx-readonly-card mb-3">
+    <span class="text-text-subtle">Selected account</span>
+    <div class="mt-1 flex items-center gap-2">
+      <span class="min-w-0 flex-1 truncate font-mono text-textlight" [title]="selectedAccountId() ?? ''">{{ selectedAccountLabel() }}</span>
+      <button
+        type="button"
+        class="sethx-copy-button shrink-0"
+        [class.is-copied]="copiedAddress() === selectedAccountId()"
+        [disabled]="!selectedAccountId()"
+        [title]="copiedAddress() === selectedAccountId() ? 'Copied' : 'Copy address'"
+        aria-label="Copy selected account address"
+        (click)="copySelectedAccountAddress()"
+      >
+        <i class="fa-regular" [class.fa-copy]="copiedAddress() !== selectedAccountId()" [class.fa-circle-check]="copiedAddress() === selectedAccountId()" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="mb-3 rounded border border-down/50 bg-background/70 p-2 text-[11px] text-down">
+    No account selected.
+  </div>
+}
+
+<div class="grid grid-cols-2 gap-2">
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('deposit', 'ETH')"
+  >
+    Deposit ETH
+  </button>
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('withdraw', 'ETH')"
+  >
+    Withdraw ETH
+  </button>
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('deposit', 'TOKEN')"
+  >
+    Deposit Token
+  </button>
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('withdraw', 'TOKEN')"
+  >
+    Withdraw Token
+  </button>
+</div>
+
+@if (portfolioWriteSuccess()) {
+  <div class="mt-3 rounded border border-up/60 p-3 text-xs text-up">
+    Vault transaction completed.
+    @if (portfolioExplorerUrl()) {
+      <a class="ml-1 underline" [href]="portfolioExplorerUrl() ?? ''" target="_blank" rel="noopener noreferrer">View transaction</a>
+    }
+  </div>
+}
+
+@if (portfolioWriteError() || localError()) {
+  <div class="mt-3 rounded border border-red-500/60 p-3 text-xs text-red-300">
+    {{ portfolioWriteError() || localError() }}
+  </div>
+}

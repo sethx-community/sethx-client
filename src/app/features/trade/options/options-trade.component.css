@@ -1,0 +1,27 @@
+.text-up {
+  color: #22c55e;
+} /* green */
+.text-down {
+  color: #ef4444;
+} /* red */
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.btn {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+.btn:hover {
+  border-color: white;
+}
+
+.inp {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  width: 90px;
+}

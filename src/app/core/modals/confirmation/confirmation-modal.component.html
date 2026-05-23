@@ -1,0 +1,153 @@
+<div
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+>
+  <div
+    class="sethx-modal-shell"
+  >
+    <div class="p-6 pb-3 flex justify-between items-start gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-base font-bold text-white">{{ title }}</h2>
+          @if (previewBadge) {
+            <span class="rounded-full border border-frame/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-frame">
+              {{ previewBadge }}
+            </span>
+          }
+        </div>
+        @if (previewHelper) {
+          <div class="mt-1 text-[11px] text-frame">{{ previewHelper }}</div>
+        }
+      </div>
+      <button
+        (click)="onCancel()"
+        [disabled]="loading"
+        class="text-frame text-xs disabled:opacity-50"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="flex-1 px-6 pb-4 overflow-y-auto space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @for (field of fields; track field.label + "::" + field.value) {
+          <div>
+            <div class="text-xs text-frame uppercase mb-1 font-semibold tracking-[0.08em]">
+              {{ field.label }}
+            </div>
+            <div
+              class="break-words text-sm select-text"
+              [ngClass]="fieldToneClass(field.tone)"
+            >
+              {{ field.value }}
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (requirements?.length) {
+        <div class="pt-2 border-t border-frame/40"></div>
+
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-frame uppercase font-semibold tracking-[0.08em]">Will be locked</div>
+          @if (hasInsufficientRequirements()) {
+            <div class="text-[11px] text-down">
+              Insufficient available balance
+            </div>
+          }
+        </div>
+
+        <div class="border border-frame rounded p-2 space-y-2">
+          @for (
+            r of requirements;
+            track r.tokenAddress + "::" + r.tokenSymbol
+          ) {
+            <div class="text-xs">
+              <div class="flex justify-between items-center">
+                <div class="font-bold" [title]="tokenTitle(r)">
+                  {{ r.tokenSymbol }}
+                  @if (shouldShowTokenAddress(r)) {
+                    <span class="text-frame font-normal">
+                      ({{ r.tokenAddress }})
+                    </span>
+                  }
+                </div>
+
+                <div
+                  class="px-2 py-0.5 rounded border text-[11px]"
+                  [ngClass]="{
+                    'border-up text-up': r.ok,
+                    'border-down text-down': !r.ok,
+                  }"
+                >
+                  {{ r.ok ? "OK" : "INSUFFICIENT" }}
+                </div>
+              </div>
+
+              <div class="flex justify-between mt-1">
+                <span class="text-text-muted">Total required</span>
+                <span class="text-white">{{ r.totalRequired ?? r.required }}</span>
+              </div>
+
+              <div class="flex justify-between">
+                <span class="text-text-muted">Available</span>
+                <span class="text-white">{{ r.available }}</span>
+              </div>
+
+              @if (r.components?.length) {
+                <div class="mt-2 space-y-1">
+                  @for (c of r.components; track c.label + "::" + c.amount) {
+                    <div class="flex justify-between text-[11px]">
+                      <span class="text-text-muted">{{ c.label }}</span>
+                      <span class="text-white">{{ c.amount }}</span>
+                    </div>
+                  }
+                </div>
+              } @else if (r.note) {
+                <div class="text-frame mt-1">{{ r.note }}</div>
+              }
+
+              @if (
+                requirements && r !== requirements[requirements.length - 1]
+              ) {
+                <div class="border-t border-frame/40 mt-2"></div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (riskNote) {
+        <div class="rounded border border-frame/50 bg-black/20 p-3 text-[11px] text-frame leading-relaxed">
+          <span class="font-semibold uppercase tracking-[0.08em] text-text-muted">Risk note:</span>
+          {{ riskNote }}
+        </div>
+      }
+
+      <app-transaction-receipt [receipt]="receipt" [explorerUrl]="explorerUrl" />
+
+      @if (error) {
+        <div class="text-red-500 text-xs break-words">{{ error }}</div>
+      }
+    </div>
+
+    <div class="mt-auto p-6 pt-3 border-t border-frame/40 flex justify-end gap-2">
+      <button
+        class="px-3 py-1 text-xs border border-muted rounded disabled:opacity-50"
+        [disabled]="loading"
+        (click)="onCancel()"
+      >
+        {{ cancelLabel() }}
+      </button>
+
+      @if (showConfirmButton) {
+        <button
+          class="sethx-modal-confirm-button"
+          [disabled]="confirmDisabled || loading || receipt?.status === 'success'"
+          (click)="onConfirm()"
+        >
+          {{ loading ? "Working..." : confirmLabel }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,145 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">Treasury</div>
+    <h1 class="sethx-page-title">Protocol Treasury</h1>
+    <p class="sethx-page-copy">Role-gated operations for protocol-owned balances, vault pulls, approved payments, treasury accounts, and treasury trading modules.</p>
+  </header>
+
+  <div *ngIf="loading() || treasuryMode.loading()" class="sethx-table-card">Loading treasury role, permissions, and balances…</div>
+  <div *ngIf="error()" class="sethx-table-card text-down">{{ error() }}</div>
+  <div *ngIf="success()" class="sethx-table-card text-up">{{ success() }}</div>
+
+  <section *ngIf="!loading() && !hasTreasuryAccess()" class="sethx-table-card space-y-3">
+    <h2 class="sethx-section-title">Treasury access required</h2>
+    <p class="sethx-page-copy">This page is reserved for operational treasurers registered in TreasuryAuthority. The current wallet is not an active treasurer.</p>
+    <div class="grid gap-3 md:grid-cols-2 text-xs">
+      <div class="rounded border border-trade-border p-3"><div class="sethx-kicker">Wallet</div><div class="text-white">{{ short(address()) }}</div></div>
+      <div class="rounded border border-trade-border p-3"><div class="sethx-kicker">Authority</div><div class="text-white">{{ short(treasury.authorityAddress) }}</div></div>
+    </div>
+  </section>
+
+  <ng-container *ngIf="hasTreasuryAccess()">
+    <section class="grid gap-4 xl:grid-cols-4">
+      <div class="sethx-table-card space-y-2">
+        <div class="sethx-kicker">Treasury Status</div>
+        <h2 class="sethx-section-title">{{ killed() ? 'Killed' : 'Operational' }}</h2>
+        <p class="sethx-page-copy">Governor functions remain available while the emergency kill switch blocks treasurer execution.</p>
+      </div>
+      <div class="sethx-table-card space-y-2">
+        <div class="sethx-kicker">ETH Balance</div>
+        <h2 class="sethx-section-title">{{ formatEth(ethBalance()) }}</h2>
+        <p class="sethx-page-copy">Held directly by ProtocolTreasury.</p>
+      </div>
+      <div class="sethx-table-card space-y-2">
+        <div class="sethx-kicker">Treasurer</div>
+        <h2 class="sethx-section-title">{{ treasurerInfo()?.label || short(address()) }}</h2>
+        <p class="sethx-page-copy">{{ short(address()) }}</p>
+      </div>
+      <div class="sethx-table-card space-y-3">
+        <div class="sethx-kicker">Treasurer Mode</div>
+        <h2 class="sethx-section-title">{{ treasuryMode.actingAsTreasurer() ? 'Active' : 'Available' }}</h2>
+        <p class="sethx-page-copy">Select an approved treasury account, then use the top bar switch to act as treasurer.</p>
+      </div>
+    </section>
+
+    <section class="mt-4 grid gap-4 xl:grid-cols-2">
+      <div class="sethx-table-card">
+        <div class="mb-3 flex items-center justify-between gap-3"><h2 class="sethx-section-title">Wallet Permissions</h2><button type="button" class="sethx-button-secondary" (click)="refresh()">Refresh</button></div>
+        <div class="space-y-3">
+          <div *ngFor="let permission of permissionRows" class="rounded border border-trade-border p-3">
+            <div class="flex items-center justify-between gap-3"><div class="font-semibold text-white">{{ permission.label }}</div><div [class.text-up]="hasPermission(permission)" [class.text-frame]="!hasPermission(permission)" class="text-xs uppercase">{{ hasPermission(permission) ? 'Enabled' : 'Disabled' }}</div></div>
+            <p class="mt-1 text-xs text-frame">{{ permission.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sethx-table-card">
+        <h2 class="sethx-section-title mb-3">Module Action Permissions</h2>
+        <div class="space-y-3">
+          <div *ngFor="let action of actionRows" class="rounded border border-trade-border p-3">
+            <div class="flex items-center justify-between gap-3"><div class="font-semibold text-white">{{ action.label }}</div><div [class.text-up]="hasAction(action.key)" [class.text-frame]="!hasAction(action.key)" class="text-xs uppercase">{{ hasAction(action.key) ? 'Enabled' : 'Disabled' }}</div></div>
+            <p class="mt-1 text-xs text-frame">{{ action.description }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-4 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+      <div class="sethx-table-card">
+        <h2 class="sethx-section-title mb-3">Tracked Asset Balances</h2>
+        <div class="grid grid-cols-[1fr_1fr] sethx-table-header"><span>Token</span><span class="text-right">Balance</span></div>
+        <div *ngIf="tokenRows().length === 0" class="sethx-table-row text-frame">No ERC20 tokens tracked yet.</div>
+        <div *ngFor="let row of tokenRows()" class="grid grid-cols-[1fr_1fr] sethx-table-row"><span>{{ short(row.token) }}</span><span class="text-right">{{ row.balance.toString() }}</span></div>
+      </div>
+
+      <div class="sethx-table-card space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="sethx-section-title">Treasury Accounts</h2>
+          <button type="button" class="sethx-button-secondary" (click)="openTreasuryAccount()" [disabled]="busy()">Open account</button>
+        </div>
+        <div class="grid gap-3 md:grid-cols-[1fr_auto]">
+          <label class="block"><span class="sethx-field-label">Token balance lookup (optional ERC20)</span><input class="sethx-input" [(ngModel)]="tokenForAccountBalance" placeholder="0x token address" /></label>
+          <button type="button" class="sethx-button-secondary self-end" (click)="refreshAccountRows()">Refresh balances</button>
+        </div>
+        <div class="grid grid-cols-[1.2fr_.7fr_.7fr_.7fr] sethx-table-header"><span>Account</span><span class="text-right">ETH</span><span class="text-right">Locked</span><span class="text-right">Access</span></div>
+        <div *ngIf="accountRows().length === 0" class="sethx-table-row text-frame">No treasury accounts opened yet.</div>
+        <button *ngFor="let row of accountRows()" type="button" class="grid grid-cols-[1.2fr_.7fr_.7fr_.7fr] sethx-table-row w-full text-left" [ngClass]="selectedTreasuryAccount === row.account ? 'bg-gold/10' : ''" (click)="selectTreasuryAccount(row.account)">
+          <span>{{ short(row.account) }}</span>
+          <span class="text-right">{{ accountEth(row) }}</span>
+          <span class="text-right">{{ accountLockedEth(row) }}</span>
+          <span class="text-right" [class.text-up]="row.allowed" [class.text-down]="!row.allowed">{{ row.allowed ? 'Allowed' : 'No' }}</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="mt-4 grid gap-4 xl:grid-cols-3">
+      <div class="sethx-table-card space-y-3">
+        <h2 class="sethx-section-title">Vault Operations</h2>
+        <p class="sethx-page-copy">Pull protocol-owned assets from SethxVault into ProtocolTreasury. Requires Call Vault permission.</p>
+        <label class="block"><span class="sethx-field-label">ETH amount</span><input class="sethx-input" [(ngModel)]="vaultEthAmount" placeholder="0.25" /></label>
+        <button type="button" class="sethx-button-primary w-full" (click)="pullVaultEth()" [disabled]="busy() || killed() || !hasGlobalPermission('callVault') || !vaultEthAmount">Pull ETH from vault</button>
+        <label class="block"><span class="sethx-field-label">ERC20 token</span><input class="sethx-input" [(ngModel)]="vaultToken" placeholder="0x token address" /></label>
+        <label class="block"><span class="sethx-field-label">Raw token amount</span><input class="sethx-input" [(ngModel)]="vaultTokenAmount" placeholder="1000000000000000000" /></label>
+        <button type="button" class="sethx-button-secondary w-full" (click)="pullVaultToken()" [disabled]="busy() || killed() || !hasGlobalPermission('callVault') || !vaultToken || !vaultTokenAmount">Pull ERC20 from vault</button>
+      </div>
+
+      <div class="sethx-table-card space-y-3">
+        <h2 class="sethx-section-title">Approved Payments</h2>
+        <p class="sethx-page-copy">Pay governance-approved recipients through TreasuryPaymentsModule. Memo is required by the contract.</p>
+        <label class="block"><span class="sethx-field-label">Recipient</span><input class="sethx-input" [(ngModel)]="paymentRecipient" placeholder="0x recipient" /></label>
+        <label class="block"><span class="sethx-field-label">Memo</span><input class="sethx-input" [(ngModel)]="paymentMemo" placeholder="Grant milestone, invoice, bounty…" /></label>
+        <label class="block"><span class="sethx-field-label">ETH amount</span><input class="sethx-input" [(ngModel)]="paymentEthAmount" placeholder="0.1" /></label>
+        <button type="button" class="sethx-button-primary w-full" (click)="payEth()" [disabled]="busy() || killed() || !hasGlobalPermission('managePayments') || !paymentRecipient || !paymentMemo || !paymentEthAmount">Pay ETH</button>
+        <label class="block"><span class="sethx-field-label">ERC20 token</span><input class="sethx-input" [(ngModel)]="paymentToken" placeholder="0x token address" /></label>
+        <label class="block"><span class="sethx-field-label">Raw token amount</span><input class="sethx-input" [(ngModel)]="paymentTokenAmount" placeholder="1000000000000000000" /></label>
+        <button type="button" class="sethx-button-secondary w-full" (click)="payToken()" [disabled]="busy() || killed() || !hasGlobalPermission('managePayments') || !paymentRecipient || !paymentMemo || !paymentToken || !paymentTokenAmount">Pay ERC20</button>
+      </div>
+
+      <div class="sethx-table-card space-y-3">
+        <h2 class="sethx-section-title">Treasury Account Funding</h2>
+        <p class="sethx-page-copy">Fund or withdraw from an approved treasury account. These actions prepare supported Token Spot and Lending treasury trading.</p>
+        <label class="block"><span class="sethx-field-label">Selected account</span><select class="sethx-select" [(ngModel)]="selectedTreasuryAccount" (ngModelChange)="selectTreasuryAccount($event)"><option value="">Select account</option><option *ngFor="let row of accountRows()" [value]="row.account" [disabled]="!row.allowed">{{ short(row.account) }}{{ row.allowed ? '' : ' · no access' }}</option></select></label>
+        <label class="block"><span class="sethx-field-label">ETH amount</span><input class="sethx-input" [(ngModel)]="accountEthAmount" placeholder="0.25" /></label>
+        <div class="grid gap-2 md:grid-cols-2"><button type="button" class="sethx-button-primary" (click)="depositEth()" [disabled]="busy() || !canUseAccountActions('fundAccount') || !accountEthAmount">Fund ETH</button><button type="button" class="sethx-button-secondary" (click)="withdrawEth()" [disabled]="busy() || !canUseAccountActions('withdrawAccount') || !accountEthAmount">Withdraw ETH</button></div>
+        <label class="block"><span class="sethx-field-label">ERC20 token</span><input class="sethx-input" [(ngModel)]="accountToken" placeholder="0x token address" /></label>
+        <label class="block"><span class="sethx-field-label">Raw token amount</span><input class="sethx-input" [(ngModel)]="accountTokenAmount" placeholder="1000000000000000000" /></label>
+        <div class="grid gap-2 md:grid-cols-2"><button type="button" class="sethx-button-primary" (click)="depositToken()" [disabled]="busy() || !canUseAccountActions('fundAccount') || !accountToken || !accountTokenAmount">Fund ERC20</button><button type="button" class="sethx-button-secondary" (click)="withdrawToken()" [disabled]="busy() || !canUseAccountActions('withdrawAccount') || !accountToken || !accountTokenAmount">Withdraw ERC20</button></div>
+      </div>
+    </section>
+
+    <section class="mt-4 sethx-table-card">
+      <h2 class="sethx-section-title mb-3">Supported Treasury Trading</h2>
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="rounded border border-trade-border p-3"><div class="font-semibold text-white">Token Spot</div><p class="mt-1 text-xs text-frame">Supported through TreasuryTradeModule when Action Token Spot is enabled.</p></div>
+        <div class="rounded border border-trade-border p-3"><div class="font-semibold text-white">Lending</div><p class="mt-1 text-xs text-frame">Supported through TreasuryTradeModule when Action Lending is enabled.</p></div>
+        <div class="rounded border border-trade-border p-3"><div class="font-semibold text-white">Other orderbooks</div><p class="mt-1 text-xs text-frame">Options, futures, NFT spot, binary options, and margin options are disabled while acting as treasurer until wrapper functions are added.</p></div>
+      </div>
+    </section>
+
+    <section class="mt-4 sethx-table-card">
+      <h2 class="sethx-section-title mb-3">Known Treasurers</h2>
+      <div class="grid grid-cols-[1fr] sethx-table-header"><span>Address</span></div>
+      <div *ngFor="let treasurer of treasurers()" class="sethx-table-row">{{ treasurer }}</div>
+    </section>
+  </ng-container>
+</div>

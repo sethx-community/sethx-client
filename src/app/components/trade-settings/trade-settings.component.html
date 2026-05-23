@@ -1,0 +1,38 @@
+<div class="space-y-3" [class.sethx-panel-card]="boxed">
+  <div *ngIf="showContext">
+    <div class="sethx-panel-subheading">Account Context</div>
+    <p class="mt-2 text-[11px] leading-relaxed text-frame">
+      These settings define which account receives actions and which token is preferred for fees.
+    </p>
+  </div>
+
+  <div>
+    <label class="sethx-field-label">Selected account</label>
+    <select
+      class="sethx-select"
+      [ngModel]="selectedAccountId() ?? ''"
+      (ngModelChange)="setAccountId($event)"
+    >
+      <option value="">Select account…</option>
+      <option *ngFor="let account of accounts()" [value]="account.address">
+        {{ accountLabel(account.address) }}
+      </option>
+    </select>
+    <div class="mt-2 rounded border border-trade-border bg-background/60 p-2 text-[11px] text-frame">
+      Active account: <span class="text-textlight">{{ selectedAccountLabel() }}</span>
+    </div>
+  </div>
+
+  <div>
+    <label class="sethx-field-label">Fee token</label>
+    <select
+      class="sethx-select"
+      [value]="feeToken()"
+      (change)="setFeeToken($any($event.target).value)"
+    >
+      <option *ngFor="let t of feeTokenOptions()" [value]="t">
+        {{ tokenLabel(t) }}
+      </option>
+    </select>
+  </div>
+</div>

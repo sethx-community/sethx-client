@@ -1,0 +1,19 @@
+<section
+  *ngIf="consent.state() === 'unknown'"
+  class="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-4xl rounded-2xl border border-frame bg-background/95 p-4 text-sm text-textlight shadow-2xl backdrop-blur"
+>
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h2 class="mb-1 text-base font-semibold text-white">{{ 'consent.title' | t }}</h2>
+      <p class="leading-6 text-text-muted">{{ 'consent.body' | t }}</p>
+    </div>
+    <div class="flex shrink-0 gap-2">
+      <button type="button" class="rounded-xl border border-trade-border px-4 py-2 text-textlight hover:border-white hover:text-white" (click)="consent.decline()">
+        {{ 'consent.decline' | t }}
+      </button>
+      <button type="button" class="rounded-xl bg-frame px-4 py-2 font-semibold text-black hover:bg-gold-shiny" (click)="consent.accept()">
+        {{ 'consent.accept' | t }}
+      </button>
+    </div>
+  </div>
+</section>

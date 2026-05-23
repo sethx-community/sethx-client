@@ -1,0 +1,35 @@
+<div class="sethx-panel block h-full">
+  <div class="h-2"></div>
+
+  <aside class="h-full flex flex-col min-h-0 space-y-6">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Account Actions</div>
+      <div class="sethx-panel-section-title">Select Account / Fee Token</div>
+      <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
+    </section>
+
+    <app-selected-order-actions
+      [selectedOrder]="selected()"
+      [orderId]="selected()?.orderId || ''"
+      [sideLabel]="selected()?.side || ''"
+      [isMine]="!!selected()?.isMine"
+      [fillAmount]="fillAmount()"
+      [fillDisabled]="selectedFillSafety().disabled"
+      [fillDisabledReason]="selectedFillSafety().reason"
+      [cancelDisabled]="selectedCancelSafety().disabled"
+      [cancelDisabledReason]="selectedCancelSafety().reason"
+      (fillAmountChange)="setFillAmount($event)"
+      (fill)="fillSelected()"
+      (cancel)="cancelSelected()"
+      (clear)="clearSelected()"
+    ></app-selected-order-actions>
+
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Trade Actions</div>
+      <div class="sethx-panel-section-title">Token Spot</div>
+      <p class="sethx-panel-copy">
+        Use the market header buttons to open a fee quote or place a new token spot order. Select an order in the ladder to fill or cancel it here.
+      </p>
+    </section>
+  </aside>
+</div>

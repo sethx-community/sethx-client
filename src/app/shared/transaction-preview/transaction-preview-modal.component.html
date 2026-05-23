@@ -1,0 +1,17 @@
+<app-confirmation-modal
+  [title]="title"
+  [confirmLabel]="confirmLabel"
+  [fields]="fields"
+  [requirements]="requirements"
+  [confirmDisabled]="confirmDisabled"
+  [loading]="loading"
+  [error]="error"
+  [receipt]="receipt"
+  [explorerUrl]="explorerUrl"
+  [showConfirmButton]="showConfirmButton()"
+  [previewBadge]="badgeLabel()"
+  [previewHelper]="helperText()"
+  [riskNote]="riskNote"
+  (cancel)="cancel.emit()"
+  (confirm)="confirm.emit()"
+/>

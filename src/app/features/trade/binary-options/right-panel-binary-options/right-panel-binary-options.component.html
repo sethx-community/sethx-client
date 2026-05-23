@@ -1,0 +1,35 @@
+<div class="sethx-panel">
+  <aside class="h-full flex flex-col min-h-0 space-y-6">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Account Actions</div>
+      <div class="sethx-panel-section-title">Select Account / Fee Token</div>
+      <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
+    </section>
+
+    <section class="sethx-panel-section sethx-panel-card" *ngIf="isMarketOrderView()">
+      <div class="sethx-panel-heading">Market Actions</div>
+      <ng-container *ngIf="selectedMarket() as market; else noBinaryMarketSelected">
+        <div class="space-y-2 text-[11px]">
+          <div class="flex justify-between gap-3"><span class="sethx-field-label !mb-0">Market</span><span class="sethx-readonly-value-strong text-right">{{ selectedMarketLabel() }}</span></div>
+          <div class="flex justify-between gap-3"><span class="sethx-field-label !mb-0">Market key</span><span class="sethx-address-value flex items-center justify-end gap-2 min-w-0 text-right"><span class="truncate" [title]="market.marketKey">{{ market.marketKey }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === market.marketKey" [title]="copiedValue() === market.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(market.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== market.marketKey" [class.fa-circle-check]="copiedValue() === market.marketKey"></i></button></span></div>
+          <div class="flex justify-between gap-3"><span class="sethx-field-label !mb-0">Oracle</span><span class="sethx-address-value flex items-center justify-end gap-2 min-w-0 text-right"><span class="truncate" [title]="market.market.oracle">{{ market.market.oracle }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === market.market.oracle" [title]="copiedValue() === market.market.oracle ? 'Copied' : 'Copy oracle address'" (click)="copyValue(market.market.oracle, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== market.market.oracle" [class.fa-circle-check]="copiedValue() === market.market.oracle"></i></button></span></div>
+        </div>
+        <div class="mt-4 space-y-2 text-xs"><button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button><button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button></div>
+      </ng-container>
+      <ng-template #noBinaryMarketSelected><p class="sethx-panel-copy">Select a binary market to show market actions.</p></ng-template>
+    </section>
+
+    <ng-container *ngIf="isOrdersView()">
+      <app-selected-order-actions [selectedOrder]="selected()" [orderId]="selected()?.orderId || ''" [sideLabel]="selected()?.side || ''" [isMine]="!!selected()?.isMine" [fillAmount]="fillAmount()" [fillDisabled]="selectedFillSafety().disabled" [fillDisabledReason]="selectedFillSafety().reason" [cancelDisabled]="selectedCancelSafety().disabled" [cancelDisabledReason]="selectedCancelSafety().reason" (fillAmountChange)="setFillAmount($event)" (fill)="fillSelected()" (cancel)="cancelSelected()" (clear)="clearSelected()"></app-selected-order-actions>
+    </ng-container>
+
+    <ng-container *ngIf="isPositionsView()">
+      <section class="sethx-panel-section sethx-panel-card" *ngIf="selectedPosition() as position; else noPositionSelected">
+        <div class="sethx-panel-heading">Selected Position</div>
+        <div class="space-y-2 text-[11px] text-frame"><div class="flex justify-between gap-3"><span>Market</span><span class="text-white text-right">{{ positionMarketLabel(position) }}</span></div><div class="flex justify-between gap-3"><span>Status</span><span class="text-white text-right">{{ position.settlementStatus }}</span></div><div class="flex justify-between gap-3"><span>Holder payout</span><span class="text-white text-right">{{ ob.store.formatEth(position.holderClaimable) }}</span></div><div class="flex justify-between gap-3"><span>Writer margin</span><span class="text-white text-right">{{ ob.store.formatEth(position.writerMargin) }}</span></div></div>
+        <div class="mt-4 space-y-2 text-xs"><button type="button" class="sethx-button-primary w-full" [disabled]="!(position.canBuy || position.canWrite || position.canSellHolder)" (click)="placeOrderForPosition(position)">Place Order</button><div class="grid grid-cols-2 gap-2"><button type="button" class="sethx-button-secondary" [disabled]="!position.canClaim" [title]="position.claimHint" (click)="claimPosition(position)">{{ position.claimLabel }}</button><button type="button" class="sethx-button-secondary" [disabled]="!position.canReclaim" [title]="position.reclaimHint" (click)="reclaimPosition(position)">Reclaim</button></div><button type="button" class="sethx-button-secondary w-full" (click)="clearPosition()">Clear Position</button></div>
+      </section>
+      <ng-template #noPositionSelected><section class="sethx-panel-section sethx-panel-card"><div class="sethx-panel-heading">Selected Position</div><p class="sethx-panel-copy">Select a row in My Positions to trade, claim, or reclaim from this panel.</p></section></ng-template>
+    </ng-container>
+  </aside>
+</div>

@@ -1,0 +1,34 @@
+<div class="sethx-panel"><div class="h-2"></div><aside class="h-full flex flex-col min-h-0 space-y-6">
+  <section class="sethx-panel-section sethx-panel-card">
+    <div class="sethx-panel-heading">Treasurer Mode</div>
+    <div class="sethx-panel-section-title">{{ mode.actingAsTreasurer() ? 'Acting as treasurer' : 'Personal mode' }}</div>
+    <p class="sethx-panel-copy">Treasury mode uses an approved treasury account and contract module wrappers. Unsupported orderbooks are disabled while this mode is active.</p>
+    <div class="space-y-2 text-xs">
+      <div class="flex justify-between gap-3"><span class="text-frame">Selected account</span><span>{{ short(mode.selectedTreasuryAccount()) }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Account access</span><span [class.text-up]="mode.selectedAccountAccess()" [class.text-down]="!mode.selectedAccountAccess()">{{ mode.selectedAccountAccess() ? 'Allowed' : 'Missing' }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Emergency state</span><span [class.text-up]="mode.killed() === false" [class.text-down]="mode.killed() === true">{{ mode.killed() === true ? 'Killed' : 'Operational' }}</span></div>
+    </div>
+  </section>
+
+  <section class="sethx-panel-section sethx-panel-card">
+    <div class="sethx-panel-heading">Supported Actions</div>
+    <div class="space-y-2 text-xs">
+      <div class="flex justify-between gap-3"><span class="text-frame">Fund account</span><span [class.text-up]="mode.actionPermissions().fundAccount">{{ mode.actionPermissions().fundAccount ? 'Enabled' : 'Disabled' }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Withdraw account</span><span [class.text-up]="mode.actionPermissions().withdrawAccount">{{ mode.actionPermissions().withdrawAccount ? 'Enabled' : 'Disabled' }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Token Spot</span><span [class.text-up]="mode.actionPermissions().spotTrade">{{ mode.actionPermissions().spotTrade ? 'Enabled' : 'Disabled' }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Lending</span><span [class.text-up]="mode.actionPermissions().lend">{{ mode.actionPermissions().lend ? 'Enabled' : 'Disabled' }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Passive LP</span><span [class.text-up]="mode.actionPermissions().passiveLp">{{ mode.actionPermissions().passiveLp ? 'Enabled' : 'Disabled' }}</span></div>
+    </div>
+  </section>
+
+  <section class="sethx-panel-section sethx-panel-card">
+    <div class="sethx-panel-heading">Contracts</div>
+    <div class="space-y-2 text-xs">
+      <div class="flex justify-between gap-3"><span class="text-frame">Authority</span><span>{{ short(treasury.authorityAddress) }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Treasury</span><span>{{ short(treasury.treasuryAddress) }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Vault Module</span><span>{{ short(treasury.vaultModuleAddress) }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Payments</span><span>{{ short(treasury.paymentsModuleAddress) }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-frame">Trade</span><span>{{ short(treasury.tradeModuleAddress) }}</span></div>
+    </div>
+  </section>
+</aside></div>

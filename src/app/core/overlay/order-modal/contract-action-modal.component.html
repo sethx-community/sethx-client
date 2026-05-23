@@ -1,0 +1,44 @@
+<div class="sethx-modal-shell">
+  <div class="sethx-modal-header">
+    <div>
+      <div class="text-white text-base font-semibold">{{ data.title }}</div>
+      <div class="text-frame text-xs mt-1">{{ data.subtitle }}</div>
+    </div>
+    <button type="button" class="sethx-modal-close" (click)="close()">×</button>
+  </div>
+
+  <div class="sethx-modal-body">
+    <div class="sethx-panel-card">
+      <div class="text-white text-xs uppercase mb-2">Contracts</div>
+      <div class="flex flex-wrap gap-2">
+        @for (name of data.contractNames; track name) {
+          <span class="text-[11px] text-textlight border border-trade-border rounded px-2 py-1">{{ name }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="sethx-panel-card">
+      <div class="text-white text-xs uppercase mb-2">Required functions</div>
+      <div class="space-y-3">
+        @for (fn of data.functions; track fn.name) {
+          <div class="border-b border-trade-border/70 pb-3 last:border-b-0 last:pb-0">
+            <div class="text-textlight text-xs font-semibold">{{ fn.name }}</div>
+            <div class="text-frame text-[11px] font-mono break-all mt-1">{{ fn.signature }}</div>
+            <div class="text-textlight/80 text-[11px] mt-1">{{ fn.purpose }}</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (data.note) {
+      <div class="text-frame text-[11px] leading-relaxed">{{ data.note }}</div>
+    }
+  </div>
+
+  <div class="sethx-modal-footer">
+    <button type="button" class="sethx-btn-secondary" (click)="close()">Close</button>
+    <button type="button" class="sethx-btn-primary-neutral" (click)="close('reviewed')">
+      Reviewed
+    </button>
+  </div>
+</div>

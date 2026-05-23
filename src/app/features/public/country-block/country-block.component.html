@@ -1,0 +1,13 @@
+<section
+  *ngIf="access.isBlocked()"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-background/95 p-6 text-textlight backdrop-blur"
+>
+  <article class="max-w-xl rounded-2xl border border-down bg-darkgray p-6 shadow-2xl">
+    <p class="mb-3 text-xs uppercase tracking-[0.3em] text-frame">{{ 'country.kicker' | t }}</p>
+    <h1 class="mb-4 text-2xl font-semibold text-white">{{ 'country.title' | t }}</h1>
+    <p class="leading-7 text-text-muted">
+      {{ 'country.body' | t }}
+      <span *ngIf="access.countryCode()">{{ 'country.detected' | t }} {{ access.countryCode() }}.</span>
+    </p>
+  </article>
+</section>

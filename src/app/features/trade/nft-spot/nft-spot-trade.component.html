@@ -1,0 +1,408 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">NFT Spot</h1>
+    <p class="sethx-page-copy">
+      Trade listed NFTs through the NFT spot order book. Select a market to inspect bids and asks, then use the right action panel for placing, accepting, or cancelling orders.
+    </p>
+  </header>
+
+  <section class="sethx-table-card space-y-4">
+    <div class="sethx-toolbar">
+      <div class="sethx-view-tabs">
+        <button
+          type="button"
+          class="sethx-view-tab"
+          [class.is-active]="view() === 'markets'"
+          (click)="showMarkets()"
+        >
+          Markets
+        </button>
+        <button
+          type="button"
+          class="sethx-view-tab"
+          [class.is-active]="view() === 'my-nfts'"
+          (click)="showMyNfts()"
+        >
+          My NFTs
+        </button>
+        <button
+          type="button"
+          class="sethx-view-tab"
+          [class.is-active]="view() === 'my-orders'"
+          (click)="showMyOrders()"
+        >
+          My Orders
+        </button>
+      </div>
+
+      <div class="sethx-error-note" *ngIf="error()">{{ error() }}</div>
+    </div>
+
+    <ng-container *ngIf="view() === 'markets'">
+      <app-spot-summary-header
+        eyebrow="NFT spot"
+        title="Active NFT Spot Markets"
+        subtitle="Select a collection/token market to view bids and asks. Create new bids or asks from the same flow."
+        [metrics]="marketsMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-section-title text-base">Markets</div>
+
+        <div class="sethx-toolbar-actions">
+          <input
+            class="sethx-input !w-[280px] !py-1"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+            placeholder="Search collection / token id / quote…"
+          />
+
+          <label class="sethx-inline-control">
+            <input
+              type="checkbox"
+              [checked]="myMarketsOnly()"
+              (change)="myMarketsOnly.set($any($event.target).checked)"
+            />
+            <span>Has my orders</span>
+          </label>
+        </div>
+      </div>
+
+
+      <div class="sethx-table-header grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr_56px] gap-x-4">
+        <div>NFT</div>
+        <div class="text-right">Best Bid</div>
+        <div class="text-right">Best Ask</div>
+        <div class="text-right">Orders</div>
+        <div class="text-right">My Orders</div>
+        <div class="text-right">Info</div>
+      </div>
+
+      <ng-container *ngFor="let market of visibleMarkets(); trackBy: trackMarket">
+        <div class="sethx-market-row-shell" (mouseenter)="hoveredMarket.set(market)" (mouseleave)="hoveredMarket.set(null)">
+          <div
+            class="sethx-table-row sethx-table-row-action grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr_56px] gap-x-4 items-center"
+            (click)="openMarket(market)"
+          >
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="sethx-nft-thumb" [class.is-empty]="!market.imageUrl">
+              <img *ngIf="market.imageUrl" [src]="market.imageUrl" [alt]="market.metadataName || market.collection" />
+              <span *ngIf="!market.imageUrl">NFT</span>
+            </div>
+            <div class="min-w-0 truncate">
+              <div class="sethx-readonly-value-strong truncate">{{ market.metadataName || (market.collection + ' #' + market.tokenId) }}</div>
+              <div class="sethx-address-value truncate text-[11px]">{{ market.collection }} #{{ market.tokenId }} · {{ market.quoteSymbol }}</div>
+            </div>
+          </div>
+          <div class="text-right sethx-orderbook-side-bid font-semibold">{{ market.bestBid }}</div>
+          <div class="text-right sethx-orderbook-side-ask font-semibold">{{ market.bestAsk }}</div>
+          <div class="text-right sethx-readonly-value">{{ market.totalOrders }}</div>
+          <div class="text-right sethx-readonly-value">{{ market.myOrders }}</div>
+          <div class="text-right">
+            <button
+              type="button"
+              class="sethx-action-link"
+              title="Show market information"
+              (click)="showMarketInfo(market, $event)"
+            >Info</button>
+          </div>
+        </div>
+
+          <app-market-detail-panel
+            *ngIf="isMarketDetailOpen(market)"
+            class="sethx-market-detail-popover"
+            title="Market details"
+            [subtitle]="pinnedMarket()?.key === market.key ? 'Selected market' : 'Hover market'"
+            [items]="marketDetailItemsFor(market)"
+            [showClose]="pinnedMarket()?.key === market.key"
+            (close)="clearPinnedMarket()"
+          ></app-market-detail-panel>
+        </div>
+      </ng-container>
+
+      <div class="sethx-table-empty" *ngIf="visibleMarkets().length === 0">
+        No NFT spot markets found.
+      </div>
+    </ng-container>
+
+
+    <ng-container *ngIf="view() === 'my-nfts'">
+      <app-spot-summary-header
+        eyebrow="NFT inventory"
+        title="My NFTs"
+        subtitle="NFTs currently held by the active protocol account vault."
+        [metrics]="myNftsMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-section-title text-base">Inventory</div>
+
+        <label class="sethx-inline-control">
+          <input
+            type="checkbox"
+            [checked]="myNftsOnlyAvailable()"
+            (change)="myNftsOnlyAvailable.set($any($event.target).checked)"
+          />
+          <span>Available only</span>
+        </label>
+      </div>
+
+      <div class="sethx-table-header grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_1fr] gap-x-4">
+        <div>NFT</div>
+        <div class="text-right">Token ID</div>
+        <div class="text-right">Status</div>
+        <div class="text-right">Open Ask</div>
+        <div class="text-right">Action</div>
+      </div>
+
+      <ng-container *ngFor="let nft of myNfts(); trackBy: trackNft">
+        <div class="sethx-table-row grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_1fr] gap-x-4 items-center">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="sethx-nft-thumb" [class.is-empty]="!nft.imageUrl">
+              <img *ngIf="nft.imageUrl" [src]="nft.imageUrl" [alt]="nft.metadataName || nft.collection" />
+              <span *ngIf="!nft.imageUrl">NFT</span>
+            </div>
+            <div class="min-w-0 truncate">
+              <div class="sethx-readonly-value-strong truncate">{{ nft.metadataName || (nft.collection + ' #' + nft.tokenId) }}</div>
+              <div class="sethx-address-value truncate text-[11px]">{{ nft.collection }} #{{ nft.tokenId }}</div>
+            </div>
+          </div>
+          <div class="text-right sethx-address-value-muted">{{ nft.tokenId }}</div>
+          <div class="text-right">
+            <span class="sethx-status-pill"
+              [ngClass]="nft.locked ? 'is-warning' : 'is-ok'">
+              {{ nft.status }}
+            </span>
+          </div>
+          <div class="text-right sethx-readonly-value">{{ nft.openAsk ? nft.openAsk.price : '—' }}</div>
+          <div class="text-right flex justify-end gap-2">
+            <button
+              type="button"
+              class="sethx-button-secondary !py-1"
+              [disabled]="nft.locked"
+              [title]="nft.locked ? 'This NFT is already locked by an open order or settlement.' : 'Create an ask for this NFT'"
+              (click)="sellNft(nft, $event)"
+            >
+              Sell this NFT
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <div class="sethx-table-empty" *ngIf="myNfts().length === 0">
+        No NFTs found in the active protocol account vault. Deposit an NFT into the account first, then refresh this page.
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'my-orders'">
+      <app-spot-summary-header
+        eyebrow="NFT spot orders"
+        title="My Orders"
+        subtitle="Selected-account NFT spot orders. Select a row to open the same accept/cancel assessment flow in the right panel."
+        [metrics]="myOrdersMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[960px] text-xs">
+          <div class="sethx-table-header grid grid-cols-[0.8fr_1.4fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4">
+            <div>Order ID</div>
+            <div>NFT</div>
+            <div>Side</div>
+            <div class="text-right">Price</div>
+            <div class="text-right">Quote</div>
+            <div>Expiry</div>
+            <div class="text-right">Action</div>
+          </div>
+
+          <ng-container *ngFor="let order of myOrders(); trackBy: trackOrder">
+            <div
+              class="sethx-table-row sethx-table-row-action grid grid-cols-[0.8fr_1.4fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4 items-center"
+              [class.is-selected]="isMyOrderSelected(order)"
+              (click)="selectMyOrder(order, $event)"
+            >
+              <div class="sethx-address-value-muted truncate">{{ order.id }}</div>
+              <div class="truncate">
+                <div class="sethx-readonly-value-strong truncate">{{ order.nftLabel }}</div>
+                <div class="mt-1 sethx-address-value truncate text-[11px]">{{ shortAddress(order.raw.nft) }} #{{ order.raw.tokenId.toString() }}</div>
+              </div>
+              <div class="uppercase" [ngClass]="order.side === 'bid' ? 'text-up' : 'text-down'">{{ order.side }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ order.price }}</div>
+              <div class="text-right sethx-address-value">{{ shortAddress(order.raw.quoteToken) }}</div>
+              <div class="sethx-meta-text">{{ order.expiresAt }}</div>
+              <div class="text-right"><button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(order, $event)">Details</button></div>
+            </div>
+          </ng-container>
+
+          <div class="sethx-table-empty" *ngIf="myOrders().length === 0">No NFT spot orders for the selected account.</div>
+        </div>
+      </div>
+
+      <app-market-detail-panel
+        *ngIf="selectedNftOrder() as selected"
+        title="Order details"
+        [subtitle]="selected.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: accept from the right panel'"
+        [items]="selectedOrderDetailItems()"
+      ></app-market-detail-panel>
+    </ng-container>
+
+    <div class="sethx-toolbar border-t border-trade-border pt-3" *ngIf="view() === 'markets'">
+      <div class="sethx-meta-text">Showing up to {{ store.marketLimit() }} markets per page.</div>
+      <div class="sethx-toolbar-actions">
+        <button type="button" class="sethx-button-secondary !py-1" [disabled]="store.marketOffset() === 0" (click)="previousMarketsPage()">Previous</button>
+        <span class="sethx-muted-value">Page {{ marketsPageLabel() }}</span>
+        <button type="button" class="sethx-button-secondary !py-1" [disabled]="visibleMarkets().length < store.marketLimit()" (click)="nextMarketsPage()">Next</button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="view() === 'orders'">
+      <app-spot-summary-header
+        eyebrow="NFT spot orderbook"
+        [title]="selectedMarket() ? selectedMarket()!.collection + ' #' + selectedMarket()!.tokenId : 'Selected NFT Market'"
+        [subtitle]="selectedMarket()?.key ?? ''"
+        [subtitleMono]="true"
+        [metrics]="selectedMarketMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-toolbar-actions">
+          <label class="sethx-inline-control">
+            <input
+              type="checkbox"
+              [checked]="myOrdersOnly()"
+              (change)="myOrdersOnly.set($any($event.target).checked)"
+            />
+            <span>My orders</span>
+          </label>
+
+          <button type="button" class="sethx-button-secondary !py-1" (click)="showAllRows.set(!showAllRows())">
+            {{ showAllRows() ? 'Show less' : 'Show all' }}
+          </button>
+        </div>
+      </div>
+
+
+      <div class="sethx-ladder-toolbar">
+        <div class="sethx-section-title text-base">Order Ladder</div>
+      </div>
+
+      <div class="sethx-table-header grid grid-cols-[1fr_1fr_1fr_1fr]">
+        <div>Bid Maker</div>
+        <div class="text-center sethx-orderbook-side-bid">Bid Price</div>
+        <div class="text-center sethx-orderbook-side-ask">Ask Price</div>
+        <div class="text-right">Ask Maker</div>
+      </div>
+
+      <div class="text-xs font-mono sethx-tabular-nums">
+        <ng-container *ngFor="let row of focusRows(); trackBy: trackRow">
+          <div class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3 relative overflow-visible" (mouseleave)="clearOrderHover()">
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-amount-bid"
+              [disabled]="!row.bid"
+              [class.is-selected]="isSelected(row.bid)"
+              [title]="row.bid ? 'Select bid order' : 'No bid order'"
+              (mouseenter)="onOrderHover(row.bid)"
+              (click)="selectOrder(row.bid, $event)"
+            >
+              <span *ngIf="row.bid">{{ row.bid.maker }} <span class="ml-2 sethx-status-pill" *ngIf="row.bid.isMine">mine</span></span>
+              <span *ngIf="!row.bid">—</span>
+            </button>
+
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-price-bid"
+              [disabled]="!row.bid"
+              [class.is-selected]="isSelected(row.bid)"
+              (mouseenter)="onOrderHover(row.bid)"
+              (click)="selectOrder(row.bid, $event)"
+            >
+              <span *ngIf="row.bid">{{ row.bid.price }}</span>
+              <span *ngIf="!row.bid">—</span>
+            </button>
+
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-price-ask"
+              [disabled]="!row.ask"
+              [class.is-selected]="isSelected(row.ask)"
+              (mouseenter)="onOrderHover(row.ask)"
+              (click)="selectOrder(row.ask, $event)"
+            >
+              <span *ngIf="row.ask">{{ row.ask.price }}</span>
+              <span *ngIf="!row.ask">—</span>
+            </button>
+
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-amount-ask"
+              [disabled]="!row.ask"
+              [class.is-selected]="isSelected(row.ask)"
+              [title]="row.ask ? 'Select ask order' : 'No ask order'"
+              (mouseenter)="onOrderHover(row.ask)"
+              (click)="selectOrder(row.ask, $event)"
+            >
+              <span *ngIf="row.ask"><span class="mr-2 sethx-status-pill" *ngIf="row.ask.isMine">mine</span>{{ row.ask.maker }}</span>
+              <span *ngIf="!row.ask">—</span>
+            </button>
+
+            @if (displayedOrderForRow(row); as detailRow) {
+              <div class="absolute z-30 left-4 right-4 top-full mt-2" (click)="$event.stopPropagation()">
+                <app-market-detail-panel
+                  title="Order details"
+                  [subtitle]="detailRow.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: accept from the right panel'"
+                  [items]="ladderOrderDetailItems(detailRow)"
+                  [showClose]="isSelected(detailRow)"
+                  (close)="orderSelection.clear('nft-spot')"
+                ></app-market-detail-panel>
+              </div>
+            }
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="text-xs font-mono sethx-tabular-nums max-h-[260px] overflow-y-auto opacity-80" *ngIf="showAllRows()">
+        <ng-container *ngFor="let row of restRows(); trackBy: trackRow">
+          <div class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3 !py-2 relative overflow-visible" (mouseleave)="clearOrderHover()">
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-bid !font-normal" [disabled]="!row.bid" [class.is-selected]="isSelected(row.bid)" (mouseenter)="onOrderHover(row.bid)" (click)="selectOrder(row.bid, $event)"><span *ngIf="row.bid">{{ row.bid.maker }} <span class="ml-2 sethx-status-pill" *ngIf="row.bid.isMine">mine</span></span><span *ngIf="!row.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-bid !font-normal" [disabled]="!row.bid" [class.is-selected]="isSelected(row.bid)" (mouseenter)="onOrderHover(row.bid)" (click)="selectOrder(row.bid, $event)"><span *ngIf="row.bid">{{ row.bid.price }}</span><span *ngIf="!row.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-ask !font-normal" [disabled]="!row.ask" [class.is-selected]="isSelected(row.ask)" (mouseenter)="onOrderHover(row.ask)" (click)="selectOrder(row.ask, $event)"><span *ngIf="row.ask">{{ row.ask.price }}</span><span *ngIf="!row.ask">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-ask !font-normal" [disabled]="!row.ask" [class.is-selected]="isSelected(row.ask)" (mouseenter)="onOrderHover(row.ask)" (click)="selectOrder(row.ask, $event)"><span *ngIf="row.ask"><span class="mr-2 sethx-status-pill" *ngIf="row.ask.isMine">mine</span>{{ row.ask.maker }}</span><span *ngIf="!row.ask">—</span></button>
+
+            @if (displayedOrderForRow(row); as detailRow) {
+              <div class="absolute z-30 left-4 right-4 top-full mt-2" (click)="$event.stopPropagation()">
+                <app-market-detail-panel
+                  title="Order details"
+                  [subtitle]="detailRow.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: accept from the right panel'"
+                  [items]="ladderOrderDetailItems(detailRow)"
+                  [showClose]="isSelected(detailRow)"
+                  (close)="orderSelection.clear('nft-spot')"
+                ></app-market-detail-panel>
+              </div>
+            }
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="sethx-table-empty" *ngIf="focusRows().length === 0">
+        No orders for this NFT market.
+      </div>
+    </ng-container>
+  </section>
+</div>

@@ -1,0 +1,69 @@
+<div class="sethx-panel">
+  <div class="h-2"></div>
+
+  <aside class="h-full flex flex-col min-h-0 space-y-6">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Account Actions</div>
+      <div class="sethx-panel-section-title">Select Account / Fee Token</div>
+      <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
+    </section>
+
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Selected Market</div>
+      @if (selectedMarketKey()) {
+        <div class="space-y-2 text-[11px]">
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Market</span>
+            <span class="sethx-readonly-value-strong text-right">{{ selectedMarketLabel() }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Key</span>
+            <span class="flex min-w-0 items-start justify-end gap-2 text-right">
+              <span class="sethx-address-value break-all">{{ selectedMarketKey() }}</span>
+              <button
+                type="button"
+                class="sethx-copy-button shrink-0"
+                [class.is-copied]="copiedValue() === selectedMarketKey()"
+                [title]="copiedValue() === selectedMarketKey() ? 'Copied' : 'Copy market key'"
+                (click)="copyValue(selectedMarketKey(), $event)"
+              >
+                <i class="fa-regular" [class.fa-copy]="copiedValue() !== selectedMarketKey()" [class.fa-circle-check]="copiedValue() === selectedMarketKey()" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Risk</span>
+            <span class="sethx-readonly-value">R{{ selectedRiskLevel() ?? '—' }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Maturity</span>
+            <span class="sethx-readonly-value">{{ selectedExpiryLabel() }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="sethx-field-label !mb-0">Account type</span>
+            <span [ngClass]="selectedAccountType() === 'lending' ? 'text-up font-semibold' : 'text-frame'">{{ selectedAccountType() ?? '—' }}</span>
+          </div>
+        </div>
+
+        <button type="button" class="sethx-button-secondary mt-4 w-full" (click)="clearMarket()">
+          Clear Market
+        </button>
+      } @else {
+        <p class="sethx-panel-copy">
+          Select a lending market in the center view to unlock market-specific lending actions.
+        </p>
+      }
+    </section>
+
+    @if (selectedMarketKey()) {
+      <section class="sethx-panel-section sethx-panel-card">
+        <div class="sethx-panel-heading">Market Actions</div>
+        <div class="sethx-panel-section-title">Lending</div>
+        <p class="sethx-panel-copy">
+          Place lend or borrow orders, cancel open orders, repay debt, and redeem lender bond proceeds for the selected lending market.
+        </p>
+        <app-order-flow-launcher [actions]="actions" [ctx]="ctx()"></app-order-flow-launcher>
+      </section>
+    }
+  </aside>
+</div>

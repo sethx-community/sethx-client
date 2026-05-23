@@ -1,0 +1,212 @@
+<div class="sethx-order-flow-shell">
+  <div class="sethx-modal-header">
+    <h2 class="sethx-section-title text-base">{{ modalTitle() }}</h2>
+    <button type="button" class="sethx-modal-close" (click)="close()" aria-label="Close">✕</button>
+  </div>
+
+  <div class="sethx-modal-body">
+    <div class="sethx-panel-copy">
+      Token Spot orders are created against a base/quote pair. The order form captures the market-specific inputs; the shared order-flow review handles fee quote, locks, balances, receipt, and confirmation.
+    </div>
+
+    @if (isSideSelectable && vm.mode() === "place") {
+      <section class="sethx-order-flow-section">
+        <div class="sethx-field-label">Side</div>
+        <div class="sethx-order-flow-toggle-grid">
+          <button
+            type="button"
+            class="sethx-button-secondary sethx-order-flow-toggle"
+            [class.is-active]="vm.side() === 'buy'"
+            (click)="vm.side.set('buy')"
+          >
+            Bid / Buy
+          </button>
+          <button
+            type="button"
+            class="sethx-button-secondary sethx-order-flow-toggle"
+            [class.is-active]="vm.side() === 'sell'"
+            (click)="vm.side.set('sell')"
+          >
+            Ask / Sell
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (vm.mode() === "cancel" || vm.mode() === "accept") {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Order ID</div>
+          <input
+            class="sethx-input font-mono"
+            placeholder="e.g. 123"
+            [ngModel]="vm.makerOrderIdHuman()"
+            (ngModelChange)="vm.makerOrderIdHuman.set($event)"
+          />
+        </div>
+
+        @if (vm.mode() === "accept") {
+          <div>
+            <div class="sethx-field-label">Amount (base)</div>
+            <input
+              class="sethx-input"
+              placeholder="0.0"
+              [ngModel]="vm.acceptAmountHuman()"
+              (ngModelChange)="vm.acceptAmountHuman.set($event)"
+            />
+          </div>
+        }
+      </section>
+    }
+
+    @if (vm.mode() === "place") {
+      <section class="sethx-order-flow-section">
+        <div class="sethx-order-flow-grid-2">
+          <div>
+            <div class="sethx-field-label">Base token</div>
+            <select
+              class="sethx-select"
+              [ngModel]="vm.baseSelected()"
+              (ngModelChange)="vm.onBaseSelected($event)"
+            >
+              <option value="" disabled>Select base token…</option>
+              @for (t of vm.tokenList(); track t.address) {
+                <option [value]="t.address">{{ t.symbol }} — {{ t.address }}</option>
+              }
+            </select>
+            <input
+              class="sethx-input sethx-order-flow-manual-input font-mono"
+              placeholder="Or paste base address / ETH"
+              [ngModel]="vm.baseInput()"
+              (ngModelChange)="vm.onBaseInput($event)"
+            />
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Quote token</div>
+            <select
+              class="sethx-select"
+              [ngModel]="vm.quoteSelected()"
+              (ngModelChange)="vm.onQuoteSelected($event)"
+            >
+              <option value="" disabled>Select quote token…</option>
+              @for (t of vm.tokenList(); track t.address) {
+                <option [value]="t.address">{{ t.symbol }} — {{ t.address }}</option>
+              }
+            </select>
+            <input
+              class="sethx-input sethx-order-flow-manual-input font-mono"
+              placeholder="Or paste quote address / ETH"
+              [ngModel]="vm.quoteInput()"
+              (ngModelChange)="vm.onQuoteInput($event)"
+            />
+          </div>
+        </div>
+
+        <div class="sethx-order-flow-grid-2">
+          <div>
+            <div class="sethx-field-label">{{ vm.amountLabel() }}</div>
+            <input
+              class="sethx-input"
+              placeholder="0.0"
+              [ngModel]="vm.amountHuman()"
+              (ngModelChange)="vm.amountHuman.set($event)"
+            />
+          </div>
+
+          <div>
+            <div class="sethx-field-label">{{ vm.priceLabel() }}</div>
+            <input
+              class="sethx-input"
+              placeholder="0.0"
+              [ngModel]="vm.priceHuman()"
+              (ngModelChange)="vm.priceHuman.set($event)"
+            />
+            <div class="sethx-meta-text sethx-field-helper">
+              Total: {{ vm.totalQuoteHuman() }} {{ vm.quoteSymbol() }}
+            </div>
+          </div>
+        </div>
+
+        @if (!isQuote) {
+          <app-expiry-picker
+            label="Order expiry"
+            helper="Default sends 0 and lets the token spot orderbook apply its default expiry."
+            [value]="vm.expirySeconds()"
+            (valueChange)="vm.expirySeconds.set($event)"
+          />
+        }
+
+        @if (!vm.pairValid()) {
+          <div class="sethx-error-note">Select two different valid tokens before quoting fees.</div>
+        }
+        @if (!vm.feeTokenAccepted()) {
+          <div class="sethx-error-note">Preferred fee token is not accepted on-chain.</div>
+        }
+      </section>
+    }
+
+    @if (vm.makerOrderError()) {
+      <div class="sethx-error-note">{{ vm.makerOrderError() }}</div>
+    }
+    @if (vm.confirmError() && !vm.showConfirmModal()) {
+      <div class="sethx-error-note">{{ vm.confirmError() }}</div>
+    }
+  </div>
+
+  <div class="sethx-modal-footer">
+    <button type="button" class="sethx-button-secondary sethx-order-flow-secondary-action" (click)="close()">
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      class="sethx-button-primary sethx-order-flow-primary-action"
+      [disabled]="
+        vm.makerOrderLoading() ||
+        (vm.mode() === 'place' && (!vm.pairValid() || !vm.feeTokenAccepted())) ||
+        (vm.mode() === 'cancel' && !vm.makerOrderIdHuman().trim()) ||
+        (vm.mode() === 'accept' && (!vm.makerOrderIdHuman().trim() || !vm.acceptAmountHuman().trim()))
+      "
+      (click)="vm.openConfirmation()"
+    >
+      {{ vm.makerOrderLoading() ? 'Loading order…' : primaryActionLabel() }}
+    </button>
+  </div>
+
+  @if (!actions.confirmOpen() && vm.showConfirmModal()) {
+    <app-order-review-flow
+      [title]="isQuote ? 'Token Spot Fee Quote' : 'Place Token Spot Order'"
+      [kind]="isQuote ? 'quote' : 'transaction'"
+      [confirmLabel]="vm.confirmButtonLabel()"
+      [fields]="vm.confirmFields()"
+      [requirements]="vm.confirmRequirements()"
+      [error]="vm.confirmError()"
+      [receipt]="txReceipt.receipt()"
+      [explorerUrl]="txReceipt.explorerTxUrl()"
+      [loading]="vm.modalLoading()"
+      [confirmDisabled]="vm.confirmDisabled()"
+      riskNote="Token spot execution locks the offered token plus fee budgets. Verify balances, side, price, amount, and expiry before signing."
+      (cancel)="vm.closeConfirm()"
+      (confirm)="submitAndClose()"
+    />
+  }
+
+  @if (actions.confirmOpen()) {
+    <app-order-review-flow
+      [title]="actions.confirmTitle()"
+      kind="transaction"
+      [confirmLabel]="actions.confirmLabel()"
+      [fields]="actions.confirmFields()"
+      [requirements]="actions.confirmRequirements()"
+      [error]="actions.confirmError()"
+      [receipt]="actions.receipt()"
+      [explorerUrl]="actions.explorerTxUrl()"
+      [loading]="actions.status() === 'pending'"
+      [confirmDisabled]="actions.confirmDisabled()"
+      riskNote="Token spot execution locks or releases order assets based on the selected action. Verify order ID, fill amount, fees, and balances before signing."
+      (cancel)="actions.closeConfirmModal()"
+      (confirm)="actions.onConfirmModalConfirm()"
+    />
+  }
+</div>

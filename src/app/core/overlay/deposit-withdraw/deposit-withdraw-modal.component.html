@@ -1,0 +1,124 @@
+<div class="p-6 text-sm text-white font-mono space-y-5 min-h-[420px] h-full flex flex-col">
+  <div class="flex items-start justify-between gap-4 border-b border-frame/40 pb-3">
+    <div>
+      <div class="text-base font-bold text-white">{{ titleText() }}</div>
+      <div class="mt-1 text-xs leading-relaxed text-frame">
+        Enter an amount, review the transaction details, then confirm with your wallet.
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="text-frame text-xs hover:text-white disabled:opacity-50"
+      (click)="closeAll()"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="flex-1 space-y-4 overflow-y-auto pr-1">
+    @if (data.asset === "TOKEN") {
+      <section class="space-y-2 rounded-xl border border-trade-border bg-background/60 p-3">
+        <div class="text-xs font-bold uppercase tracking-[0.18em] text-white">Token</div>
+
+        <select
+          class="sethx-select"
+          [ngModel]="tokenSelected()"
+          (ngModelChange)="onTokenSelected($event)"
+        >
+          <option value="" disabled>Select token…</option>
+          @for (t of tokenList(); track t.address) {
+            <option [value]="t.address">{{ t.symbol }} — {{ t.address }}</option>
+          }
+        </select>
+
+        <input
+          class="sethx-input"
+          placeholder="Paste token address"
+          [ngModel]="tokenInput()"
+          (ngModelChange)="onTokenInput($event)"
+        />
+
+        @if (tokenAddress() && !isValidTokenAddress()) {
+          <div class="text-[11px] text-red-500">Invalid token address.</div>
+        }
+      </section>
+    }
+
+    <section class="space-y-2 rounded-xl border border-trade-border bg-background/60 p-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-xs font-bold uppercase tracking-[0.18em] text-white">Amount</div>
+        <button type="button" class="text-[11px] text-textlight hover:text-white" (click)="refreshWalletBalance()">Refresh wallet</button>
+      </div>
+      <input
+        class="sethx-input"
+        placeholder="0.0"
+        [ngModel]="amount()"
+        (ngModelChange)="amount.set($event)"
+      />
+      <div class="flex items-center justify-between gap-3 text-[11px] text-frame">
+        <span>Wallet balance</span>
+        <span class="text-white">{{ walletBalanceText() }}</span>
+      </div>
+    </section>
+
+    @if (error()) {
+      <div class="rounded border border-down/50 bg-background/70 p-3 text-[11px] text-down break-words">
+        {{ error() }}
+      </div>
+    }
+
+    @if (explorerUrl()) {
+      <div class="rounded border border-up/50 bg-background/70 p-3 text-[11px] text-up">
+        Latest transaction confirmed.
+        <a class="underline" [href]="explorerUrl() ?? ''" target="_blank" rel="noopener noreferrer">View transaction</a>
+      </div>
+    }
+  </div>
+
+  <div class="mt-auto border-t border-frame/40 pt-4 flex justify-end gap-2">
+    <button
+      type="button"
+      class="sethx-button-secondary"
+      (click)="closeAll()"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      class="sethx-button-primary w-auto min-w-[120px]"
+      [disabled]="
+        !amount() ||
+        (data.asset === 'TOKEN' && !isValidTokenAddress()) ||
+        !selectedAccount() ||
+        writing()
+      "
+      (click)="openConfirmation()"
+    >
+      {{ writing() ? 'Working…' : 'Continue' }}
+    </button>
+  </div>
+
+  <app-approve-modal
+    *ngIf="showApproveModal()"
+    [tokenAddress]="confirmData()?.tokenAddress ?? tokenAddress()"
+    [tokenSymbol]="tokenSymbol()"
+    [decimals]="tokenDecimals()"
+    [account]="selectedAccount()!"
+    [amount]="amount()"
+    (cancel)="handleApprovalCancel()"
+    (success)="handleApprovalSuccess()"
+  ></app-approve-modal>
+
+  <app-confirmation-modal
+    *ngIf="showConfirmModal()"
+    [title]="titleText()"
+    [confirmLabel]="data.intent === 'deposit' ? 'Deposit' : 'Withdraw'"
+    [fields]="confirmModalFields()"
+    [error]="error()"
+    [loading]="writing()"
+    (cancel)="showConfirmModal.set(false)"
+    (confirm)="submit()"
+  ></app-confirmation-modal>
+</div>

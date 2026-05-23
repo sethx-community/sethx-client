@@ -1,0 +1,264 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="sethx-modal-shell">
+    <div class="p-6 pb-3 flex justify-between items-center border-b border-trade-border/60">
+      <h2 class="text-base font-bold">{{ title() }}</h2>
+      <button (click)="close()" class="text-frame text-xs hover:text-white">✕</button>
+    </div>
+
+    <div class="px-6 py-4 overflow-y-auto space-y-4 flex-1">
+      <div class="text-[11px] leading-relaxed text-frame">
+        Lending orders route through the selected account contract. Lend orders can use normal or lending accounts; borrow and rollover orders require a lending account.
+      </div>
+
+      <div class="rounded-lg border border-trade-border bg-background/70 p-4 text-xs space-y-2">
+        <div class="flex justify-between gap-4">
+          <span class="text-frame">Selected account</span>
+          <span class="text-right text-white">{{ selectedAccount() ? accountLabel(selectedAccount()) : 'No account selected' }}</span>
+        </div>
+        <div class="flex justify-between gap-4">
+          <span class="text-frame">Account type</span>
+          <span class="text-right" [ngClass]="isLendingAccount() ? 'text-up' : 'text-frame'">{{ selectedAccountType() }}</span>
+        </div>
+      </div>
+
+      @if (data.intent === 'place' || data.intent === 'lend' || data.intent === 'borrow' || data.intent === 'rollover') {
+        <section class="space-y-4">
+          <div class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+            <div class="sethx-field-label">Side</div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="flex-1 px-3 py-2 rounded text-xs border border-textlight text-textlight hover:border-white hover:text-white"
+                [class.border-white]="side() === 0"
+                [class.text-white]="side() === 0"
+                (click)="setSide(0)"
+              >
+                Lend
+              </button>
+              <button
+                type="button"
+                class="flex-1 px-3 py-2 rounded text-xs border border-textlight text-textlight hover:border-white hover:text-white"
+                [class.border-white]="side() === 1"
+                [class.text-white]="side() === 1"
+                (click)="setSide(1)"
+              >
+                Borrow
+              </button>
+            </div>
+
+            @if ((side() === 1 || data.intent === 'rollover') && !isLendingAccount()) {
+              <div class="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+                Borrow and rollover orders can only be placed from a lending account. Select or create a lending account first.
+              </div>
+            }
+          </div>
+
+          <div class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+            <div class="grid gap-3 md:grid-cols-2">
+              <div>
+                <div class="sethx-field-label">Market</div>
+                <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">
+                  {{ data.marketLabel ?? data.defaultMarketLabel ?? 'Select a market from the lending table' }}
+                </div>
+              </div>
+              <div>
+                <div class="sethx-field-label">Market key</div>
+                <div class="rounded border border-trade-border bg-background px-3 py-2 font-mono text-[11px] text-frame">
+                  {{ formatMarketKey() }}
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-2">
+              <div>
+                <div class="sethx-field-label">Borrow asset</div>
+                <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">ETH</div>
+              </div>
+              <div>
+                <div class="sethx-field-label">Risk tier</div>
+                <select class="sethx-select" [ngModel]="riskLevel()" (ngModelChange)="riskLevel.set(+($event || 1))">
+                  <option [ngValue]="1">R1</option>
+                  <option [ngValue]="2">R2</option>
+                  <option [ngValue]="3">R3</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <div class="sethx-field-label">Market maturity</div>
+              <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">
+                {{ formatExpiry(marketExpiry()) }}
+              </div>
+              <div class="mt-1 text-[11px] text-frame">Markets are valid only at last Friday of the month, 12:00 UTC.</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="sethx-field-label">{{ data.intent === 'rollover' ? 'Rollover principal (ETH)' : 'Principal (ETH)' }}</div>
+                <input
+                  class="sethx-input"
+                  placeholder="0.00"
+                  inputmode="decimal"
+                  [ngModel]="principalHuman()"
+                  (ngModelChange)="principalHuman.set($event)"
+                />
+              </div>
+              <div>
+                <div class="sethx-field-label">APR (%)</div>
+                <input
+                  class="sethx-input"
+                  placeholder="5.00"
+                  inputmode="decimal"
+                  [ngModel]="aprHuman()"
+                  (ngModelChange)="aprHuman.set($event)"
+                />
+              </div>
+            </div>
+
+
+            @if (data.intent === 'rollover') {
+              <div class="rounded-lg border border-frame/40 bg-frame/10 p-3 text-[11px] leading-relaxed text-frame">
+                Rollover proceeds repay the selected old debt immediately when matched. The protocol does not allow rollover principal above the outstanding old debt, and the new market must use the same risk tier.
+                <div class="mt-2 font-mono text-textlight">Repay market: {{ repayMarketLabel() || formatMarketKey() }}</div>
+              </div>
+            }
+
+            <app-expiry-picker
+              label="Order expiry"
+              helper="Order expiry must be before or equal to market maturity."
+              [value]="orderExpiry()"
+              (valueChange)="orderExpiry.set($event)"
+            />
+          </div>
+        </section>
+      }
+
+      @if (data.intent === 'cancel') {
+        <section class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+          <div>
+            <div class="sethx-field-label">Order ID</div>
+            <input
+              class="sethx-input"
+              placeholder="e.g. 12"
+              inputmode="numeric"
+              [ngModel]="cancelOrderId()"
+              (ngModelChange)="cancelOrderId.set($event)"
+            />
+          </div>
+          <div class="text-[11px] text-frame">
+            Cancels an open lending order owned by the selected account. Lend cancellations unlock remaining principal; borrow cancellations release pending borrow accounting.
+          </div>
+        </section>
+      }
+
+      @if (data.intent === 'repay') {
+        <section class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <div class="sethx-field-label">Market</div>
+              <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">
+                {{ data.marketLabel ?? data.defaultMarketLabel ?? 'Select a market first' }}
+              </div>
+            </div>
+            <div>
+              <div class="sethx-field-label">Market key</div>
+              <div class="rounded border border-trade-border bg-background px-3 py-2 font-mono text-[11px] text-frame">
+                {{ formatMarketKey() }}
+              </div>
+            </div>
+          </div>
+
+          @if (!isLendingAccount()) {
+            <div class="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+              Repayment is only available from a lending account because only lending accounts can carry lending debt.
+            </div>
+          }
+
+          <div>
+            <div class="sethx-field-label">Repayment amount (ETH)</div>
+            <input
+              class="sethx-input"
+              placeholder="0.00"
+              inputmode="decimal"
+              [ngModel]="repayAmountHuman()"
+              (ngModelChange)="repayAmountHuman.set($event)"
+            />
+            <div class="mt-1 text-[11px] text-frame">Funds are taken from the selected lending account vault free ETH balance.</div>
+          </div>
+        </section>
+      }
+
+      @if (data.intent === 'redeem' || data.intent === 'claim') {
+        <section class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+          <div class="sethx-field-label">Claim action</div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="flex-1 px-3 py-2 rounded text-xs border border-textlight text-textlight hover:border-white hover:text-white"
+              [class.border-white]="bondAction() === 'initial'"
+              [class.text-white]="bondAction() === 'initial'"
+              (click)="setBondAction('initial')"
+            >
+              Redeem initial
+            </button>
+            <button
+              type="button"
+              class="flex-1 px-3 py-2 rounded text-xs border border-textlight text-textlight hover:border-white hover:text-white"
+              [class.border-white]="bondAction() === 'supplemental'"
+              [class.text-white]="bondAction() === 'supplemental'"
+              (click)="setBondAction('supplemental')"
+            >
+              Claim supplemental
+            </button>
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Bond index</div>
+            <input
+              class="sethx-input"
+              placeholder="e.g. 4"
+              inputmode="numeric"
+              [ngModel]="bondIndex()"
+              (ngModelChange)="bondIndex.set($event)"
+            />
+          </div>
+
+          <div class="text-[11px] text-frame">
+            Bond proceeds become claimable only after the lending market has settled and recovery liquidity is available.
+          </div>
+        </section>
+      }
+
+      @if (confirmError() && !confirmOpen()) {
+        <div class="text-red-400 text-xs break-words">{{ confirmError() }}</div>
+      }
+    </div>
+
+    <div class="px-6 py-4 border-t border-trade-border/60 flex justify-end gap-3 mt-auto">
+      <button class="sethx-button-secondary min-w-[110px] border-textlight text-textlight" (click)="close()">
+        Cancel
+      </button>
+      <button class="sethx-button-primary w-auto min-w-[150px]" [disabled]="submitDisabled()" (click)="openConfirmation()">
+        {{ submitLabel() }}
+      </button>
+    </div>
+  </div>
+</div>
+
+@if (confirmOpen()) {
+  <app-order-review-flow
+    [title]="confirmTitle()"
+    [confirmLabel]="confirmLabel()"
+    [fields]="confirmFields()"
+    [requirements]="confirmRequirements()"
+    [confirmDisabled]="confirmDisabled()"
+    [loading]="pending()"
+    [error]="confirmError()"
+    [receipt]="txReceipt.receipt()"
+    [explorerUrl]="txReceipt.explorerTxUrl()"
+    kind="transaction"
+    riskNote="Lending actions can lock vault balances, create debt, or redeem bond proceeds. Verify the selected account type, market maturity, and risk tier before signing."
+    (cancel)="closeConfirm()"
+    (confirm)="confirm()"
+  />
+}

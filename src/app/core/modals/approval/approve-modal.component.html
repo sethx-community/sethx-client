@@ -1,0 +1,56 @@
+<div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+  <div class="sethx-modal-shell">
+    <div class="p-6 pb-3 flex justify-between items-start gap-4 border-b border-frame/40">
+      <div>
+        <h2 class="text-base font-bold text-white">Approve {{ tokenSymbol }}</h2>
+        <p class="mt-1 text-xs leading-relaxed text-frame">
+          Allow the selected account contract to spend this token before depositing.
+        </p>
+      </div>
+
+      <button
+        (click)="cancelAction()"
+        [disabled]="pending()"
+        class="text-frame text-xs hover:text-white disabled:opacity-50"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div class="rounded-xl border border-trade-border bg-background/60 p-3 text-xs space-y-2">
+        <div class="flex justify-between gap-4">
+          <span class="text-frame uppercase">Amount</span>
+          <span class="text-white text-right">{{ amount }} {{ tokenSymbol }}</span>
+        </div>
+        <div class="text-frame leading-relaxed">
+          This approval is required once when the allowance is below your deposit amount.
+        </div>
+      </div>
+
+      @if (error()) {
+        <div class="rounded border border-down/50 bg-background/70 p-3 text-xs text-down break-words">
+          {{ error() }}
+        </div>
+      }
+    </div>
+
+    <div class="p-6 pt-3 border-t border-frame/40 flex justify-end gap-2">
+      <button
+        class="sethx-button-secondary"
+        [disabled]="pending()"
+        (click)="cancelAction()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="sethx-modal-confirm-button min-w-[120px] py-2"
+        [disabled]="pending()"
+        (click)="approve()"
+      >
+        {{ pending() ? "Approving..." : "Approve" }}
+      </button>
+    </div>
+  </div>
+</div>

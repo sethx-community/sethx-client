@@ -1,0 +1,32 @@
+<div>
+  <div class="sethx-field-label">{{ label }}</div>
+  <select class="sethx-input" [ngModel]="presetValue()" (ngModelChange)="onPresetChange($event)">
+    <option value="default">Default</option>
+    @for (p of expiry.presets; track p.seconds) {
+      <option [value]="p.seconds">{{ p.label }}</option>
+    }
+    <option value="custom">Custom date/time</option>
+    <option value="manual">Advanced/manual Unix timestamp</option>
+  </select>
+
+  @if (selection.mode === 'custom') {
+    <input
+      class="sethx-input mt-2"
+      type="datetime-local"
+      [ngModel]="selection.customLocal || ''"
+      (ngModelChange)="onCustomChange($event)"
+    />
+  }
+
+  @if (selection.mode === 'manual') {
+    <input
+      class="sethx-input mt-2"
+      placeholder="1767225600"
+      inputmode="numeric"
+      [ngModel]="selection.manualUnix || ''"
+      (ngModelChange)="onManualChange($event)"
+    />
+  }
+
+  <div class="text-[11px] text-frame mt-1">{{ preview() }}</div>
+</div>

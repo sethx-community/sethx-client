@@ -1,0 +1,345 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">Token Spot</h1>
+    <p class="sethx-page-copy">
+      Trade listed tokens through the token spot order book. Select a market to inspect orders, review your tokens and orders, then place, fill, or cancel token spot orders from the right action panel.
+    </p>
+  </header>
+
+  <section class="sethx-table-card space-y-4">
+    <div class="sethx-toolbar">
+      <div class="sethx-view-tabs">
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'books' || view() === 'orders'" (click)="backToBooks()">
+          Markets
+        </button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'tokens'" (click)="openMyTokens()">
+          My Tokens
+        </button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'my-orders'" (click)="openMyOrders()">
+          My Orders
+        </button>
+      </div>
+
+      <div class="sethx-error-note" *ngIf="ob.error() || ob.myOrdersError()">{{ ob.error() || ob.myOrdersError() }}</div>
+    </div>
+
+    <ng-container *ngIf="view() === 'books'">
+      <app-spot-summary-header
+        eyebrow="Token spot"
+        title="Active Token Spot Markets"
+        subtitle="Select a token pair to view bids and asks. Market actions stay in the header; selected-order actions stay in the right panel."
+        [metrics]="booksMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-section-title text-base">Markets</div>
+
+        <div class="sethx-toolbar-actions">
+          <input class="sethx-input !w-[260px] !py-1" [value]="ob.bookSearch()" (input)="ob.setBookSearch($any($event.target).value)" placeholder="Search pair / token / address…" />
+
+          <label class="sethx-inline-control">
+            <input type="checkbox" [checked]="ob.booksWithMyOrdersOnly()" (change)="ob.setBooksWithMyOrdersOnly($any($event.target).checked)" />
+            <span>Has my orders</span>
+          </label>
+
+          <div class="sethx-meta-text" *ngIf="ob.loadingBooks()">Loading…</div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[760px] text-xs">
+          <div class="sethx-table-header grid gap-x-4" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 120px 120px 70px' : '1fr 120px 70px'">
+            <button type="button" class="text-left uppercase cursor-pointer" (click)="ob.toggleBookSort('pair')">Pair</button>
+            <button type="button" class="text-right uppercase cursor-pointer" (click)="ob.toggleBookSort('orders')">Orders</button>
+            <button *ngIf="ob.supportsMyTotals()" type="button" class="text-right uppercase cursor-pointer" (click)="ob.toggleBookSort('myOrders')">My orders</button>
+            <div class="text-right">Info</div>
+          </div>
+
+          <ng-container *ngFor="let b of ob.visibleBooks(); trackBy: trackBook">
+            <div class="sethx-market-row-shell" (mouseenter)="hoveredBook.set(b)" (mouseleave)="hoveredBook.set(null)">
+              <div class="sethx-table-row sethx-table-row-action grid gap-x-4 items-center" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 120px 120px 70px' : '1fr 120px 70px'" (click)="openBook(b)">
+                <div class="truncate">
+                  <div class="sethx-readonly-value-strong truncate">{{ ob.pairLabel(b) }}</div>
+                  <div class="mt-1 sethx-address-value truncate text-[11px]">{{ ob.shortAddr(b.base) }} / {{ ob.shortAddr(b.quote) }}</div>
+                </div>
+                <div class="text-right sethx-readonly-value">{{ b.total }}</div>
+                <div class="text-right sethx-readonly-value" *ngIf="ob.supportsMyTotals()">{{ b.myTotal ?? 0 }}</div>
+                <div class="text-right">
+                  <button type="button" class="sethx-action-link" title="Show market information" (click)="showBookInfo(b, $event)">Info</button>
+                </div>
+              </div>
+
+              <app-market-detail-panel
+                *ngIf="isBookDetailOpen(b)"
+                class="sethx-market-detail-popover"
+                title="Market details"
+                [subtitle]="pinnedBook()?.key === b.key ? 'Selected market' : 'Hover market'"
+                [items]="bookDetailItemsFor(b)"
+                [showClose]="pinnedBook()?.key === b.key"
+                (close)="pinnedBook.set(null)"
+              ></app-market-detail-panel>
+            </div>
+          </ng-container>
+
+          <div class="sethx-table-empty" *ngIf="!ob.loadingBooks() && ob.visibleBooks().length === 0">No active markets found.</div>
+        </div>
+      </div>
+
+      <div class="sethx-toolbar border-t border-trade-border pt-3">
+        <div class="sethx-meta-text">Showing up to {{ ob.bookLimit() }} markets per page.</div>
+        <div class="sethx-toolbar-actions">
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="ob.bookOffset() === 0 || ob.loadingBooks()" (click)="previousBooksPage()">Previous</button>
+          <span class="sethx-muted-value">Page {{ booksPageLabel() }}</span>
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="ob.loadingBooks() || ob.visibleBooks().length < ob.bookLimit()" (click)="nextBooksPage()">Next</button>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'tokens'">
+      <app-spot-summary-header
+        eyebrow="Token spot assets"
+        title="My Tokens"
+        subtitle="Review selected-account token balances, available amounts, locked balances, oracle values, and deposit or withdraw directly from Token Spot."
+        [metrics]="tokenHoldingsMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar border-y border-trade-border py-3">
+        <div>
+          <span class="sethx-field-label !mb-0 !inline-block mr-2">Selected account</span>
+          <span class="sethx-readonly-value-strong">{{ selectedAccountLabel() }}</span>
+        </div>
+
+        <div class="sethx-toolbar-actions">
+          <div class="sethx-meta-text md:text-right">Last refreshed: <span class="sethx-readonly-value-strong">{{ lastRefreshedText() }}</span></div>
+          <button type="button" (click)="refreshBalances()" class="sethx-button-secondary w-full md:w-28">Refresh</button>
+          <button type="button" (click)="toggleTokenValueView()" class="sethx-button-secondary w-full md:w-36">{{ showTokenUSD() ? 'Show Amounts' : 'Show USD Value' }}</button>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="sethx-meta-text">Loading tokens…</div>
+      }
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px] text-xs">
+          <div class="sethx-table-header grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] gap-x-4">
+            <div class="truncate">Token</div>
+            <div class="text-right">Total</div>
+            <div class="text-right">Locked</div>
+            <div class="text-right">Available</div>
+            <div class="text-right">Price</div>
+            <div class="text-right">24h</div>
+            <div class="text-right">Actions</div>
+          </div>
+
+          <div class="sethx-table-section">Main tokens</div>
+          <ng-container *ngFor="let token of mainTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
+              <div class="text-right">{{ getFormattedTokenValue(token.address) }}</div>
+              <div class="text-right">{{ getFormattedLockedValue(token.address) }}</div>
+              <div class="text-right">{{ getFormattedAvailableValue(token.address) }}</div>
+              <div class="text-right">{{ getOraclePriceText(token.address) }}</div>
+              <div class="text-right" [ngClass]="getOracleChangeClass(token.address)">{{ getOracleChangePercent(token.address) }}</div>
+              <div class="flex justify-end gap-2">
+                <button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button>
+                <button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button>
+              </div>
+            </div>
+          </ng-container>
+
+          <div class="my-3 border-t border-frame"></div>
+          <div class="sethx-table-section">Whitelisted / trusted tokens</div>
+          @if (whitelistTokens().length === 0) { <div class="sethx-table-empty">No trusted non-main tokens detected for trade valuation yet.</div> }
+          <ng-container *ngFor="let token of whitelistTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
+              <div class="text-right">{{ getFormattedTokenValue(token.address, token.decimals) }}</div>
+              <div class="text-right">{{ getFormattedLockedValue(token.address, token.decimals) }}</div>
+              <div class="text-right">{{ getFormattedAvailableValue(token.address, token.decimals) }}</div>
+              <div class="text-right">{{ getOraclePriceText(token.address) }}</div>
+              <div class="text-right" [ngClass]="getOracleChangeClass(token.address)">{{ getOracleChangePercent(token.address) }}</div>
+              <div class="flex justify-end gap-2"><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button></div>
+            </div>
+          </ng-container>
+
+          <div class="my-3 border-t border-frame"></div>
+          <div class="sethx-table-section">Other tokens</div>
+          @if (otherTokens().length === 0) { <div class="sethx-table-empty">No other ERC20 tokens detected.</div> }
+          <ng-container *ngFor="let token of otherTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
+              <div class="text-right">{{ getFormattedTokenValue(token.address, token.decimals) }}</div>
+              <div class="text-right">{{ getFormattedLockedValue(token.address, token.decimals) }}</div>
+              <div class="text-right">{{ getFormattedAvailableValue(token.address, token.decimals) }}</div>
+              <div class="text-right">—</div>
+              <div class="text-right">—</div>
+              <div class="flex justify-end gap-2"><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button></div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      @if (portfolioError()) { <div class="sethx-error-note mt-3">Failed to load tokens.</div> }
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'my-orders'">
+      <app-spot-summary-header
+        eyebrow="Token spot orders"
+        title="My Orders"
+        subtitle="Selected-account token spot orders. Select a row to open the same cancel/fill assessment flow in the right panel."
+        [metrics]="myOrdersMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[920px] text-xs">
+          <div class="sethx-table-header grid grid-cols-[0.9fr_1.1fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4">
+            <div>Order ID</div>
+            <div>Market</div>
+            <div>Side</div>
+            <div class="text-right">Amount</div>
+            <div class="text-right">Price</div>
+            <div>Expiry</div>
+            <div class="text-right">Action</div>
+          </div>
+
+          <ng-container *ngFor="let order of ob.myOrders()">
+            <div class="sethx-table-row sethx-table-row-action grid grid-cols-[0.9fr_1.1fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4 items-center" [class.is-selected]="isMyOrderSelected(order)" (click)="selectMyOrder(order, $event)">
+              <div class="sethx-address-value-muted truncate">{{ order.orderId }}</div>
+              <div class="truncate"><div class="sethx-readonly-value-strong truncate">{{ orderPairLabel(order) }}</div><div class="mt-1 sethx-address-value truncate text-[11px]">{{ ob.shortAddr(order.baseToken) }} / {{ ob.shortAddr(order.quoteToken) }}</div></div>
+              <div class="uppercase" [ngClass]="order.side === 0 ? 'text-up' : 'text-down'">{{ orderSideLabel(order) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ ob.formatAmount(order) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ ob.formatPrice(order) }}</div>
+              <div class="sethx-meta-text">{{ ob.formatExpiry(order.expiry) }}</div>
+              <div class="text-right"><button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(order, $event)">Details</button></div>
+            </div>
+          </ng-container>
+
+          <div class="sethx-table-empty" *ngIf="!ob.loadingMyOrders() && ob.myOrders().length === 0">No token spot orders for the selected account.</div>
+          <div class="sethx-table-empty" *ngIf="ob.loadingMyOrders()">Loading my orders…</div>
+        </div>
+      </div>
+
+      <app-market-detail-panel
+        *ngIf="selectedSpotOrder() as selected"
+        title="Order details"
+        [subtitle]="selected.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: fill from the right panel'"
+        [items]="selectedOrderDetailItems()"
+      ></app-market-detail-panel>
+    </ng-container>
+
+    <ng-container *ngIf="view() === 'orders'">
+      <app-spot-summary-header
+        eyebrow="Token spot orderbook"
+        [title]="ob.selectedBook() ? ob.pairLabel(ob.selectedBook()!) : 'Selected Token Pair'"
+        [subtitle]="ob.selectedBook()?.key ?? ''"
+        [subtitleMono]="true"
+        [metrics]="selectedBookMetrics()"
+        primaryLabel="Place Order"
+        secondaryLabel="Fee Quote"
+        (primary)="openPlaceOrder()"
+        (secondary)="openFeeQuote()"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div class="sethx-toolbar-actions">
+          <label class="sethx-inline-control">
+            <input type="checkbox" [checked]="ob.myOrdersOnly()" (change)="ob.setMyOrdersOnly($any($event.target).checked)" />
+            <span>My orders</span>
+          </label>
+          <select class="sethx-select !w-auto !py-1" [value]="ob.ladderFocus()" (change)="ob.setLadderFocus(+$any($event.target).value)">
+            <option [value]="3">Focus 3</option>
+            <option [value]="5">Focus 5</option>
+            <option [value]="10">Focus 10</option>
+          </select>
+          <button type="button" class="sethx-button-secondary !py-1" (click)="ob.toggleShowAllRows()" [disabled]="ob.loadingOrders()">{{ ob.showAllRows() ? 'Show less' : 'Show all' }}</button>
+          <div class="sethx-meta-text" *ngIf="ob.loadingOrders()">Loading…</div>
+        </div>
+      </div>
+
+      <div class="sethx-ladder-toolbar">
+        <div class="sethx-section-title text-base">Order Ladder</div>
+      </div>
+
+      <div class="sethx-table-header grid grid-cols-[1fr_1fr_1fr_1fr]">
+        <div>Bid Amt</div><div class="text-center sethx-orderbook-side-bid">Bid Px</div><div class="text-center sethx-orderbook-side-ask">Ask Px</div><div class="text-right">Ask Amt</div>
+      </div>
+
+      <div class="text-xs font-mono sethx-tabular-nums">
+        <ng-container *ngFor="let r of ob.focusRows(); trackBy: trackLadderRow">
+          <div class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3 relative overflow-visible" (mouseleave)="clearOrderHover()">
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-bid" [disabled]="!r.bid" [class.is-selected]="isSelected(r.bid)" [title]="r.bid ? 'Select bid order' : 'No bid order'" (mouseenter)="onOrderHover(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.formatAmount(r.bid.order) }} <span class="ml-2 sethx-status-pill" *ngIf="r.bid.isMine">mine</span></span><span *ngIf="!r.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-bid" [disabled]="!r.bid" [class.is-selected]="isSelected(r.bid)" (mouseenter)="onOrderHover(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.formatPrice(r.bid.order) }}</span><span *ngIf="!r.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-ask" [disabled]="!r.ask" [class.is-selected]="isSelected(r.ask)" (mouseenter)="onOrderHover(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask">{{ ob.formatPrice(r.ask.order) }}</span><span *ngIf="!r.ask">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-ask" [disabled]="!r.ask" [class.is-selected]="isSelected(r.ask)" [title]="r.ask ? 'Select ask order' : 'No ask order'" (mouseenter)="onOrderHover(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask"><span class="mr-2 sethx-status-pill" *ngIf="r.ask.isMine">mine</span>{{ ob.formatAmount(r.ask.order) }}</span><span *ngIf="!r.ask">—</span></button>
+
+            @if (displayedOrderForRow(r); as detailRow) {
+              <div class="absolute z-30 left-4 right-4 top-full mt-2" (click)="$event.stopPropagation()">
+                <app-market-detail-panel
+                  title="Order details"
+                  [subtitle]="detailRow.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: fill from the right panel'"
+                  [items]="ladderOrderDetailItems(detailRow)"
+                  [showClose]="isSelected(detailRow)"
+                  (close)="orderSelection.clear('spot')"
+                ></app-market-detail-panel>
+              </div>
+            }
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="text-xs font-mono sethx-tabular-nums max-h-[260px] overflow-y-auto opacity-80" *ngIf="ob.showAllRows()">
+        <ng-container *ngFor="let r of ob.restRows(); trackBy: trackLadderRow">
+          <div class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3 !py-2 relative overflow-visible" (mouseleave)="clearOrderHover()">
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-bid !font-normal" [disabled]="!r.bid" [class.is-selected]="isSelected(r.bid)" (mouseenter)="onOrderHover(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.formatAmount(r.bid.order) }} <span class="ml-2 sethx-status-pill" *ngIf="r.bid.isMine">mine</span></span><span *ngIf="!r.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-bid !font-normal" [disabled]="!r.bid" [class.is-selected]="isSelected(r.bid)" (mouseenter)="onOrderHover(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.formatPrice(r.bid.order) }}</span><span *ngIf="!r.bid">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-ask !font-normal" [disabled]="!r.ask" [class.is-selected]="isSelected(r.ask)" (mouseenter)="onOrderHover(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask">{{ ob.formatPrice(r.ask.order) }}</span><span *ngIf="!r.ask">—</span></button>
+            <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-ask !font-normal" [disabled]="!r.ask" [class.is-selected]="isSelected(r.ask)" (mouseenter)="onOrderHover(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask"><span class="mr-2 sethx-status-pill" *ngIf="r.ask.isMine">mine</span>{{ ob.formatAmount(r.ask.order) }}</span><span *ngIf="!r.ask">—</span></button>
+
+            @if (displayedOrderForRow(r); as detailRow) {
+              <div class="absolute z-30 left-4 right-4 top-full mt-2" (click)="$event.stopPropagation()">
+                <app-market-detail-panel
+                  title="Order details"
+                  [subtitle]="detailRow.isMine ? 'Your selected order: cancel from the right panel' : 'Other account order: fill from the right panel'"
+                  [items]="ladderOrderDetailItems(detailRow)"
+                  [showClose]="isSelected(detailRow)"
+                  (close)="orderSelection.clear('spot')"
+                ></app-market-detail-panel>
+              </div>
+            }
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="sethx-table-empty" *ngIf="!ob.loadingOrders() && ob.focusRows().length === 0">No orders for this market.</div>
+    </ng-container>
+  </section>
+</div>
+
+<app-confirmation-modal
+  *ngIf="ob.confirmOpen()"
+  [title]="ob.confirmTitle()"
+  [confirmLabel]="ob.confirmLabel()"
+  [fields]="ob.confirmFields()"
+  [requirements]="ob.confirmRequirements()"
+  [confirmDisabled]="ob.confirmDisabled()"
+  [loading]="ob.confirmLoading()"
+  [error]="ob.confirmError()"
+  [receipt]="ob.receipt()"
+  [explorerUrl]="ob.explorerTxUrl()"
+  (cancel)="ob.closeConfirmModal()"
+  (confirm)="ob.onConfirmModalConfirm()"
+></app-confirmation-modal>

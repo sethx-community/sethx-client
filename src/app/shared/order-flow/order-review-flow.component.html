@@ -1,0 +1,15 @@
+<app-transaction-preview-modal
+  [title]="title"
+  [kind]="kind"
+  [confirmLabel]="confirmLabel"
+  [fields]="fields"
+  [requirements]="requirements"
+  [confirmDisabled]="confirmDisabled"
+  [loading]="loading"
+  [error]="error"
+  [receipt]="receipt"
+  [explorerUrl]="explorerUrl"
+  [riskNote]="riskNote"
+  (cancel)="cancel.emit()"
+  (confirm)="confirm.emit()"
+/>

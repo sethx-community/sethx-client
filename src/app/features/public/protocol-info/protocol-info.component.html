@@ -1,0 +1,102 @@
+<div class="sethx-page space-y-5">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">Protocol</div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="sethx-page-title">SETHX Protocol</h1>
+        <p class="sethx-page-copy mt-2">
+          SETHX is a decentralized exchange built on Ethereum smart contracts. The client reads the deployed protocol configuration and helps users review the active network, core modules, contract addresses, fee tokens, and vault status.
+        </p>
+      </div>
+      <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()">Refresh protocol reads</button>
+    </div>
+  </header>
+
+  <section class="grid gap-4 lg:grid-cols-3">
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Network</div>
+      <h2 class="sethx-section-title mt-2">{{ network().name }}</h2>
+      <p class="sethx-page-copy mt-2">Chain {{ network().chainId }} · Native token {{ network().nativeSymbol }}</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Contracts</div>
+      <h2 class="sethx-section-title mt-2">{{ live().configuredContractCount }} configured</h2>
+      <p class="sethx-page-copy mt-2">Configured addresses are loaded from the client deployment configuration.</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Governance</div>
+      <h2 class="sethx-section-title mt-2">Native governor</h2>
+      <p class="sethx-page-copy mt-2">Protocol roles and parameters are controlled through the SETHX Governor and timelock contracts.</p>
+    </article>
+  </section>
+
+  <section class="sethx-table-card space-y-4">
+    <div class="sethx-toolbar">
+      <div>
+        <h2 class="sethx-section-title">Core protocol contracts</h2>
+        <p class="sethx-page-copy mt-1">Key contracts used for governance, accounts, vault, fees, and prices.</p>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-trade-border">
+      <div class="grid grid-cols-[0.75fr_1fr_1.5fr] gap-4 border-b border-trade-border bg-background/60 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-subtle">
+        <span>Contract</span>
+        <span>Address</span>
+        <span>Purpose</span>
+      </div>
+      <div
+        *ngFor="let row of keyContracts(); trackBy: trackByName"
+        class="grid grid-cols-[0.75fr_1fr_1.5fr] gap-4 border-b border-trade-border px-3 py-3 text-xs last:border-b-0"
+      >
+        <span class="font-semibold text-white">{{ row.name }}</span>
+        <code class="break-all text-accent">{{ short(row.address) }}</code>
+        <span class="text-text-muted">{{ row.description }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+    <article class="sethx-table-card space-y-4">
+      <div>
+        <h2 class="sethx-section-title">Market modules</h2>
+        <p class="sethx-page-copy mt-1">Configured product modules exposed by this deployment.</p>
+      </div>
+      <div class="grid gap-3 md:grid-cols-2">
+        <div *ngFor="let product of products()" class="rounded border border-trade-border bg-background/60 p-3">
+          <div class="text-sm font-semibold text-white">{{ product.label }}</div>
+          <p class="mt-1 text-xs leading-relaxed text-text-muted">{{ product.summary }}</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="sethx-table-card space-y-4">
+      <div>
+        <h2 class="sethx-section-title">Vault status</h2>
+        <p class="sethx-page-copy mt-1">Read-only status for tracked assets in the protocol vault.</p>
+      </div>
+      <div class="space-y-2">
+        <div *ngFor="let row of live().vaultQuantities" class="grid grid-cols-[0.7fr_1fr_0.9fr] gap-3 rounded border border-trade-border bg-background/60 p-3 text-xs">
+          <span class="font-semibold text-white">{{ row.symbol }}</span>
+          <span class="text-text-muted">{{ row.name }}</span>
+          <span class="text-right text-white">{{ formatToken(row.balance, row.decimals) }}</span>
+        </div>
+        <p *ngIf="live().vaultQuantities.length === 0" class="sethx-page-copy">Vault quantities are loading or not available from the current provider.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="sethx-table-card space-y-4">
+    <div>
+      <h2 class="sethx-section-title">All configured contracts</h2>
+      <p class="sethx-page-copy mt-1">Full deployment address list for the connected client configuration.</p>
+    </div>
+    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      <div *ngFor="let row of contracts(); trackBy: trackByName" class="rounded border border-trade-border bg-background/60 p-3 text-xs">
+        <div class="font-semibold text-white">{{ row.name }}</div>
+        <code class="mt-1 block break-all text-accent">{{ row.address }}</code>
+      </div>
+    </div>
+  </section>
+</div>

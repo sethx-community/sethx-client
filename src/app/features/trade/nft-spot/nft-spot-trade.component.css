@@ -1,0 +1,30 @@
+:host { display: block; }
+
+
+.nft-thumb {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  height: 2.5rem;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-transform: uppercase;
+  width: 2.5rem;
+}
+
+.nft-thumb img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.nft-thumb-empty {
+  background: linear-gradient(135deg, rgba(40, 48, 68, 0.9), rgba(21, 28, 43, 0.9));
+}

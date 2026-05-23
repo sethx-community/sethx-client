@@ -1,0 +1,53 @@
+<div class="rounded-lg border border-trade-border bg-background/70 p-4 space-y-3">
+  <div>
+    <div class="sethx-field-label">{{ label }}</div>
+    <select
+      class="sethx-input"
+      [ngModel]="mode"
+      (ngModelChange)="onModeChange($event)"
+    >
+      @for (m of modes; track m.value) {
+        @if (allowDefault || m.value !== 'default') {
+          <option [value]="m.value">{{ m.label }}</option>
+        }
+      }
+    </select>
+    <div class="text-[11px] text-frame mt-1">{{ helper }}</div>
+  </div>
+
+  @if (mode === 'custom') {
+    <div>
+      <div class="sethx-field-label">Custom date/time</div>
+      <input
+        class="sethx-input"
+        type="datetime-local"
+        [ngModel]="customLocal"
+        (ngModelChange)="onCustomChange($event)"
+      />
+    </div>
+  }
+
+  @if (mode === 'manual') {
+    <div>
+      <div class="sethx-field-label">Manual Unix timestamp</div>
+      <input
+        class="sethx-input font-mono"
+        placeholder="0 or 1767225600"
+        inputmode="numeric"
+        [ngModel]="manualUnix"
+        (ngModelChange)="onManualChange($event)"
+      />
+    </div>
+  }
+
+  <div class="grid grid-cols-2 gap-3 text-[11px]">
+    <div class="rounded border border-frame/40 p-2">
+      <div class="text-frame uppercase mb-1">Human date/time</div>
+      <div class="text-white">{{ previewHuman() }}</div>
+    </div>
+    <div class="rounded border border-frame/40 p-2">
+      <div class="text-frame uppercase mb-1">Contract expiry value</div>
+      <div class="text-white font-mono break-all">{{ previewUnix() }}</div>
+    </div>
+  </div>
+</div>

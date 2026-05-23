@@ -1,0 +1,451 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">Lending</h1>
+    <p class="sethx-page-copy">
+      Borrow and lend ETH through maturity-based lending markets. Select a market to review lend offers, borrow bids, active debt, and bond lots. Market actions live in the right panel after a market is selected.
+    </p>
+  </header>
+
+  <section class="sethx-table-card space-y-4">
+    <div class="sethx-toolbar">
+      <div class="sethx-view-tabs">
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'markets' || view() === 'book'" (click)="openMarkets()">
+          Markets
+        </button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'loans'" (click)="openLoans()">
+          My Loans
+        </button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'bonds'" (click)="openBonds()">
+          My Bonds
+        </button>
+        <button type="button" class="sethx-view-tab" [class.is-active]="view() === 'my-orders'" (click)="openMyOrders()">
+          My Orders
+        </button>
+      </div>
+
+      <div class="sethx-toolbar-actions">
+        <div class="sethx-meta-text md:text-right">
+          Account: <span class="sethx-readonly-value-strong">{{ selectedAccountLabel() }}</span>
+        </div>
+        <button type="button" class="sethx-button-secondary !py-1.5" (click)="refresh()">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="sethx-info-note">Loading lending markets and account positions…</div>
+    }
+
+    @if (!selectedAccount()) {
+      <div class="sethx-info-note">
+        Select or create an account first. Lending orders require a protocol account; borrow and repay actions require a lending account.
+      </div>
+    }
+
+    @if (selectedAccount() && !isSelectedAccountLending()) {
+      <div class="sethx-info-note">
+        The selected account can lend, redeem bonds, and cancel its lend orders. Borrowing and repayment require a lending account because debt and liquidation checks are account-level.
+      </div>
+    }
+
+    @if (view() === 'markets') {
+      <app-spot-summary-header
+        eyebrow="Lending"
+        title="Monthly ETH Lending Markets"
+        subtitle="Last-Friday monthly maturities at 12:00 UTC. Enabled risk tiers can be opened lazily by the first valid order."
+        [metrics]="pageMetrics()"
+        [showActions]="false"
+      ></app-spot-summary-header>
+
+      <div class="sethx-toolbar">
+        <div>
+          <div class="sethx-section-title text-base">Markets</div>
+          <div class="sethx-meta-text mt-1">Disabled, non-created risk-tier/maturity specs are hidden.</div>
+        </div>
+        <div class="sethx-toolbar-actions">
+          <input
+            class="sethx-input !w-[260px] !py-1"
+            [value]="search()"
+            (input)="setSearch($any($event.target).value)"
+            placeholder="Search maturity, risk, market key…"
+          />
+          <label class="sethx-inline-control">
+            <input type="checkbox" [checked]="marketsWithMyOrdersOnly()" (change)="setMarketsWithMyOrdersOnly($any($event.target).checked)" />
+            <span>Has my orders</span>
+          </label>
+          <span class="sethx-meta-text">Showing {{ visibleMarkets().length }} markets</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[1120px] text-xs">
+          <div class="sethx-table-header sethx-lending-market-grid">
+            <div>Market</div>
+            <div class="text-right">Status</div>
+            <div class="text-right">Best lend</div>
+            <div class="text-right">Best borrow</div>
+            <div class="text-right">Orders</div>
+            <div class="text-right">My orders</div>
+            <div class="text-right">Outstanding</div>
+            <div class="text-right">Info</div>
+          </div>
+
+          @for (row of visibleMarkets(); track trackMarket($index, row)) {
+            <div class="sethx-market-row-shell" (mouseenter)="hoveredMarketKey.set(row.marketKey)" (mouseleave)="hoveredMarketKey.set(null)">
+              <div class="sethx-table-row sethx-table-row-action sethx-lending-market-grid items-center" (click)="openMarket(row)">
+                <div class="min-w-0">
+                  <div class="sethx-readonly-value-strong truncate">{{ marketLabel(row) }}</div>
+                  <div class="mt-1 flex items-center gap-2 min-w-0">
+                    <span class="sethx-address-value truncate text-[11px]" [title]="row.marketKey">{{ row.marketKey }}</span>
+                    <button
+                      type="button"
+                      class="sethx-copy-button shrink-0"
+                      [class.is-copied]="copiedValue() === row.marketKey"
+                      [attr.aria-label]="'Copy market key ' + row.marketKey"
+                      [title]="copiedValue() === row.marketKey ? 'Copied' : 'Copy market key'"
+                      (click)="copyValue(row.marketKey, $event)"
+                    >
+                      <i class="fa-regular" [class.fa-copy]="copiedValue() !== row.marketKey" [class.fa-circle-check]="copiedValue() === row.marketKey" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="sethx-status-pill" [ngClass]="marketStatusPillClass(row)">{{ marketStatusText(row) }}</span>
+                </div>
+                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ bestLendRateText(row) }}</div>
+                <div class="text-right sethx-orderbook-side-ask font-semibold">{{ bestBorrowRateText(row) }}</div>
+                <div class="text-right sethx-readonly-value">{{ row.lendOrders.length }} / {{ row.borrowOrders.length }}</div>
+                <div class="text-right sethx-readonly-value">{{ row.myLendOrders }} / {{ row.myBorrowOrders }}</div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(row.outstandingFaceValue) }}</div>
+                <div class="text-right">
+                  <button type="button" class="sethx-action-link" title="Show market information" (click)="toggleMarketInfo(row.marketKey, $event)">Info</button>
+                </div>
+              </div>
+
+              <app-market-detail-panel
+                *ngIf="isMarketInfoOpen(row.marketKey)"
+                class="sethx-market-detail-popover"
+                title="Lending market details"
+                [subtitle]="marketLabel(row)"
+                [items]="marketInfoItems(row)"
+                [showClose]="true"
+                (close)="toggleMarketInfo(row.marketKey)"
+              ></app-market-detail-panel>
+            </div>
+          }
+
+          @if (visibleMarkets().length === 0) {
+            <div class="sethx-table-empty">
+              @if (search()) {
+                No lending markets matched your search.
+              } @else if (marketsWithMyOrdersOnly()) {
+                No lending markets have orders for the selected account.
+              } @else if (hiddenDisabledSpecs() > 0) {
+                No lending risk tiers are enabled yet. Governance must enable an R-level before its monthly markets appear as ready for the first order.
+              } @else {
+                No lending markets are available yet.
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="sethx-toolbar border-t border-trade-border pt-3">
+        <div class="sethx-meta-text">Showing up to {{ marketLimit() }} markets per page.</div>
+        <div class="sethx-toolbar-actions">
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="marketOffset() === 0" (click)="previousMarketsPage()">Previous</button>
+          <span class="sethx-muted-value">Page {{ marketsPageLabel() }}</span>
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="visibleMarkets().length < marketLimit()" (click)="nextMarketsPage()">Next</button>
+        </div>
+      </div>
+    }
+
+    @if (view() === 'book') {
+      @if (selectedMarket(); as market) {
+        <app-spot-summary-header
+          eyebrow="Lending market"
+          [title]="marketLabel(market)"
+          [subtitle]="market.marketKey"
+          [subtitleMono]="true"
+          [metrics]="selectedMarketMetrics()"
+          [showActions]="false"
+        ></app-spot-summary-header>
+
+        <section class="sethx-edit-panel">
+          <div class="sethx-panel-section-title mb-3">Market Risk</div>
+          <div class="sethx-lending-risk-grid">
+            <div>
+              <div class="sethx-field-label !mb-0">Max LTV</div>
+              <div class="sethx-readonly-value-strong">{{ formatBps(market.maxLtvBps) }}</div>
+            </div>
+            <div>
+              <div class="sethx-field-label !mb-0">Liquidation LTV</div>
+              <div class="sethx-readonly-value-strong">{{ formatBps(market.liquidationLtvBps) }}</div>
+            </div>
+            <div>
+              <div class="sethx-field-label !mb-0">Utilization</div>
+              <div class="sethx-readonly-value">{{ utilizationText(market) }}</div>
+            </div>
+            <div>
+              <div class="sethx-field-label !mb-0">Recovery estimate</div>
+              <div class="sethx-readonly-value">{{ recoveryRateText(market) }}</div>
+            </div>
+            <div>
+              <div class="sethx-field-label !mb-0">Total principal</div>
+              <div class="sethx-readonly-value">{{ formatEth(market.totalPrincipal) }}</div>
+            </div>
+            <div>
+              <div class="sethx-field-label !mb-0">Total face</div>
+              <div class="sethx-readonly-value">{{ formatEth(market.totalFaceValue) }}</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <section class="sethx-orderbook-panel">
+            <div class="sethx-toolbar mb-3 p-3 pb-0">
+              <div>
+                <div class="sethx-table-section">Lend Offers</div>
+                <div class="sethx-meta-text mt-2">Lowest APR has matching priority for borrowers.</div>
+              </div>
+              <label class="sethx-inline-control">
+                <input type="checkbox" [checked]="myOrdersOnly()" (change)="setMyOrdersOnly($any($event.target).checked)" />
+                <span>My orders only</span>
+              </label>
+            </div>
+            <div class="sethx-table-header sethx-lending-book-grid">
+              <div>Order</div>
+              <div class="text-right">APR</div>
+              <div class="text-right">Principal</div>
+              <div class="text-right">Expires</div>
+            </div>
+
+            @for (order of selectedLendOrders(); track trackOrder($index, order)) {
+              <div class="sethx-table-row sethx-lending-book-grid items-center">
+                <div>
+                  <div class="sethx-address-value-muted truncate">#{{ order.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isMyOrder(order)">mine</span></div>
+                  <div class="truncate text-[11px] text-frame">{{ shortKey(order.user) }}</div>
+                </div>
+                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ formatRate(order.rateBps) }}</div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(order.principal) }}</div>
+                <div class="text-right sethx-muted-value">{{ timeLeftText(order.orderExpiry) }}</div>
+              </div>
+            }
+
+            @if (selectedLendOrders().length === 0) {
+              <div class="sethx-table-empty px-3">No open lend offers for this market.</div>
+            }
+          </section>
+
+          <section class="sethx-orderbook-panel">
+            <div class="sethx-toolbar mb-3 p-3 pb-0">
+              <div>
+                <div class="sethx-table-section">Borrow Bids</div>
+                <div class="sethx-meta-text mt-2">Highest APR has matching priority for lenders.</div>
+              </div>
+              <label class="sethx-inline-control">
+                <input type="checkbox" [checked]="myOrdersOnly()" (change)="setMyOrdersOnly($any($event.target).checked)" />
+                <span>My orders only</span>
+              </label>
+            </div>
+            <div class="sethx-table-header sethx-lending-book-grid">
+              <div>Order</div>
+              <div class="text-right">APR</div>
+              <div class="text-right">Principal</div>
+              <div class="text-right">Expires</div>
+            </div>
+
+            @for (order of selectedBorrowOrders(); track trackOrder($index, order)) {
+              <div class="sethx-table-row sethx-lending-book-grid items-center">
+                <div>
+                  <div class="sethx-address-value-muted truncate">#{{ order.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isMyOrder(order)">mine</span></div>
+                  <div class="truncate text-[11px] text-frame">{{ shortKey(order.user) }}</div>
+                </div>
+                <div class="text-right sethx-orderbook-side-ask font-semibold">{{ formatRate(order.rateBps) }}</div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(order.principal) }}</div>
+                <div class="text-right sethx-muted-value">{{ timeLeftText(order.orderExpiry) }}</div>
+              </div>
+            }
+
+            @if (selectedBorrowOrders().length === 0) {
+              <div class="sethx-table-empty px-3">No open borrow bids for this market.</div>
+            }
+          </section>
+        </div>
+      } @else {
+        <div class="sethx-table-empty">Select a lending market to view the book.</div>
+      }
+    }
+
+    @if (view() === 'loans') {
+      <app-spot-summary-header
+        eyebrow="Lending account"
+        title="My Loans"
+        subtitle="Active debt and pending borrow principal for the selected account."
+        [metrics]="accountMetrics()"
+        [showActions]="false"
+      ></app-spot-summary-header>
+
+      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <section class="sethx-orderbook-panel">
+          <div class="p-3">
+            <div class="sethx-table-section">Active Debt</div>
+            <div class="sethx-meta-text mt-2">Repayments reduce borrower face value and fund settlement liquidity for bondholders.</div>
+          </div>
+          <div class="sethx-table-header sethx-lending-loan-grid">
+            <div>Market</div>
+            <div class="text-right">Principal</div>
+            <div class="text-right">Face value</div>
+            <div class="text-right">Recovery</div>
+            <div class="text-right">Action</div>
+          </div>
+
+          @for (row of accountSnapshot().debts; track trackDebt($index, row)) {
+            <div class="sethx-table-row sethx-lending-loan-grid items-center">
+              <div>
+                <div class="sethx-readonly-value-strong truncate">{{ debtMarketLabel(row) }}</div>
+                <div class="sethx-address-value-muted text-[11px]">{{ shortKey(row.marketKey) }}</div>
+              </div>
+              <div class="text-right sethx-readonly-value">{{ formatEth(row.principal) }}</div>
+              <div class="text-right sethx-orderbook-side-ask font-semibold">{{ formatEth(row.faceValue) }}</div>
+              <div class="text-right sethx-readonly-value">{{ recoveryRateForDebt(row) }}</div>
+              <div class="text-right">
+                <button type="button" class="sethx-button-secondary !px-2 !py-1" [disabled]="!isSelectedAccountLending()" title="Repay from selected lending account" (click)="openRepayDebt(row, $event)">Repay</button>
+                <button type="button" class="sethx-button-secondary !px-2 !py-1 ml-1" [disabled]="!isSelectedAccountLending()" title="Create a rollover borrow order that repays this debt when matched" (click)="openRolloverDebt(row, $event)">Rollover</button>
+              </div>
+            </div>
+          }
+
+          @if (accountSnapshot().debts.length === 0) {
+            <div class="sethx-table-empty px-3">No active lending debt for the selected account.</div>
+          }
+        </section>
+
+        <section class="sethx-orderbook-panel">
+          <div class="p-3">
+            <div class="sethx-table-section">Pending Borrow Orders</div>
+            <div class="sethx-meta-text mt-2">Borrow principal is pending until matched or cancelled.</div>
+          </div>
+          <div class="sethx-table-header sethx-lending-pending-grid">
+            <div>Market</div>
+            <div class="text-right">Pending principal</div>
+          </div>
+
+          @for (row of accountSnapshot().pendingDebts; track trackDebt($index, row)) {
+            <div class="sethx-table-row sethx-lending-pending-grid items-center">
+              <div>
+                <div class="sethx-readonly-value-strong truncate">{{ debtMarketLabel(row) }}</div>
+                <div class="sethx-address-value-muted text-[11px]">{{ shortKey(row.marketKey) }}</div>
+              </div>
+              <div class="text-right sethx-orderbook-side-ask font-semibold">{{ formatEth(row.pendingPrincipal) }}</div>
+            </div>
+          }
+
+          @if (accountSnapshot().pendingDebts.length === 0) {
+            <div class="sethx-table-empty px-3">No pending borrow orders for the selected account.</div>
+          }
+        </section>
+      </div>
+    }
+
+    @if (view() === 'my-orders') {
+      <app-spot-summary-header
+        eyebrow="Lending orders"
+        title="My Orders"
+        subtitle="Open lend and borrow orders owned by the selected account."
+        [metrics]="accountMetrics()"
+        [showActions]="false"
+      ></app-spot-summary-header>
+
+      <section class="sethx-orderbook-panel">
+        <div class="sethx-table-header sethx-lending-my-orders-grid">
+          <div>Order</div>
+          <div>Market</div>
+          <div class="text-right">Side</div>
+          <div class="text-right">APR</div>
+          <div class="text-right">Principal</div>
+          <div class="text-right">Expires</div>
+          <div class="text-right">Action</div>
+        </div>
+
+        @for (order of myOpenOrders(); track trackOrder($index, order)) {
+          <div class="sethx-table-row sethx-lending-my-orders-grid items-center">
+            <div class="sethx-address-value-muted truncate">#{{ order.orderId }}</div>
+            <div>
+              <div class="sethx-readonly-value-strong truncate">{{ orderMarketLabel(order) }}</div>
+              <div class="sethx-address-value-muted text-[11px]">{{ shortKey(order.marketKey) }}</div>
+            </div>
+            <div class="text-right font-bold" [ngClass]="sideClass(order.side)">{{ order.isRollover ? 'Rollover' : sideLabel(order.side) }}</div>
+            <div class="text-right sethx-readonly-value">{{ formatRate(order.rateBps) }}</div>
+            <div class="text-right sethx-readonly-value">{{ formatEth(order.principal) }}</div>
+            <div class="text-right sethx-muted-value">{{ timeLeftText(order.orderExpiry) }}</div>
+            <div class="text-right">
+              <button type="button" class="sethx-button-secondary !px-2 !py-1" title="Cancel this lending order" (click)="openCancelLendingOrder(order, $event)">Cancel</button>
+            </div>
+          </div>
+        }
+
+        @if (myOpenOrders().length === 0) {
+          <div class="sethx-table-empty px-3">No open lending orders for the selected account.</div>
+        }
+      </section>
+    }
+
+    @if (view() === 'bonds') {
+      <app-spot-summary-header
+        eyebrow="Lending account"
+        title="My Bonds"
+        subtitle="Matched lend orders mint bond lots. Initial and supplemental claims become available after settlement and recovery."
+        [metrics]="accountMetrics()"
+        [showActions]="false"
+      ></app-spot-summary-header>
+
+      <section class="sethx-orderbook-panel">
+        <div class="overflow-x-auto">
+          <div class="min-w-[1080px]">
+            <div class="sethx-table-header sethx-lending-bond-grid">
+              <div>Bond</div>
+              <div>Market</div>
+              <div class="text-right">Face value</div>
+              <div class="text-right">Initial</div>
+              <div class="text-right">Supplemental</div>
+              <div class="text-right">Status</div>
+              <div class="text-right">Action</div>
+            </div>
+
+            @for (row of accountSnapshot().bonds; track trackBond($index, row)) {
+              <div class="sethx-table-row sethx-lending-bond-grid items-center">
+                <div class="sethx-address-value-muted truncate">#{{ row.bondIndex }}</div>
+                <div>
+                  <div class="sethx-readonly-value-strong truncate">{{ bondMarketLabel(row) }}</div>
+                  <div class="sethx-address-value-muted text-[11px]">{{ shortKey(row.marketKey) }}</div>
+                </div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(row.faceValue) }}</div>
+                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ formatEth(row.initialClaimable) }}</div>
+                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ formatEth(row.supplementalClaimable) }}</div>
+                <div class="text-right" [ngClass]="row.initialRedeemed ? 'sethx-muted-value' : 'sethx-readonly-value'">{{ row.initialRedeemed ? 'Initial redeemed' : 'Open' }}</div>
+                <div class="flex justify-end gap-1">
+                  @if (hasInitialClaim(row)) {
+                    <button type="button" class="sethx-button-secondary !px-2 !py-1" title="Redeem initial bond claim" (click)="openClaimBond(row, 'initial', $event)">Initial</button>
+                  }
+                  @if (hasSupplementalClaim(row)) {
+                    <button type="button" class="sethx-button-secondary !px-2 !py-1" title="Claim supplemental recovery" (click)="openClaimBond(row, 'supplemental', $event)">Supp.</button>
+                  }
+                  @if (!hasAnyBondClaim(row)) {
+                    <button type="button" class="sethx-button-secondary !px-2 !py-1" disabled>No claim</button>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (accountSnapshot().bonds.length === 0) {
+              <div class="sethx-table-empty px-3">No lender bond lots for the selected account.</div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+  </section>
+</div>

@@ -1,0 +1,19 @@
+@if (visible() && receipt) {
+  <div class="rounded border bg-black/20 p-3 text-xs" [ngClass]="statusClass()">
+    <div class="flex items-center justify-between gap-3">
+      <div class="font-semibold text-white">{{ receipt.title || statusLabel() }}</div>
+      <div class="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]" [ngClass]="statusClass()">{{ statusLabel() }}</div>
+    </div>
+    <div class="mt-1 leading-relaxed text-frame">{{ receipt.message }}</div>
+    @if (receipt.txHash) {
+      <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-text-muted">Tx hash</span>
+        <span class="select-text font-mono text-white">{{ shortHash(receipt.txHash) }}</span>
+      </div>
+    }
+    @if (explorerUrl) {
+      <a class="mt-2 inline-flex items-center rounded border border-frame px-2 py-1 text-[11px] text-white hover:border-white" [href]="explorerUrl" target="_blank" rel="noopener noreferrer">View on explorer</a>
+    }
+    @if (receipt.error) { <div class="mt-2 break-words text-down">{{ receipt.error }}</div> }
+  </div>
+}

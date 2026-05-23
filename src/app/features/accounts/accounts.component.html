@@ -1,0 +1,177 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">Accounts</h1>
+    <p class="sethx-page-copy">
+      Manage your trading and margin accounts. Active accounts are available in the exchange selector; inactive accounts are hidden unless you choose to show them.
+    </p>
+  </header>
+
+  <section class="sethx-table-card">
+    <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="sethx-section-title">Accounts</h2>
+        <div class="sethx-meta-text">
+          {{ activeCount() }} active · {{ inactiveCount() }} inactive
+        </div>
+      </div>
+
+      <label class="sethx-control-label">
+        <input
+          type="checkbox"
+          class="accent-accent"
+          [ngModel]="showAll()"
+          (ngModelChange)="showAll.set($event)"
+        />
+        Show inactive accounts
+      </label>
+    </div>
+
+    @if (status() === 'pending') {
+      <div class="sethx-info-note">Loading accounts…</div>
+    } @else if (visibleAccounts().length === 0) {
+      <div class="rounded border border-frame p-6 text-center">
+        <div class="text-white">No accounts to show.</div>
+        <div class="mt-2 text-xs text-text-muted">
+          Create your first trading or margin account from the right panel.
+        </div>
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px] text-xs">
+          <div class="sethx-table-header grid grid-cols-[1.7fr_1.05fr_0.9fr_1.75fr_2.1fr] gap-x-4">
+            <div>Name</div>
+            <div>Account type</div>
+            <div>Status</div>
+            <div>Address</div>
+            <div class="text-right">Actions</div>
+          </div>
+
+          <ng-container *ngFor="let account of visibleAccounts(); trackBy: trackAccount">
+            <div
+              class="sethx-table-row grid grid-cols-[1.7fr_1.05fr_0.9fr_1.75fr_2.1fr] gap-x-4 items-center"
+              [class.opacity-60]="!account.active"
+            >
+              <div class="min-w-0">
+                <div class="truncate sethx-readonly-value-strong">
+                  {{ accountLabel(account) }}
+                </div>
+                @if (selectedAccountId() === account.address && account.active) {
+                  <div class="mt-1 text-[11px] uppercase tracking-[0.12em] text-accent">Selected</div>
+                }
+              </div>
+
+              <div class="sethx-readonly-value">
+                {{ account.type === 'lending' ? 'Margin account' : 'Trading account' }}
+              </div>
+
+              <div>
+                <span class="sethx-status-pill" [class.is-active]="account.active">{{ account.active ? 'Active' : 'Inactive' }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-mono sethx-muted-value truncate" [title]="account.address">
+                  {{ shortAddress(account.address) }}
+                </span>
+                <button
+                  type="button"
+                  class="sethx-copy-button shrink-0"
+                  [class.is-copied]="copiedAddress() === account.address"
+                  [attr.aria-label]="'Copy address ' + account.address"
+                  [title]="copiedAddress() === account.address ? 'Copied' : 'Copy address'"
+                  (click)="copyAddress(account.address)"
+                >
+                  <i class="fa-regular" [class.fa-copy]="copiedAddress() !== account.address" [class.fa-circle-check]="copiedAddress() === account.address" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="flex items-center justify-end gap-4 whitespace-nowrap">
+                <button
+                  type="button"
+                  class="sethx-action-link-primary"
+                  [disabled]="!account.active"
+                  (click)="selectAccount(account)"
+                >
+                  Select
+                </button>
+
+                <button
+                  type="button"
+                  class="sethx-action-link"
+                  (click)="startRename(account)"
+                >
+                  Rename
+                </button>
+
+                @if (account.active) {
+                  <button
+                    type="button"
+                    class="sethx-action-link"
+                    [disabled]="updatingAccount() === account.address"
+                    (click)="setActive(account, false)"
+                  >
+                    Deactivate
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="sethx-action-link"
+                    [disabled]="updatingAccount() === account.address"
+                    (click)="setActive(account, true)"
+                  >
+                    Activate
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (editingAccount() === account.address) {
+              <div class="border-b border-trade-border py-4">
+                <div class="sethx-edit-panel">
+                  <div class="mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <div class="text-sm font-semibold text-white">Rename account</div>
+                      <div class="mt-1 text-xs text-text-muted">
+                        Give this account a readable name. If no name is set, the short address is shown.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="sethx-action-link"
+                      (click)="cancelRename()"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div class="flex flex-col gap-3 md:flex-row">
+                    <input
+                      class="sethx-input md:flex-1"
+                      placeholder="Account name"
+                      [ngModel]="editingName()"
+                      (ngModelChange)="editingName.set($event)"
+                    />
+                    <button
+                      type="button"
+                      class="sethx-button-secondary md:w-32"
+                      [disabled]="updatingAccount() === account.address"
+                      (click)="saveRename(account)"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </ng-container>
+        </div>
+      </div>
+    }
+
+    @if (updateError() || localError()) {
+      <div class="mt-3 rounded border border-red-500/60 p-3 text-xs text-red-300">
+        {{ updateError() || localError() }}
+      </div>
+    }
+  </section>
+</div>

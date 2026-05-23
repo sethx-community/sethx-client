@@ -1,0 +1,140 @@
+<main class="home-scroll-page bg-background text-textlight">
+  <section class="relative flex min-h-[calc(100vh-88px)] snap-start snap-always items-stretch overflow-hidden border-b border-trade-border bg-[linear-gradient(to_bottom,rgba(8,12,20,0.96),rgba(8,12,20,0.82),rgba(8,12,20,1))] px-6 pt-12">
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute left-[-10%] top-10 h-72 w-72 rounded-full bg-frame/10 blur-3xl"></div>
+      <div class="absolute right-[-6%] top-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
+
+      <div class="absolute inset-x-0 bottom-[-4rem] top-[16%] opacity-100 md:top-[12%]">
+        <img
+          src="assets/sethx-landing-illustration.png"
+          alt="SETHX background illustration combining crypto and traditional finance themes"
+          class="h-full w-full object-cover object-center brightness-125 saturate-125 contrast-110"
+          style="-webkit-mask-image: linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 9%, black 86%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 9%, black 86%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect;"
+        />
+      </div>
+
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(8,12,20,0.78),rgba(8,12,20,0.16),rgba(8,12,20,0.44))]"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(8,12,20,0.72),rgba(8,12,20,0.08),rgba(8,12,20,0.42),rgba(8,12,20,0.94))]"></div>
+    </div>
+
+    <div class="relative mx-auto flex w-full max-w-7xl flex-col justify-start pb-20">
+      <div *ngIf="accessNotice()" class="mb-5 rounded-2xl border border-frame bg-darkgray/70 p-4 text-sm text-frame">{{ accessNotice() }}</div>
+      <p class="mb-5 text-sm uppercase tracking-[0.32em] text-frame">{{ content().eyebrow }}</p>
+
+      <div class="max-w-5xl pb-52 md:pb-64 lg:pb-72">
+        <h1 class="mb-6 text-4xl font-semibold leading-[1.05] text-white md:text-6xl lg:text-7xl">
+          <span class="block">{{ content().heroLine1 }}</span>
+          <span class="block">{{ content().heroLine2 }}</span>
+          <span class="block whitespace-nowrap text-[0.9em] md:text-[0.88em]">
+            <span class="text-frame">S</span>{{ content().heroSmart.slice(1) }} <span class="text-frame">ETH</span>{{ content().heroEthereum.slice(3) }} e<span class="text-frame">X</span>{{ content().heroExchangePrefix.slice(2) }}
+          </span>
+        </h1>
+
+        <p class="mb-8 max-w-4xl text-base leading-8 text-text-muted md:text-lg">
+          {{ content().heroDescription }}
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            (click)="openExchange()"
+            class="rounded-xl bg-frame px-5 py-3 font-semibold text-black transition hover:bg-gold-shiny disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="!wallet.address()"
+          >
+            {{ content().enterApp }}
+          </button>
+          <a routerLink="/docs" class="rounded-xl border border-trade-border px-5 py-3 font-semibold text-textlight hover:border-white hover:text-white">{{ content().openLibrary }}</a>
+          <a routerLink="/governance" class="rounded-xl border border-trade-border px-5 py-3 font-semibold text-textlight hover:border-white hover:text-white">{{ content().governance }}</a>
+        </div>
+
+        <p *ngIf="!wallet.address()" class="mt-4 text-sm text-text-muted">{{ content().connectWallet }}</p>
+        <p *ngIf="wallet.address()" class="mt-4 text-sm text-up">{{ content().walletConnected }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex min-h-[calc(100vh-88px)] snap-start snap-always items-center px-6 py-20 md:py-24">
+    <div class="mx-auto grid w-full max-w-7xl gap-x-12 gap-y-10 lg:grid-cols-2 lg:grid-rows-[auto_auto] lg:gap-x-16 lg:gap-y-10">
+      <div class="flex items-center justify-center lg:justify-center lg:pl-10 lg:pt-4 lg:translate-x-4 lg:-translate-y-6">
+        <h2 class="text-center text-4xl font-semibold leading-[1.05] text-white md:text-5xl lg:text-6xl">{{ content().getStartedTitle }}</h2>
+      </div>
+
+      <div class="lg:pl-14 lg:pt-14 lg:translate-y-2">
+        <div class="space-y-6">
+          <article *ngFor="let item of content().participation" class="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <p class="text-xs uppercase tracking-[0.28em] text-text-subtle">{{ item.title }}</p>
+            <p class="text-sm leading-7 text-text-muted md:text-base">{{ item.description }}</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="lg:pr-10 lg:-mt-14 lg:translate-x-3 lg:-translate-y-10">
+        <div class="space-y-5">
+          <article *ngFor="let step of content().steps; index as i" class="grid gap-3 sm:grid-cols-[6.5rem_minmax(0,1fr)]">
+            <p class="text-xs uppercase tracking-[0.28em] text-text-subtle">{{ content().stepLabel }} {{ i + 1 }}</p>
+            <p class="text-sm leading-7 text-text-muted md:text-base">{{ step }}</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="flex items-start lg:pl-14 lg:pt-14 lg:translate-x-2 lg:translate-y-4">
+        <h3 class="max-w-[34rem] text-4xl font-semibold leading-[1.08] text-white md:text-5xl lg:text-6xl">
+          <span class="block whitespace-nowrap">{{ content().ownLine1 }}</span>
+          <span class="block whitespace-nowrap">{{ content().ownLine2 }}</span>
+          <span class="block whitespace-nowrap">{{ content().ownLine3 }}</span>
+        </h3>
+      </div>
+    </div>
+  </section>
+
+  <section id="exchange" class="flex min-h-[calc(100vh-88px)] snap-start snap-always items-center px-6 py-20">
+    <div class="mx-auto grid w-full max-w-7xl items-stretch gap-7 lg:grid-cols-2 lg:gap-10">
+      <article class="flex min-h-[220px] flex-col justify-between rounded-3xl border border-trade-border/80 bg-darkgray/35 p-7 md:p-9">
+        <div>
+          <p class="mb-4 text-xs uppercase tracking-[0.28em] text-text-subtle">{{ content().marketsKicker }}</p>
+          <h2 class="text-2xl font-semibold leading-tight text-white md:text-3xl">
+            {{ content().marketsTitle }}
+          </h2>
+        </div>
+        <p class="mt-8 max-w-xl text-sm leading-7 text-text-muted md:text-base">
+          {{ content().marketsIntro }}
+        </p>
+      </article>
+
+      <article *ngFor="let item of content().markets" class="flex min-h-[220px] flex-col justify-between rounded-3xl border border-trade-border/80 bg-darkgray/35 p-7 transition hover:border-frame/60 md:p-9">
+        <div>
+          <p class="mb-4 text-xs uppercase tracking-[0.28em] text-text-subtle">{{ item.kicker }}</p>
+          <h3 class="text-2xl font-semibold leading-tight text-white md:text-3xl">{{ item.title }}</h3>
+        </div>
+        <div class="mt-8">
+          <p class="text-sm leading-7 text-text-muted md:text-base">{{ item.description }}</p>
+          <a routerLink="/docs" class="mt-5 inline-block text-sm font-semibold text-textlight hover:text-white">{{ content().readMore }}</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="flex min-h-[calc(100vh-88px)] snap-start snap-always items-center px-6 py-20">
+    <div class="mx-auto flex w-full max-w-7xl flex-col justify-center gap-8">
+      <article class="rounded-3xl border border-trade-border bg-darkgray/50 p-7 md:p-9">
+        <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="mb-3 text-xs uppercase tracking-[0.32em] text-frame">{{ content().libraryKicker }}</p>
+            <h2 class="text-4xl font-semibold leading-tight text-white md:text-5xl">{{ content().libraryTitle }}</h2>
+          </div>
+          <a routerLink="/docs" class="sethx-button-secondary">{{ content().openLibrary }}</a>
+        </div>
+        <div class="grid gap-5 md:grid-cols-3">
+          <article *ngFor="let item of content().library" class="flex min-h-[220px] flex-col justify-between rounded-3xl border border-trade-border/80 bg-darkgray/35 p-7 transition hover:border-frame/60 md:p-9">
+            <div>
+              <h3 class="text-2xl font-semibold leading-tight text-white md:text-3xl">{{ item.title }}</h3>
+            </div>
+            <div class="mt-8">
+              <p class="text-sm leading-7 text-text-muted md:text-base">{{ item.description }}</p>
+              <a [routerLink]="item.link" class="mt-5 inline-block text-sm font-semibold text-textlight hover:text-white">{{ content().open }}</a>
+            </div>
+          </article>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>

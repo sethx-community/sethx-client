@@ -1,0 +1,103 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="sethx-modal-shell">
+    <div class="p-6 pb-3 flex justify-between items-center border-b border-trade-border/60">
+      <div>
+        <h2 class="text-base font-bold">{{ title() }}</h2>
+        <p class="text-frame text-xs mt-1">{{ subtitle() }}</p>
+      </div>
+      <button type="button" class="text-frame text-xs hover:text-white" (click)="close()">✕</button>
+    </div>
+
+    <div class="px-6 py-4 overflow-y-auto space-y-4 flex-1">
+      <section class="rounded-lg border border-trade-border bg-background/70 p-4 text-xs space-y-2">
+        <div class="flex justify-between gap-4">
+          <span class="text-frame">Market</span>
+          <span class="text-white text-right">{{ marketSummary() }}</span>
+        </div>
+        @if (selectedMarket(); as row) {
+          <div class="flex justify-between gap-4">
+            <span class="text-frame">Market key</span>
+            <span class="font-mono text-white text-right break-all">{{ row.marketKey }}</span>
+          </div>
+        }
+        <div class="flex justify-between gap-4">
+          <span class="text-frame">Payment token</span>
+          <span class="text-white">ETH</span>
+        </div>
+      </section>
+
+      @if (data.intent === 'place' || data.intent === 'quote') {
+        <section class="space-y-4">
+          <div>
+            <div class="sethx-field-label">Intent</div>
+            <select class="sethx-input" [ngModel]="intent()" (ngModelChange)="setIntent($event)">
+              <option value="0">Buy option (bid)</option>
+              <option value="1">Sell holder position (ask)</option>
+              <option value="2">Write option (ask)</option>
+              <option value="3">Sell writer position (bid)</option>
+            </select>
+            <div class="text-[11px] text-frame mt-1">
+              Buyers pay premium for long exposure. Writers lock margin according to the market collateral settings.
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="sethx-field-label">Size</div>
+              <input class="sethx-input" [ngModel]="sizeHuman()" (ngModelChange)="sizeHuman.set($event)" placeholder="1.0" />
+            </div>
+            <div>
+              <div class="sethx-field-label">Premium price</div>
+              <input class="sethx-input" [ngModel]="priceHuman()" (ngModelChange)="priceHuman.set($event)" placeholder="0.5" />
+            </div>
+          </div>
+
+          @if (data.intent === 'place') {
+            <div>
+              <div class="sethx-field-label">Order expiry</div>
+              <select class="sethx-input" [ngModel]="expiryPreset()" (ngModelChange)="setExpiryPreset($event)">
+                <option value="default">No extra expiry</option>
+                <option value="1h">1 hour</option>
+                <option value="1d">1 day</option>
+                <option value="7d">7 days</option>
+                <option value="max">Max until market expiry</option>
+                <option value="custom">Custom Unix timestamp</option>
+              </select>
+              @if (expiryPreset() === 'custom') {
+                <input class="sethx-input mt-2" [ngModel]="customExpiryUnix()" (ngModelChange)="customExpiryUnix.set($event)" placeholder="Unix seconds" />
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (error()) {
+        <div class="text-xs text-red-400">{{ error() }}</div>
+      }
+    </div>
+
+    <div class="px-6 py-4 border-t border-trade-border/60 flex justify-end gap-3 mt-auto">
+      <button type="button" class="sethx-button-secondary min-w-[110px]" (click)="close()">Cancel</button>
+      <button type="button" class="sethx-button-secondary min-w-[150px] border-textlight text-textlight" (click)="preview()">
+        @if (data.intent === 'quote') { Get Fee Quote } @else { Review Order }
+      </button>
+    </div>
+  </div>
+</div>
+
+@if (actions.confirmOpen()) {
+  <app-order-review-flow
+    [title]="actions.confirmTitle()"
+    [confirmLabel]="actions.confirmLabel()"
+    [fields]="actions.confirmFields()"
+    [requirements]="actions.confirmRequirements()"
+    [error]="actions.confirmError()"
+    [receipt]="actions.receipt()"
+    [explorerUrl]="actions.explorerTxUrl()"
+    [loading]="actions.status() === 'pending'"
+    [confirmDisabled]="actions.confirmDisabled()"
+    [kind]="actions.confirmShowConfirmButton() ? 'transaction' : 'quote'"
+    (cancel)="actions.closeConfirmModal()"
+    (confirm)="actions.onConfirmModalConfirm()"
+  />
+}

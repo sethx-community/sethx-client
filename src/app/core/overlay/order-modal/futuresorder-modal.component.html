@@ -1,0 +1,148 @@
+<div class="sethx-order-flow-shell">
+  <div class="sethx-modal-header">
+    <h2 class="sethx-section-title text-base">{{ modalTitle() }}</h2>
+    <button type="button" class="sethx-modal-close" (click)="close()" aria-label="Close">✕</button>
+  </div>
+
+  <div class="sethx-modal-body">
+    <div class="sethx-panel-copy">
+      Futures orders are routed through the selected account contract. The form captures market, side, price, amount, and expiry; the shared order-flow review handles margin, fees, locks, balances, receipt, and confirmation.
+    </div>
+
+    @if (vm.mode() === "cancel") {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Order ID</div>
+          <input
+            class="sethx-input font-mono"
+            placeholder="e.g. 12"
+            [ngModel]="vm.cancelOrderId()"
+            (ngModelChange)="vm.cancelOrderId.set($event)"
+          />
+        </div>
+      </section>
+    } @else {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Market</div>
+          <select class="sethx-select" [ngModel]="vm.marketKey()" (ngModelChange)="selectMarket($event)">
+            <option value="" disabled>Select futures market…</option>
+            @for (market of marketOptions(); track market.marketKey) {
+              <option [value]="market.marketKey">{{ market.market?.ticker || market.marketKey }}</option>
+            }
+          </select>
+          <input
+            class="sethx-input sethx-order-flow-manual-input font-mono"
+            [ngModel]="vm.marketKey()"
+            (ngModelChange)="vm.marketKey.set($event)"
+            placeholder="Or paste market key / market identifier"
+          />
+          <div class="sethx-meta-text sethx-field-helper">Review shows the market ticker/name and full market key before signing.</div>
+        </div>
+
+        <div>
+          <div class="sethx-field-label">Side</div>
+          <div class="sethx-order-flow-toggle-grid">
+            <button
+              type="button"
+              class="sethx-button-secondary sethx-order-flow-toggle"
+              [class.is-active]="vm.side() === 'buy'"
+              (click)="setIntent('buy')"
+            >
+              Buy / Open Long
+            </button>
+
+            <button
+              type="button"
+              class="sethx-button-secondary sethx-order-flow-toggle"
+              [class.is-active]="vm.side() === 'sell'"
+              (click)="setIntent('sell')"
+            >
+              Sell / Open Short
+            </button>
+          </div>
+        </div>
+
+        <div class="sethx-order-flow-grid-2">
+          <div>
+            <div class="sethx-field-label">Price</div>
+            <input
+              class="sethx-input"
+              placeholder="0.0"
+              [ngModel]="vm.priceHuman()"
+              (ngModelChange)="vm.priceHuman.set($event)"
+            />
+          </div>
+
+          <div>
+            <div class="sethx-field-label">Amount (contracts)</div>
+            <input
+              class="sethx-input"
+              placeholder="0"
+              inputmode="numeric"
+              [ngModel]="vm.amountHuman()"
+              (ngModelChange)="vm.amountHuman.set($event)"
+            />
+          </div>
+        </div>
+
+        @if (!isQuote) {
+          <app-expiry-picker
+            label="Order expiry"
+            helper="Default sends 0 and lets the futures orderbook apply its default expiry."
+            [value]="vm.expirySec()"
+            (valueChange)="vm.expirySec.set($event)"
+          />
+        }
+
+        <div class="sethx-info-note">
+          Preview includes initial margin, P&amp;L buffer, fixed fee, percentage fee, available-balance checks, and the exact transaction route.
+        </div>
+      </section>
+    }
+
+    @if (vm.confirmError() && !vm.confirmOpen()) {
+      <div class="sethx-error-note">{{ vm.confirmError() }}</div>
+    }
+  </div>
+
+  <div class="sethx-modal-footer">
+    <button type="button" class="sethx-button-secondary sethx-order-flow-secondary-action" (click)="close()">
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="sethx-button-primary sethx-order-flow-primary-action"
+      [disabled]="
+        vm.mode() === 'cancel'
+          ? !vm.cancelOrderId()
+          : !vm.marketKey() || !vm.priceHuman() || !vm.amountHuman()
+      "
+      (click)="submitAndClose()"
+    >
+      @if (vm.mode() === "cancel") {
+        Review Cancel
+      } @else {
+        {{ isQuote ? "Get Fee Quote" : "Preview / Quote Fees" }}
+      }
+    </button>
+  </div>
+
+  @if (vm.confirmOpen()) {
+    <app-order-review-flow
+      [title]="vm.confirmTitle()"
+      [confirmLabel]="vm.confirmLabel()"
+      [fields]="vm.confirmFields()"
+      [requirements]="vm.confirmRequirements()"
+      [confirmDisabled]="vm.confirmDisabled() || isQuote"
+      [loading]="vm.pending()"
+      [error]="vm.confirmError()"
+      [receipt]="txReceipt.receipt()"
+      [explorerUrl]="txReceipt.explorerTxUrl()"
+      [kind]="isQuote ? 'quote' : 'transaction'"
+      riskNote="Futures execution can lock margin, P&L buffer, and fee budgets. Verify market, side, size, price, and expiry before signing."
+      (cancel)="vm.closeConfirm()"
+      (confirm)="confirmAndClose()"
+    />
+  }
+</div>

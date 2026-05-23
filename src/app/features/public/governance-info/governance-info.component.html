@@ -1,0 +1,27 @@
+<section class="mx-auto max-w-7xl px-6 py-12">
+  <p class="mb-4 text-sm uppercase tracking-[0.3em] text-frame">{{ content().kicker }}</p>
+  <h1 class="mb-5 max-w-4xl text-3xl font-semibold text-white md:text-4xl">{{ content().title }}</h1>
+  <p class="mb-10 max-w-3xl leading-8 text-text-muted">{{ content().intro }}</p>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <article *ngFor="let item of content().lifecycle" class="rounded-2xl border border-trade-border bg-darkgray/60 p-5">
+      <h2 class="mb-3 text-xl font-semibold text-white">{{ item.title }}</h2>
+      <p class="leading-7 text-text-muted">{{ item.description }}</p>
+    </article>
+  </div>
+
+  <div class="mt-8 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+    <article class="rounded-2xl border border-frame bg-background/70 p-6">
+      <h2 class="mb-3 text-2xl font-semibold text-white">{{ content().scopeTitle }}</h2>
+      <p class="leading-7 text-text-muted">{{ content().scopeText }}</p>
+      <a routerLink="/app" class="mt-5 inline-block rounded-xl border border-frame px-4 py-2 text-sm font-semibold text-frame hover:bg-frame hover:text-black">{{ content().enterApp }}</a>
+    </article>
+
+    <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-1">
+      <article *ngFor="let item of content().votingModel" class="rounded-2xl border border-trade-border bg-darkgray/60 p-5">
+        <h3 class="mb-2 text-lg font-semibold text-white">{{ item.title }}</h3>
+        <p class="text-sm leading-6 text-text-muted">{{ item.description }}</p>
+      </article>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,91 @@
+<div class="sethx-page">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">SETHX</div>
+    <h1 class="sethx-page-title">Assets</h1>
+    <p class="sethx-page-copy">
+      Quiet account snapshot for balances, NFT holdings, derivative positions, and lending exposure. Detailed management stays inside the matching market workspaces.
+    </p>
+  </header>
+
+  <section class="sethx-table-card mb-5">
+    <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h2 class="sethx-section-title">Asset overview</h2>
+        <div class="sethx-meta-text">
+          {{ totalPositionCount() }} positions · {{ balanceEntryCount() }} balances · {{ expiringSoonCount() }} attention items
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="refreshBalances()"
+        class="sethx-button-secondary w-full md:w-28"
+      >
+        Refresh
+      </button>
+    </div>
+
+    <div class="mb-4 grid gap-3 md:grid-cols-3">
+      <div class="sethx-readonly-card p-3">
+        <div class="sethx-field-label mb-0">Selected account</div>
+        <div class="mt-2 break-all text-sm text-white">{{ selectedAccountLabel() }}</div>
+      </div>
+
+      <div class="sethx-readonly-card p-3">
+        <div class="sethx-field-label mb-0">Token value · all accounts</div>
+        <div class="mt-2 text-sm text-white">{{ allAccountTokenValueText() }}</div>
+        <div class="mt-1 text-[11px] text-text-muted">{{ unvaluedTokenCount() }} tokens not valued</div>
+      </div>
+
+      <div class="sethx-readonly-card p-3">
+        <div class="sethx-field-label mb-0">Last refreshed</div>
+        <div class="mt-2 text-sm text-white">{{ lastRefreshedText() }}</div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <div class="min-w-[980px] text-xs">
+        <div class="sethx-table-header grid grid-cols-[1.45fr_0.95fr_0.75fr_1.35fr_1.2fr] gap-x-4">
+          <div>Asset area</div>
+          <div class="text-right">Exposure</div>
+          <div class="text-right">Orders</div>
+          <div>Warnings</div>
+          <div class="text-right">Detailed view</div>
+        </div>
+
+        @for (row of assetOverviewRows(); track row.id) {
+          <div class="sethx-table-row grid grid-cols-[1.45fr_0.95fr_0.75fr_1.35fr_1.2fr] gap-x-4 items-center">
+            <div class="min-w-0">
+              <div class="sethx-readonly-value-strong truncate">{{ row.label }}</div>
+              <div class="mt-1 truncate text-[11px] text-text-muted">{{ row.description }}</div>
+            </div>
+            <div class="text-right sethx-readonly-value">{{ row.exposure }}</div>
+            <div class="text-right sethx-readonly-value">{{ row.orders }}</div>
+            <div>
+              <span class="sethx-status-pill" [ngClass]="warningClass(row.warning)" [title]="row.warning.title">
+                {{ row.warning.label }}
+              </span>
+            </div>
+            <div class="text-right">
+              <div class="flex justify-end gap-3">
+                <a
+                  [routerLink]="row.primaryRoute"
+                  [queryParams]="row.primaryQueryParams"
+                  class="sethx-action-link-primary"
+                >
+                  {{ row.primaryLabel }}
+                </a>
+                <a
+                  [routerLink]="row.ordersRoute"
+                  [queryParams]="row.ordersQueryParams"
+                  class="sethx-action-link-primary"
+                >
+                  {{ row.ordersLabel }}
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+</div>

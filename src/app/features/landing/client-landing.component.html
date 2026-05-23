@@ -1,0 +1,41 @@
+<div class="landing-shell">
+  <header class="landing-header">
+    <img src="assets/sethx-logo-combined.svg" alt="SETHX Client" class="landing-logo" />
+
+  </header>
+
+  <main class="landing-main">
+    <div class="landing-art" aria-hidden="true">
+      <img src="assets/sethx-landing-illustration.png" alt="" />
+    </div>
+
+    <section class="landing-copy">
+      <p class="sethx-kicker">SETHX Client</p>
+      <h1>Connect your wallet to open the app.</h1>
+      <p>
+        SETHX Client is the local app for interacting with the SETHX protocol on Ethereum.
+        Connect your wallet to view accounts, assets, markets, protocol information, and fees.
+      </p>
+
+      <div class="landing-actions">
+        <button
+          type="button"
+          class="landing-primary-action"
+          [disabled]="wallet.status() === 'pending'"
+          (click)="connect()"
+        >
+          {{ wallet.status() === 'pending' ? 'Connecting...' : 'Connect wallet' }}
+        </button>
+        <span class="landing-network-note">Required network: {{ requiredNetworkName }}</span>
+      </div>
+
+      <div *ngIf="wallet.lastError()" class="landing-error">
+        {{ wallet.lastError() }}
+      </div>
+
+      <div *ngIf="!network.available()" class="landing-error">
+        Network unavailable: {{ network.error() }}
+      </div>
+    </section>
+  </main>
+</div>

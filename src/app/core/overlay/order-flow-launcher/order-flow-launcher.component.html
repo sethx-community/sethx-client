@@ -1,0 +1,40 @@
+<div class="space-y-3">
+  <div>
+    <label class="sethx-field-label">Action</label>
+    <select
+      class="sethx-select"
+      [value]="selectedId()"
+      (change)="onSelect($event)"
+    >
+      <option value="">Choose action…</option>
+
+      @for (group of groups(); track group) {
+        <optgroup [label]="group">
+          @for (a of grouped()[group]; track a.id) {
+            <option [value]="a.id" [disabled]="isDisabled(a)">
+              {{ a.label }}
+            </option>
+          }
+        </optgroup>
+      }
+    </select>
+  </div>
+
+  @if (selectedAction()) {
+    <div class="text-[11px] leading-relaxed text-frame">
+      {{ selectedAction()?.description }}
+    </div>
+
+    @if (disabledReason(selectedAction()!)) {
+      <div class="text-[11px] text-red-400">
+        {{ disabledReason(selectedAction()!) }}
+      </div>
+    }
+  }
+
+  @if (launchError()) {
+    <div class="text-[11px] text-red-400">
+      {{ launchError() }}
+    </div>
+  }
+</div>

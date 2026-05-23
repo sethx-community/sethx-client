@@ -1,0 +1,66 @@
+<main class="min-h-screen bg-background text-textlight">
+  <header class="sticky top-0 z-40 border-b border-trade-border/70 bg-background/95 backdrop-blur">
+    <div class="mx-auto flex max-w-[104rem] flex-wrap items-center justify-between gap-2 px-4 py-4 lg:flex-nowrap">
+      <a routerLink="/" class="flex items-center gap-3" aria-label="SETHX home">
+        <img src="assets/sethx-logo-combined.svg" alt="SETHX" class="h-12 w-auto md:h-14" />
+      </a>
+
+      <nav class="order-3 flex w-full flex-wrap items-center gap-0.5 text-xs text-text-muted lg:order-2 lg:w-auto lg:flex-nowrap lg:justify-center lg:gap-0.5 xl:gap-1">
+        <a
+          *ngFor="let item of primaryNav"
+          [routerLink]="item.link"
+          [fragment]="item.fragment"
+          routerLinkActive="text-white border-frame bg-darkgray/80"
+          [routerLinkActiveOptions]="{ exact: item.exact }"
+          class="whitespace-nowrap rounded-xl border border-transparent px-1.5 py-2 hover:text-white lg:px-1.5 xl:px-2"
+        >
+          {{ item.labelKey | t }}
+        </a>
+        <a routerLink="/app" (click)="trackEnterApp()" class="whitespace-nowrap rounded-xl border border-frame px-1.5 py-2 text-frame hover:bg-frame hover:text-black lg:px-1.5 xl:px-2">{{ 'nav.app' | t }}</a>
+      </nav>
+
+      <div class="order-2 flex shrink-0 items-center gap-2 lg:order-3">
+        <button
+          type="button"
+          class="sethx-theme-toggle"
+          [class.is-light]="theme.isLight()"
+          (click)="onThemeToggle()"
+          [attr.aria-pressed]="theme.isLight()"
+          [attr.title]="theme.isLight() ? 'Switch to dark mode' : 'Switch to light mode'"
+        >
+          <span class="sethx-theme-toggle-track">
+            <span class="sethx-theme-toggle-thumb">
+              <i class="fa-solid" [class.fa-sun]="theme.isLight()" [class.fa-moon]="!theme.isLight()"></i>
+            </span>
+          </span>
+          <span class="hidden xl:inline">{{ theme.isLight() ? 'Light' : 'Dark' }}</span>
+        </button>
+        <select
+          class="rounded-xl border border-trade-border bg-darkgray px-2 py-2 text-xs text-white lg:text-sm"
+          [value]="language.language()"
+          (change)="setLanguage($any($event.target).value)"
+          aria-label="Language"
+        >
+          <option *ngFor="let item of language.availableLanguages()" [value]="item.code">
+            {{ item.label }}
+          </option>
+        </select>
+        <app-wallet-connect />
+      </div>
+    </div>
+  </header>
+
+  <router-outlet />
+
+  <footer class="public-footer mx-auto max-w-7xl px-6 py-10 text-sm text-text-muted">
+    <div class="grid gap-5 rounded-2xl border border-trade-border bg-darkgray/40 p-5 md:grid-cols-[1fr_auto] md:items-center">
+      <div>
+        <p class="mb-2 text-white">{{ 'footer.experimental' | t }}</p>
+        <p>{{ 'footer.disclaimer' | t }}</p>
+      </div>
+      <nav class="flex flex-wrap gap-3">
+        <a *ngFor="let item of footerLinks" [routerLink]="item.link" class="hover:text-white">{{ item.labelKey | t }}</a>
+      </nav>
+    </div>
+  </footer>
+</main>

@@ -1,0 +1,196 @@
+<div class="sethx-order-flow-shell">
+  <div class="sethx-modal-header">
+    <div>
+      <h2 class="sethx-section-title text-base">{{ isQuote ? 'Options Fee Quote' : 'Place Options Order' }}</h2>
+      <p class="sethx-panel-copy mt-1">The form captures option-specific inputs; the shared review handles fees, locks, balances, receipt, and confirmation.</p>
+    </div>
+    <button type="button" class="sethx-modal-close" (click)="close()" aria-label="Close">✕</button>
+  </div>
+
+  <div class="sethx-modal-body">
+    @if (vm.mode() === 'cancel' || vm.mode() === 'accept') {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Order ID</div>
+          <input class="sethx-input font-mono" placeholder="e.g. 123" [ngModel]="vm.makerOrderIdHuman()" (ngModelChange)="vm.makerOrderIdHuman.set($event)" />
+        </div>
+        @if (vm.mode() === 'accept') {
+          <div>
+            <div class="sethx-field-label">Fill size</div>
+            <input class="sethx-input" placeholder="0.0" [ngModel]="vm.acceptSizeHuman()" (ngModelChange)="vm.acceptSizeHuman.set($event)" />
+          </div>
+        }
+        <div class="sethx-info-note">Accepting existing orders is the recommended way to exit older markets if the strike tick/divider has changed.</div>
+      </section>
+    }
+
+    @if (vm.mode() === 'exercise' || vm.mode() === 'reclaim') {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Market Key</div>
+          <input class="sethx-input font-mono" placeholder="0x..." [ngModel]="vm.actionMarketKeyHuman() || vm.marketKey()" (ngModelChange)="vm.actionMarketKeyHuman.set($event)" />
+        </div>
+        @if (vm.mode() === 'exercise') {
+          <div>
+            <div class="sethx-field-label">Exercise size</div>
+            <input class="sethx-input" placeholder="0.0" [ngModel]="vm.exerciseSizeHuman() || vm.sizeHuman()" (ngModelChange)="vm.exerciseSizeHuman.set($event)" />
+          </div>
+        }
+      </section>
+    }
+
+    @if (vm.mode() === 'place') {
+      <section class="sethx-order-flow-section">
+        <div>
+          <div class="sethx-field-label">Intent</div>
+          <select class="sethx-select" [ngModel]="vm.intent()" (ngModelChange)="vm.intent.set($event)">
+            <option [ngValue]="0">Buy Option / Bid</option>
+            <option [ngValue]="3">Sell Writer / Bid</option>
+            <option [ngValue]="2">Write Option / Ask</option>
+            <option [ngValue]="1">Sell Option / Ask</option>
+          </select>
+          <div class="sethx-meta-text sethx-field-helper">Fees are paid only by the premium payer: Buy Option or Sell Writer.</div>
+        </div>
+
+        <div>
+          <div class="sethx-field-label">Option type</div>
+          <div class="sethx-order-flow-toggle-grid">
+            <button type="button" class="sethx-button-secondary sethx-order-flow-toggle" [class.is-active]="vm.optionType() === 0" (click)="vm.optionType.set(0)">CALL</button>
+            <button type="button" class="sethx-button-secondary sethx-order-flow-toggle" [class.is-active]="vm.optionType() === 1" (click)="vm.optionType.set(1)">PUT</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="sethx-field-label">Asset token</div>
+          <select class="sethx-select" [ngModel]="vm.assetSelected()" (ngModelChange)="vm.onAssetSelected($event)">
+            <option value="" disabled>Select asset…</option>
+            @for (t of vm.tokenList(); track t.address) {
+              <option [value]="t.address">{{ t.symbol }} — {{ t.address }}</option>
+            }
+          </select>
+          <input class="sethx-input sethx-order-flow-manual-input font-mono" placeholder="Paste asset address or ETH" [ngModel]="vm.assetInput()" (ngModelChange)="vm.onAssetInput($event)" />
+        </div>
+
+        <div class="sethx-edit-panel !p-3 text-xs flex justify-between gap-4">
+          <span class="text-frame">Payment token</span>
+          <span class="sethx-readonly-value-strong">ETH</span>
+        </div>
+
+        <div class="sethx-order-flow-grid-2">
+          <div>
+            <div class="sethx-field-label">Strike ({{ vm.quoteSymbol() }} per 1 {{ vm.assetSymbol() }})</div>
+            <input class="sethx-input" placeholder="e.g. 2500" [ngModel]="vm.strikeHuman()" (ngModelChange)="vm.strikeHuman.set($event)" />
+            <div class="sethx-meta-text sethx-field-helper">Normalized: <span class="sethx-readonly-value">{{ vm.normalizedStrikeHuman() || '—' }}</span></div>
+          </div>
+          <div>
+            <div class="sethx-field-label">Option expiry</div>
+            <select class="sethx-select" [ngModel]="vm.optionExpiryDropdownValue()" (ngModelChange)="vm.selectOptionExpiryChoice($event)">
+              @for (e of vm.validExpiryOptions(); track e.unix) {
+                <option [value]="e.unix">{{ e.label }} ({{ e.unix }})</option>
+              }
+              <option value="custom">Custom date…</option>
+            </select>
+            <div class="sethx-meta-text sethx-field-helper">Next Fridays at 12:00 UTC, or choose custom.</div>
+          </div>
+        </div>
+
+        @if (vm.isCustomOptionExpiry()) {
+          <div class="sethx-edit-panel space-y-3">
+            <div class="sethx-panel-copy">Custom option expiry is always Friday 12:00 UTC.</div>
+            <div class="sethx-order-flow-grid-2 md:!grid-cols-3">
+              <div>
+                <div class="sethx-field-label">Year</div>
+                <select class="sethx-select" [ngModel]="vm.optionExpiryYear()" (ngModelChange)="vm.onOptionExpiryYearChange($event)">
+                  @for (y of vm.optionExpiryYears(); track y) { <option [value]="y">{{ y }}</option> }
+                </select>
+              </div>
+              <div>
+                <div class="sethx-field-label">Month</div>
+                <select class="sethx-select" [ngModel]="vm.optionExpiryMonth()" (ngModelChange)="vm.onOptionExpiryMonthChange($event)">
+                  @for (m of vm.optionExpiryMonths(); track m.value) { <option [value]="m.value">{{ m.label }}</option> }
+                </select>
+              </div>
+              <div>
+                <div class="sethx-field-label">Week / Friday</div>
+                <select class="sethx-select" [ngModel]="vm.optionExpiryWeekUnix()" (ngModelChange)="vm.onOptionExpiryWeekChange($event)">
+                  @for (w of vm.optionExpiryWeeks(); track w.unix) { <option [value]="w.unix">{{ w.label }}</option> }
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+
+        <div class="sethx-info-note">
+          Selected option expiry: <span class="sethx-readonly-value-strong">{{ vm.optionExpiryHumanLabel() }}</span>
+          <span class="text-frame">(unix {{ vm.optionExpiryUnix() || '—' }})</span>
+        </div>
+
+        <app-expiry-picker
+          label="Order expiry"
+          helper="Default sends 0 and lets the options orderbook apply its default expiry. This is separate from protocol option expiry."
+          [value]="vm.orderExpiryUnix()"
+          (valueChange)="vm.orderExpiryUnix.set($event)"
+        />
+
+        <div class="sethx-order-flow-grid-2">
+          <div>
+            <div class="sethx-field-label">Size ({{ vm.assetSymbol() }})</div>
+            <input class="sethx-input" placeholder="0.0" [ngModel]="vm.sizeHuman()" (ngModelChange)="vm.sizeHuman.set($event)" />
+          </div>
+          <div>
+            <div class="sethx-field-label">Premium ({{ vm.quoteSymbol() }} per 1 {{ vm.assetSymbol() }})</div>
+            <input class="sethx-input" placeholder="0.0" [ngModel]="vm.askHuman()" (ngModelChange)="vm.askHuman.set($event)" />
+          </div>
+        </div>
+
+        @if (vm.intent() === 1 || vm.intent() === 2) {
+          <div class="sethx-edit-panel text-xs space-y-2">
+            <div class="sethx-panel-heading !py-0 !text-left">Your positions in this market</div>
+            <div class="flex justify-between"><span class="text-frame">Writer contracts</span><span class="sethx-readonly-value">{{ vm.marketWriterHuman() }}</span></div>
+            <div class="flex justify-between"><span class="text-frame">Holder available</span><span class="sethx-readonly-value">{{ vm.marketHolderAvailHuman() }}</span></div>
+          </div>
+        }
+
+        <div class="sethx-meta-text break-all">Market key: <span class="sethx-address-value">{{ vm.marketKey() || '—' }}</span> @if (vm.marketKeyLoading()) { <span>(computing…)</span> }</div>
+      </section>
+    }
+
+    @if (vm.confirmError() && !vm.confirmOpen()) {
+      <div class="sethx-error-note">{{ vm.confirmError() }}</div>
+    }
+  </div>
+
+  <div class="sethx-modal-footer">
+    <button type="button" class="sethx-button-secondary sethx-order-flow-secondary-action" (click)="close()">Cancel</button>
+    <button
+      type="button"
+      class="sethx-button-primary sethx-order-flow-primary-action"
+      [disabled]="vm.mode() === 'place' ? vm.confirmDisabled() : vm.status() === 'pending'"
+      (click)="vm.mode() === 'place' ? vm.openConfirmation() : (vm.mode() === 'cancel' || vm.mode() === 'accept' ? vm.openAcceptCancelConfirmation() : vm.openExerciseReclaimConfirmation())"
+    >
+      @if (vm.mode() === 'place') { <span>{{ isQuote ? 'Get Fee Quote' : 'Preview / Quote Fees' }}</span> }
+      @else if (vm.mode() === 'cancel') { Review Cancel }
+      @else if (vm.mode() === 'accept') { Review Accept }
+      @else if (vm.mode() === 'exercise') { Review Exercise }
+      @else { Review Reclaim }
+    </button>
+  </div>
+
+  @if (vm.confirmOpen()) {
+    <app-order-review-flow
+      [title]="vm.confirmTitle()"
+      [confirmLabel]="vm.confirmLabel()"
+      [fields]="vm.confirmFields()"
+      [requirements]="vm.confirmRequirements()"
+      [error]="vm.confirmError()"
+      [receipt]="txReceipt.receipt()"
+      [explorerUrl]="txReceipt.explorerTxUrl()"
+      [loading]="vm.status() === 'pending'"
+      [confirmDisabled]="vm.confirmDisabled() || isQuote"
+      [kind]="isQuote ? 'quote' : 'transaction'"
+      riskNote="Options execution can lock premium, option collateral, and fee budgets. Verify option type, strike, expiry, side, size, and premium before signing."
+      (cancel)="vm.closeConfirm()"
+      (confirm)="submitAndClose()"
+    />
+  }
+</div>
