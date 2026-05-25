@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { ShellComponent } from './layout/shell/shell.component';
 import { treasuryAccessGuard } from './core/guards/access-layer.guard';
+import { HomeComponent } from './features/home/home.component';
 import { AccountsComponent } from './features/accounts/accounts.component';
 import { RightPanelAccountsComponent } from './features/accounts/right-panel-accounts/right-panel-accounts.component';
 import { PortfolioComponent } from './features/portfolio/portfolio.component';
@@ -22,15 +23,16 @@ import { LendingObComponent } from './features/trade/lending-ob/lending-ob.compo
 import { LendingRpComponent } from './features/trade/lending-ob/lending-rp/lending-rp.component';
 import { TreasuryComponent } from './features/treasury/treasury.component';
 import { RightPanelTreasuryComponent } from './features/treasury/right-panel-treasury/right-panel-treasury.component';
-import { ProtocolInfoComponent } from './features/public/protocol-info/protocol-info.component';
-import { FeeRatesComponent } from './features/public/fee-rates/fee-rates.component';
+import { ProtocolInfoComponent } from './features/info/protocol/protocol-info.component';
+import { FeeRatesComponent } from './features/info/fees/fee-rates.component';
 
 export const routes: Routes = [
   {
     path: '',
     component: ShellComponent,
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'assets' },
+      { path: '', pathMatch: 'full', redirectTo: 'home' },
+      { path: 'home', component: HomeComponent },
       { path: 'accounts', component: AccountsComponent },
       { path: 'accountsRightPanel', component: RightPanelAccountsComponent, outlet: 'right-panel' },
       { path: 'assets', component: PortfolioComponent },
@@ -55,5 +57,5 @@ export const routes: Routes = [
       { path: 'fees', component: FeeRatesComponent },
     ],
   },
-  { path: '**', redirectTo: 'assets' },
+  { path: '**', redirectTo: 'home' },
 ];

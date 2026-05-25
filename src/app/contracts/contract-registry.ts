@@ -1,10 +1,16 @@
+import { environment } from '../../environments/environment';
 import { CONTRACT_ABIS } from './generated/abis';
 import { CONTRACT_ADDRESSES } from './generated/addresses';
 import { ContractName } from './contract-names';
 
 export type NetworkKey = keyof typeof CONTRACT_ADDRESSES;
 
-const DEFAULT_NETWORK: NetworkKey = 'localhost';
+const DEFAULT_NETWORK: NetworkKey =
+  environment.name === 'local'
+    ? 'localhost'
+    : environment.name === 'testnet'
+      ? 'sepolia'
+      : 'mainnet';
 
 const ADDRESS_BOOK = CONTRACT_ADDRESSES as Record<
   NetworkKey,
@@ -24,11 +30,13 @@ export function getContractAddress(
   name: ContractName,
   network: NetworkKey = DEFAULT_NETWORK,
 ): string {
-  const contractAddress = ADDRESS_BOOK[network]?.[name];
+  const configuredAddress = environment.contracts[name];
+  const generatedAddress = environment.name === 'local' ? ADDRESS_BOOK[network]?.[name] : undefined;
+  const contractAddress = configuredAddress || generatedAddress;
 
   if (!contractAddress) {
     throw new Error(
-      `Missing contract address for ${name} on network ${network}`,
+      `Missing contract address for ${name} on ${environment.name} environment`,
     );
   }
 

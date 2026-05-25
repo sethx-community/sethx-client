@@ -35,10 +35,6 @@ export class ProtocolInfoComponent {
     return value.length > 14 ? `${value.slice(0, 6)}…${value.slice(-4)}` : value;
   }
 
-  formatEth(value: bigint | null): string {
-    return value == null ? '—' : ethers.formatEther(value);
-  }
-
   formatToken(value: bigint | null, decimals = 18): string {
     if (value == null) return '—';
     try {
@@ -59,11 +55,12 @@ export class ProtocolInfoComponent {
     const descriptions: Record<string, string> = {
       SethxToken: 'Protocol token used for voting power, delegation, and ecosystem alignment.',
       TimelockControllerWrapper: 'Timelock layer for delayed execution of approved governance actions.',
-      SethxGovernor: 'Native governance contract for proposals, voting, queueing, and execution.',
+      SethxGovernor: 'Governance contract for proposals, voting, queueing, and execution.',
       ProtocolTreasury: 'Protocol treasury balances, permissions, and treasury-controlled operations.',
+      TreasuryAuthority: 'Treasury permission and policy authority.',
       SethxVault: 'Vault for deposits, locked balances, settlement transfers, and withdrawals.',
       AccountRegistry: 'Registry that verifies SETHX trading and lending accounts.',
-      AccountFactory: 'Factory for normal SETHX trading accounts.',
+      AccountFactory: 'Factory for SETHX trading accounts.',
       LendingAccountFactory: 'Factory for lending-oriented borrowing accounts.',
       FeeManager: 'Contract that exposes fixed and percentage fee settings for trade contexts.',
       PriceManager: 'Oracle registry and price-read layer for supported markets.',
@@ -89,6 +86,8 @@ export class ProtocolInfoComponent {
       'SethxToken',
       'SethxGovernor',
       'TimelockControllerWrapper',
+      'TreasuryAuthority',
+      'ProtocolTreasury',
       'SethxVault',
       'AccountRegistry',
       'FeeManager',

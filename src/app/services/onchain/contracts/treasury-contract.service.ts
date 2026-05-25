@@ -1,10 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { Contract, JsonRpcProvider, ethers } from 'ethers';
 
-import { CONTRACT_ADDRESSES, ProtocolTreasuryAbi, TreasuryAuthorityAbi, TreasuryPaymentsModuleAbi, TreasuryTradeModuleAbi, TreasuryVaultModuleAbi } from '../../../contracts/generated';
+import { ProtocolTreasuryAbi, TreasuryAuthorityAbi, TreasuryPaymentsModuleAbi, TreasuryTradeModuleAbi, TreasuryVaultModuleAbi } from '../../../contracts/generated';
+import { getContractAddress } from '../../../contracts/contract-registry';
 import { CURRENT_NETWORK } from '../../../constants/network.config';
 import { NETWORKS } from '../../../constants/networks';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
+
+function optionalContractAddress(name: Parameters<typeof getContractAddress>[0]): string {
+  try {
+    return getContractAddress(name);
+  } catch {
+    return '';
+  }
+}
 
 export type TreasurerInfo = { active: boolean; appointedAt: bigint; revokedAt: bigint; permissions: bigint; label: string };
 export type TreasuryAssetOverview = { ethBal: bigint; tokens: string[]; balances: bigint[] };
@@ -15,11 +24,11 @@ export type PassivePoolWithdrawalRequest = { shares: bigint; requestedAt: bigint
 export class TreasuryContractService {
   private readonly wallet = inject(WalletConnectService);
 
-  readonly authorityAddress = CONTRACT_ADDRESSES.localhost.TreasuryAuthority;
-  readonly treasuryAddress = CONTRACT_ADDRESSES.localhost.ProtocolTreasury;
-  readonly vaultModuleAddress = CONTRACT_ADDRESSES.localhost.TreasuryVaultModule;
-  readonly paymentsModuleAddress = CONTRACT_ADDRESSES.localhost.TreasuryPaymentsModule;
-  readonly tradeModuleAddress = CONTRACT_ADDRESSES.localhost.TreasuryTradeModule;
+  readonly authorityAddress = optionalContractAddress('TreasuryAuthority');
+  readonly treasuryAddress = optionalContractAddress('ProtocolTreasury');
+  readonly vaultModuleAddress = optionalContractAddress('TreasuryVaultModule');
+  readonly paymentsModuleAddress = optionalContractAddress('TreasuryPaymentsModule');
+  readonly tradeModuleAddress = optionalContractAddress('TreasuryTradeModule');
 
   readonly permissions = {
     callVault: 1n << 0n,

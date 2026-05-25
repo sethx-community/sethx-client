@@ -12,8 +12,6 @@ export class ProtocolConfigService {
   readonly assets = computed(() => this._config().assets.filter((asset) => asset.enabled));
   readonly products = computed(() => this._config().products.filter((product) => product.enabled));
   readonly compliance = computed(() => this._config().compliance);
-  readonly language = computed(() => this._config().language);
-  readonly assistant = computed(() => this._config().assistant);
 
   product(key: ProductKey) {
     return this._config().products.find((product) => product.key === key) ?? null;

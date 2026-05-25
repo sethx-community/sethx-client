@@ -1,13 +1,22 @@
 import { Injectable, signal, computed, resource, inject } from '@angular/core';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { mainnet, arbitrum, hardhat } from '@reown/appkit/networks';
+import { mainnet, arbitrum, hardhat, sepolia } from '@reown/appkit/networks';
 import { ethers } from 'ethers';
+import { environment } from '../../environments/environment';
 import { CURRENT_NETWORK_CONFIG } from '../constants/network.config';
 import { ErrorService } from '../services/shared/error.service';
 import { TriggerService } from '../services/shared/trigger.service';
 import { NetworkStatusService } from '../services/shared/network-status.service';
 import { AnalyticsService } from '../services/shared/compliance/analytics.service';
+
+
+const appKitNetworks =
+  environment.name === 'local'
+    ? [hardhat]
+    : environment.name === 'testnet'
+      ? [sepolia]
+      : [mainnet, arbitrum];
 
 export function markNetworkError(err: unknown, ns: NetworkStatusService) {
   const msg = err instanceof Error ? err.message : String(err ?? '');
@@ -34,14 +43,14 @@ export class WalletConnectService {
   private readonly _walletTick = signal(0);
 
   private client = createAppKit({
-    projectId: 'a06102eecc532a455cd608c2934914c2',
+    projectId: environment.reownProjectId,
     adapters: [new EthersAdapter()],
-    networks: [mainnet, arbitrum, hardhat],
+    networks: appKitNetworks as any,
     metadata: {
       name: 'SETHX Client',
-      description: 'Open-source client for the SETHX protocol',
-      url: 'https://sethx.org',
-      icons: ['https://sethx.org/logo.png'],
+      description: 'Local client for the SETHX protocol',
+      url: 'https://sethx.com',
+      icons: ['https://sethx.com/logo.png'],
     },
     themeMode: 'dark',
     features: {

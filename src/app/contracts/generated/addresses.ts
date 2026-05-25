@@ -109,5 +109,6 @@ export const CONTRACT_ADDRESSES = {
       ],
   },
   mainnet: {},
+  sepolia: {},
   arbitrum: {},
 } as const;

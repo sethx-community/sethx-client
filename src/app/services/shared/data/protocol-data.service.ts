@@ -163,12 +163,6 @@ export class ProtocolDataService {
     };
   });
 
-  readonly assistantFacts = computed(() => ({
-    protocol: this.knowledge(),
-    liveOverview: this.liveOverview(),
-    configuredFees: this.protocolConfig.config().fees,
-    feeServiceAvailable: Boolean(this.fees),
-  }));
 
   warmLiveReads(): void {
     this.fees.refreshAcceptedPaymentTokens();

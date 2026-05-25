@@ -1,11 +1,11 @@
-export type NetworkName = 'mainnet' | 'arbitrum' | 'localhost';
+export type NetworkName = 'mainnet' | 'sepolia' | 'arbitrum' | 'localhost';
 
 import { Chain } from 'viem';
 
 export const NETWORKS: Record<NetworkName, Chain> = {
   localhost: {
     id: 31337,
-    name: 'Hardhat',
+    name: 'Hardhat Local',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: {
       default: { http: ['http://127.0.0.1:8545'] },
@@ -15,12 +15,24 @@ export const NETWORKS: Record<NetworkName, Chain> = {
       default: { name: 'Local', url: '' },
     },
   },
+  sepolia: {
+    id: 11155111,
+    name: 'Sepolia',
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: {
+      default: { http: [''] },
+      public: { http: ['https://rpc.sepolia.org'] },
+    },
+    blockExplorers: {
+      default: { name: 'Sepolia Etherscan', url: 'https://sepolia.etherscan.io' },
+    },
+  },
   mainnet: {
     id: 1,
     name: 'Ethereum Mainnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: {
-      default: { http: ['https://mainnet.infura.io/v3/YOUR_KEY'] },
+      default: { http: [''] },
       public: { http: ['https://rpc.ankr.com/eth'] },
     },
     blockExplorers: {

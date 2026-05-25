@@ -1,0 +1,49 @@
+<div class="sethx-page space-y-5">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">Fees</div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="sethx-page-title">Protocol fee configuration</h1>
+        <p class="sethx-page-copy mt-2">
+          Fee settings are controlled by the deployed protocol contracts and governance. This page shows client-visible fee token reads and fee configuration status for the connected network.
+        </p>
+      </div>
+      <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()">Refresh fee reads</button>
+    </div>
+  </header>
+
+  <section class="grid gap-4 lg:grid-cols-3">
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Read status</div>
+      <h2 class="sethx-section-title mt-2">{{ status() }}</h2>
+      <p class="sethx-page-copy mt-2">The client reads accepted fee tokens from the configured FeeManager.</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">SETHX fee token</div>
+      <h2 class="sethx-section-title mt-2">{{ short(sethxToken()) }}</h2>
+      <p class="sethx-page-copy mt-2">Used by the protocol for SETHX-specific fee behavior when configured.</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Governance controlled</div>
+      <h2 class="sethx-section-title mt-2">FeeManager</h2>
+      <p class="sethx-page-copy mt-2">Fee updates should be reviewed through governance before production launch.</p>
+    </article>
+  </section>
+
+  <section class="sethx-table-card space-y-4">
+    <div>
+      <h2 class="sethx-section-title">Accepted fee tokens</h2>
+      <p class="sethx-page-copy mt-1">{{ feeNote() }}</p>
+    </div>
+
+    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      <div *ngFor="let token of acceptedTokens()" class="rounded border border-trade-border bg-background/60 p-3 text-xs">
+        <div class="font-semibold text-white">Accepted token</div>
+        <code class="mt-1 block break-all text-accent">{{ token }}</code>
+      </div>
+    </div>
+    <p *ngIf="acceptedTokens().length === 0" class="sethx-page-copy">No accepted fee tokens are currently available from the connected provider.</p>
+  </section>
+</div>

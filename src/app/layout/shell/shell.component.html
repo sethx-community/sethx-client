@@ -10,6 +10,13 @@
         <section class="space-y-1">
           <div class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle">Account</div>
           <a
+            [routerLink]="['/', { outlets: { primary: ['home'], 'right-panel': null } }]"
+            routerLinkActive="active"
+            class="sethx-nav-link"
+          >
+            Home
+          </a>
+          <a
             [routerLink]="['/', { outlets: { primary: ['accounts'], 'right-panel': ['accountsRightPanel'] } }]"
             routerLinkActive="active"
             class="sethx-nav-link"

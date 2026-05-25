@@ -1,4 +1,4 @@
-import { CONTRACT_ADDRESSES } from '../../../contracts/generated';
+import { environment } from '../../../../environments/environment';
 import { CURRENT_NETWORK_CONFIG } from '../../../constants/network.config';
 import { ETH_ADDRESS } from '../../../constants/main.tokens';
 
@@ -15,7 +15,7 @@ export type ProductKey =
   | 'treasury'
   | 'governance';
 
-export type FeatureAvailability = 'public' | 'wallet' | 'holder' | 'role' | 'coming-soon';
+export type FeatureAvailability = 'wallet' | 'holder' | 'role' | 'coming-soon';
 
 export type ProtocolAssetConfig = {
   symbol: string;
@@ -44,24 +44,10 @@ export type ProtocolFeeConfig = {
 export type ProtocolComplianceConfig = {
   geoEndpoint: string;
   blockedCountries: string[];
-  cookieConsentVersion: string;
-  analyticsEnabledByDefault: false;
-  analyticsMeasurementId: string;
   noRampReason: string;
 };
 
-export type ProtocolLanguageConfig = {
-  storageKey: string;
-  defaultLanguage: 'en';
-  supportedLanguages: readonly ['en', 'es', 'pt'];
-  countryHints: Record<string, 'en' | 'es' | 'pt'>;
-};
 
-export type ProtocolAssistantConfig = {
-  modes: readonly ['protocol', 'user-context', 'crypto-education'];
-  knowledgeSources: string[];
-  guardrails: string[];
-};
 
 export type ProtocolConfig = {
   appName: string;
@@ -72,23 +58,20 @@ export type ProtocolConfig = {
     explorerUrl: string;
   };
   routes: {
-    publicHome: '/';
-    docs: '/docs';
-    community: '/community';
-    governanceInfo: '/protocol';
-    protocolInfo: '/protocol';
-    appRoot: '/app';
+    home: '/home';
+    accounts: '/accounts';
+    assets: '/assets';
+    protocol: '/protocol';
+    fees: '/fees';
   };
   contracts: Record<string, string>;
   assets: ProtocolAssetConfig[];
   products: ProtocolProductConfig[];
   fees: ProtocolFeeConfig;
   compliance: ProtocolComplianceConfig;
-  language: ProtocolLanguageConfig;
-  assistant: ProtocolAssistantConfig;
 };
 
-const localContracts = CONTRACT_ADDRESSES.localhost as Record<string, string>;
+const configuredContracts = environment.contracts as Record<string, string>;
 
 export const PROTOCOL_CONFIG: ProtocolConfig = {
   appName: 'SETHX',
@@ -99,14 +82,13 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     explorerUrl: CURRENT_NETWORK_CONFIG.blockExplorers?.default.url ?? '',
   },
   routes: {
-    publicHome: '/',
-    docs: '/docs',
-    community: '/community',
-    governanceInfo: '/protocol',
-    protocolInfo: '/protocol',
-    appRoot: '/app',
+    home: '/home',
+    accounts: '/accounts',
+    assets: '/assets',
+    protocol: '/protocol',
+    fees: '/fees',
   },
-  contracts: localContracts,
+  contracts: configuredContracts,
   assets: [
     {
       symbol: 'ETH',
@@ -119,7 +101,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       symbol: 'SETHX',
       name: 'SETHX governance token',
-      address: localContracts['SethxToken'] ?? '',
+      address: configuredContracts['SethxToken'] ?? '',
       decimals: 18,
       role: 'governance',
       enabled: true,
@@ -127,7 +109,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       symbol: 'MOCK-A',
       name: 'Mock ERC20 A',
-      address: localContracts['MockERC20A'] ?? '',
+      address: configuredContracts['MockERC20A'] ?? '',
       decimals: 18,
       role: 'mock',
       enabled: true,
@@ -135,7 +117,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       symbol: 'MOCK-B',
       name: 'Mock ERC20 B',
-      address: localContracts['MockERC20B'] ?? '',
+      address: configuredContracts['MockERC20B'] ?? '',
       decimals: 18,
       role: 'mock',
       enabled: true,
@@ -233,7 +215,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
   ],
   fees: {
     source: 'contract',
-    note: 'Exact fees should be read from FeeManager and product contracts whenever a wallet/provider is available. These placeholders only support public copy and assistant scaffolding.',
+    note: 'Exact fees should be read from FeeManager and product contracts whenever a wallet/provider is available. These placeholders only support client display while live reads are unavailable.',
     placeholders: {
       trading: 'Live contract read pending',
       settlement: 'Live contract read pending',
@@ -243,60 +225,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
   compliance: {
     geoEndpoint: '/api/geo',
     blockedCountries: ['KP', 'IR', 'SY'],
-    cookieConsentVersion: '2026-05-18-minimal-analytics',
-    analyticsEnabledByDefault: false,
-    analyticsMeasurementId: 'G-REPLACE_WITH_SETHX_ID',
     noRampReason:
       'The MVP does not sell crypto or provide a fiat ramp because that may require additional permits, banking relationships, and compliance operations.',
-  },
-  language: {
-    storageKey: 'sethx.language',
-    defaultLanguage: 'en',
-    supportedLanguages: ['en', 'es', 'pt'],
-    countryHints: {
-      ES: 'es',
-      MX: 'es',
-      AR: 'es',
-      CO: 'es',
-      CL: 'es',
-      PE: 'es',
-      VE: 'es',
-      EC: 'es',
-      UY: 'es',
-      PY: 'es',
-      BO: 'es',
-      CR: 'es',
-      PA: 'es',
-      DO: 'es',
-      GT: 'es',
-      HN: 'es',
-      NI: 'es',
-      SV: 'es',
-      PR: 'es',
-      BR: 'pt',
-      PT: 'pt',
-      AO: 'pt',
-      MZ: 'pt',
-      CV: 'pt',
-      GW: 'pt',
-      ST: 'pt',
-      TL: 'pt',
-    },
-  },
-  assistant: {
-    modes: ['protocol', 'user-context', 'crypto-education'],
-    knowledgeSources: [
-      'Public docs and library pages',
-      'Protocol configuration service',
-      'Generated contract addresses and ABIs',
-      'Live FeeManager reads',
-      'Governance and treasury data services',
-    ],
-    guardrails: [
-      'Answer protocol questions from configured facts and live reads where available.',
-      'Explain crypto and investment concepts educationally, not as personalized financial advice.',
-      'Do not claim fiat ramp, broker, or crypto sale functionality exists in the MVP.',
-      'Respect country, wallet, role, and voting-power restrictions before suggesting actions.',
-    ],
   },
 };

@@ -1,89 +1,37 @@
-import { Injectable, effect, inject } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { Injectable } from '@angular/core';
 
-import { CookieConsentService } from './cookie-consent.service';
-import { ProtocolConfigService } from '../config/protocol-config.service';
+export type AnalyticsEvent =
+  | 'enter_app'
+  | 'wallet_connect_started'
+  | 'wallet_connected'
+  | 'transaction_started'
+  | 'transaction_blocked';
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
-  private readonly consent = inject(CookieConsentService);
-  private readonly router = inject(Router);
-  private readonly protocolConfig = inject(ProtocolConfigService);
-  private initialized = false;
-
-  constructor() {
-    effect(() => {
-      if (this.consent.state() === 'accepted') this.initializeGoogleAnalytics();
-    });
-
-    this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => this.trackPageView(event.urlAfterRedirects));
+  track(_event: AnalyticsEvent, _payload: Record<string, unknown> = {}): void {
+    // The downloadable client does not send analytics by default.
+    // Keep this service as a no-op seam so wallet and transaction flows can
+    // emit internal lifecycle events without external tracking.
   }
 
-  trackEnterApp(source: 'public_nav' | 'home_hero' = 'public_nav'): void {
-    this.trackEvent('enter_app', { source });
+  trackEnterApp(_source: string = 'home_hero'): void {
+    this.track('enter_app');
   }
 
   trackWalletConnectStarted(): void {
-    this.trackEvent('wallet_connect_started');
+    this.track('wallet_connect_started');
   }
 
   trackWalletConnected(): void {
-    this.trackEvent('wallet_connected');
+    this.track('wallet_connected');
   }
 
-  trackEvent(name: string, params: Record<string, unknown> = {}): void {
-    if (!this.initialized || this.consent.state() !== 'accepted' || !window.gtag) return;
-
-    window.gtag('event', name, {
-      ...params,
-      app_area: 'sethx',
-      non_interaction: false,
-    });
+  trackTransactionStarted(payload: Record<string, unknown> = {}): void {
+    this.track('transaction_started', payload);
   }
 
-  private initializeGoogleAnalytics(): void {
-    const measurementId = this.protocolConfig.compliance().analyticsMeasurementId;
-    if (this.initialized || typeof document === 'undefined' || measurementId.includes('REPLACE')) return;
-
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-    document.head.appendChild(script);
-
-    window.dataLayer = window.dataLayer ?? [];
-    window.gtag = window.gtag ?? function gtag(...args: unknown[]) {
-      window.dataLayer?.push(args);
-    };
-
-    window.gtag('js', new Date());
-    window.gtag('config', measurementId, {
-      anonymize_ip: true,
-      allow_google_signals: false,
-      allow_ad_personalization_signals: false,
-      send_page_view: false,
-    });
-
-    this.initialized = true;
-    this.trackPageView(this.router.url);
-  }
-
-  private trackPageView(path: string): void {
-    if (!this.initialized || this.consent.state() !== 'accepted' || !window.gtag) return;
-
-    window.gtag('event', 'page_view', {
-      page_path: path,
-      page_location: `${window.location.origin}${path}`,
-      page_title: document.title,
-    });
-  }
-}
-
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-    gtag?: (...args: unknown[]) => void;
+  trackTransactionBlocked(payload: Record<string, unknown> = {}): void {
+    this.track('transaction_blocked', payload);
   }
 }

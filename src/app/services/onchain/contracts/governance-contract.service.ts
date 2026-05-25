@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Contract, JsonRpcProvider, ethers } from 'ethers';
 
-import { CONTRACT_ADDRESSES, SethxTokenAbi } from '../../../contracts/generated';
+import { SethxTokenAbi } from '../../../contracts/generated';
+import { getContractAddress } from '../../../contracts/contract-registry';
 import { CURRENT_NETWORK } from '../../../constants/network.config';
 import { NETWORKS } from '../../../constants/networks';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
@@ -20,6 +21,14 @@ const GOVERNOR_ABI = [
   'function castVoteWithReason(uint256 proposalId,uint8 support,string reason) returns (uint256)',
 ] as const satisfies ethers.InterfaceAbi;
 
+function optionalContractAddress(name: Parameters<typeof getContractAddress>[0]): string {
+  try {
+    return getContractAddress(name);
+  } catch {
+    return '';
+  }
+}
+
 export type VotingPowerOverview = { walletBalance: bigint; walletVotes: bigint; totalSupply: bigint; delegatedTo: string };
 export type ProposalVoteCounts = { againstVotes: bigint; forVotes: bigint; abstainVotes: bigint };
 export type ProposalStatus = {
@@ -36,21 +45,21 @@ export type ProposalStatus = {
 export class GovernanceContractService {
   private readonly wallet = inject(WalletConnectService);
 
-  readonly governorAddress = CONTRACT_ADDRESSES.localhost.SethxGovernor;
-  readonly sethxTokenAddress = CONTRACT_ADDRESSES.localhost.SethxToken;
-  readonly vaultAddress = CONTRACT_ADDRESSES.localhost.SethxVault;
-  readonly feeManagerAddress = CONTRACT_ADDRESSES.localhost.FeeManager;
-  readonly priceManagerAddress = CONTRACT_ADDRESSES.localhost.PriceManager;
-  readonly treasuryAddress = CONTRACT_ADDRESSES.localhost.ProtocolTreasury;
-  readonly treasuryAuthorityAddress = CONTRACT_ADDRESSES.localhost.TreasuryAuthority;
-  readonly treasuryPaymentsAddress = CONTRACT_ADDRESSES.localhost.TreasuryPaymentsModule;
-  readonly treasuryTradeAddress = CONTRACT_ADDRESSES.localhost.TreasuryTradeModule;
-  readonly futuresAddress = CONTRACT_ADDRESSES.localhost.FuturesContract;
-  readonly lendingAddress = CONTRACT_ADDRESSES.localhost.LendingContract;
-  readonly marginOptionsAddress = CONTRACT_ADDRESSES.localhost.MarginOptionContract;
-  readonly binaryOptionsAddress = CONTRACT_ADDRESSES.localhost.BinaryMarginOptionContract;
-  readonly riskModuleAddress = CONTRACT_ADDRESSES.localhost.RiskModule;
-  readonly valuationModuleAddress = CONTRACT_ADDRESSES.localhost.ValuationModule;
+  readonly governorAddress = optionalContractAddress('SethxGovernor');
+  readonly sethxTokenAddress = optionalContractAddress('SethxToken');
+  readonly vaultAddress = optionalContractAddress('SethxVault');
+  readonly feeManagerAddress = optionalContractAddress('FeeManager');
+  readonly priceManagerAddress = optionalContractAddress('PriceManager');
+  readonly treasuryAddress = optionalContractAddress('ProtocolTreasury');
+  readonly treasuryAuthorityAddress = optionalContractAddress('TreasuryAuthority');
+  readonly treasuryPaymentsAddress = optionalContractAddress('TreasuryPaymentsModule');
+  readonly treasuryTradeAddress = optionalContractAddress('TreasuryTradeModule');
+  readonly futuresAddress = optionalContractAddress('FuturesContract');
+  readonly lendingAddress = optionalContractAddress('LendingContract');
+  readonly marginOptionsAddress = optionalContractAddress('MarginOptionContract');
+  readonly binaryOptionsAddress = optionalContractAddress('BinaryMarginOptionContract');
+  readonly riskModuleAddress = optionalContractAddress('RiskModule');
+  readonly valuationModuleAddress = optionalContractAddress('ValuationModule');
 
   async governor(): Promise<Contract> { return new Contract(this.governorAddress, GOVERNOR_ABI, await this.runner()); }
   async token(): Promise<Contract> { return new Contract(this.sethxTokenAddress, SethxTokenAbi, await this.runner()); }
