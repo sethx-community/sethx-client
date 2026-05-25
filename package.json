@@ -46,5 +46,10 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "picomatch": "4.0.4",
+    "vite": "7.3.2",
+    "ws": "8.20.1"
   }
 }
