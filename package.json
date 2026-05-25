@@ -11,7 +11,8 @@
     "build:testnet": "ng build --configuration testnet",
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration local",
-    "test": "ng test"
+    "test": "ng test",
+    "package:browser": "npm run build:prod && node scripts/package-browser-release.js"
   },
   "private": true,
   "dependencies": {
