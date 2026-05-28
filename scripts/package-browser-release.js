@@ -147,8 +147,8 @@ if %errorlevel% neq 0 (
   exit /b 1
 )
 
-if not exist "app\\\\index.html" (
-  echo ERROR: app\\\\index.html was not found.
+if not exist "app\\index.html" (
+  echo ERROR: app\\index.html was not found.
   echo.
   echo Make sure you fully unzipped the release package before running this file.
   echo Do not run this script directly from inside the zip preview.
