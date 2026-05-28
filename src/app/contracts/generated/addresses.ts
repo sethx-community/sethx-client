@@ -23,10 +23,6 @@ export const CONTRACT_ADDRESSES = {
     TimelockControllerWrapper:
       IGNITION_DEPLOYED_ADDRESSES['TimelockModule#SethxTimelock'] ??
       IGNITION_DEPLOYED_ADDRESSES['TimelockModule#TimelockControllerWrapper'],
-    DerivativeSettlementOracle:
-      IGNITION_DEPLOYED_ADDRESSES[
-        'ValuationMockOraclesModule#DerivativeSettlementOracle'
-      ],
     QuoteCollateralOracle:
       IGNITION_DEPLOYED_ADDRESSES[
         'ValuationMockOraclesModule#QuoteCollateralOracle'

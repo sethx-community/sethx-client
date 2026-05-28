@@ -14,8 +14,6 @@ export const IGNITION_ARTIFACT_MAP = {
   SethxFeeConversionOracle: 'SethxFeeConversionOracleModule#SethxFeeConversionOracle',
   SethxTimelock: 'TimelockModule#SethxTimelock',
   TimelockControllerWrapper: 'TimelockModule#SethxTimelock',
-  DerivativeSettlementOracle:
-    'ValuationMockOraclesModule#DerivativeSettlementOracle',
   QuoteCollateralOracle: 'ValuationMockOraclesModule#QuoteCollateralOracle',
   PriceManager: 'PriceManagerModule#PriceManager',
   AccountRegistry: 'RegistryModule#AccountRegistry',

@@ -41730,7 +41730,6 @@ export const CONTRACT_ABIS = {
   SethxFeeConversionOracle: SethxFeeConversionOracleAbi,
   SethxTimelock: SethxTimelockAbi,
   TimelockControllerWrapper: TimelockControllerWrapperAbi,
-  DerivativeSettlementOracle: DerivativeSettlementOracleAbi,
   QuoteCollateralOracle: QuoteCollateralOracleAbi,
   PriceManager: PriceManagerAbi,
   AccountRegistry: AccountRegistryAbi,

@@ -12,7 +12,6 @@ export type ContractName =
   | 'SethxFeeConversionOracle'
   | 'SethxTimelock'
   | 'TimelockControllerWrapper'
-  | 'DerivativeSettlementOracle'
   | 'QuoteCollateralOracle'
   | 'PriceManager'
   | 'AccountRegistry'
