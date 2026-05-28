@@ -30,10 +30,6 @@ export class VaultChainService {
     loader: async () => this.vaultContract.getERC721Tokens(),
   });
 
-  private readonly _erc1155TokensRes = resource<string[] | null, {}>({
-    params: () => ({}),
-    loader: async () => this.vaultContract.getERC1155Tokens(),
-  });
 
   // PUBLIC computeds
   readonly erc20Tokens = computed(() => this._erc20TokensRes.value() ?? []);
@@ -48,19 +44,11 @@ export class VaultChainService {
   );
   readonly erc721Error = computed(() => this._erc721TokensRes.error() ?? null);
 
-  readonly erc1155Tokens = computed(() => this._erc1155TokensRes.value() ?? []);
-  readonly erc1155Status = computed<Status>(() =>
-    toStatus(this._erc1155TokensRes.status()),
-  );
-  readonly erc1155Error = computed(
-    () => this._erc1155TokensRes.error() ?? null,
-  );
 
   /** Refresh everything vault-related (use this on deposit/withdraw). */
   refreshVault() {
     this._erc20TokensRes.reload();
     this._erc721TokensRes.reload();
-    this._erc1155TokensRes.reload();
   }
 
   constructor() {

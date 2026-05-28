@@ -72,11 +72,9 @@ export type ProtocolLiveOverview = {
   feeReadStatus: string;
   vaultErc20Tokens: string[];
   vaultErc721Tokens: string[];
-  vaultErc1155Tokens: string[];
   vaultQuantities: ProtocolVaultQuantity[];
   vaultErc20Status: string;
   vaultErc721Status: string;
-  vaultErc1155Status: string;
   oracleInfo: ProtocolOracleInfo[];
   oracleReadStatus: string;
   governanceSettingsLoaded: boolean;
@@ -149,11 +147,9 @@ export class ProtocolDataService {
       feeReadStatus: String(this.fees.acceptedPaymentTokensStatus()),
       vaultErc20Tokens: this.vault.erc20Tokens(),
       vaultErc721Tokens: this.vault.erc721Tokens(),
-      vaultErc1155Tokens: this.vault.erc1155Tokens(),
       vaultQuantities: this._vaultQuantities(),
       vaultErc20Status: String(this.vault.erc20Status()),
       vaultErc721Status: String(this.vault.erc721Status()),
-      vaultErc1155Status: String(this.vault.erc1155Status()),
       oracleInfo: this._oracleInfo(),
       oracleReadStatus: this._oracleReadStatus(),
       governanceSettingsLoaded: Boolean(this.governance.settings()),

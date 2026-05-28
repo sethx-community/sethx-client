@@ -17,7 +17,11 @@ export const CONTRACT_ADDRESSES = {
       IGNITION_DEPLOYED_ADDRESSES['ChainlinkMarketOraclesModule#LinkUsdChainlinkOracle'],
     SethxFeeConversionOracle:
       IGNITION_DEPLOYED_ADDRESSES['SethxFeeConversionOracleModule#SethxFeeConversionOracle'],
+    SethxTimelock:
+      IGNITION_DEPLOYED_ADDRESSES['TimelockModule#SethxTimelock'] ??
+      IGNITION_DEPLOYED_ADDRESSES['TimelockModule#TimelockControllerWrapper'],
     TimelockControllerWrapper:
+      IGNITION_DEPLOYED_ADDRESSES['TimelockModule#SethxTimelock'] ??
       IGNITION_DEPLOYED_ADDRESSES['TimelockModule#TimelockControllerWrapper'],
     DerivativeSettlementOracle:
       IGNITION_DEPLOYED_ADDRESSES[
@@ -94,6 +98,10 @@ export const CONTRACT_ADDRESSES = {
       IGNITION_DEPLOYED_ADDRESSES['ValuationModuleModule#ValuationModule'],
     LiquidationEngine:
       IGNITION_DEPLOYED_ADDRESSES['LiquidationEngineModule#LiquidationEngine'],
+    PassiveFuturesSnapshotPublisher:
+      IGNITION_DEPLOYED_ADDRESSES[
+        'PassiveFuturesSnapshotPublisherModule#PassiveFuturesSnapshotPublisher'
+      ],
     PassiveFuturesPoolFactory:
       IGNITION_DEPLOYED_ADDRESSES[
         'PassiveFuturesPoolFactoryModule#PassiveFuturesPoolFactory'

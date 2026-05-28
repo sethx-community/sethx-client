@@ -8,6 +8,7 @@ import { norm } from '../../../core/tokens/token-normalize';
 import {
   FuturesOrderBookReadService,
   FuturesOrder,
+  PassiveFuturesSnapshot,
 } from '../../onchain/contracts/futures-orderbook-read.service';
 import {
   FuturesContractReadService,
@@ -22,6 +23,7 @@ export type ActiveFuturesMarketRow = {
   sellCount: number;
   longHolders: number;
   shortHolders: number;
+  passiveSnapshot: PassiveFuturesSnapshot | null;
 };
 
 export type FuturesMyOrderRow = FuturesOrder & {
@@ -130,12 +132,13 @@ export class FuturesOrderBookStore {
 
       const rows = await Promise.all(
         keys.map(async (k) => {
-          const [m, isActive, buyIds, sellIds, stats] = await Promise.all([
+          const [m, isActive, buyIds, sellIds, stats, passiveSnapshot] = await Promise.all([
             this.futuresReads.getMarket(k),
             this.futuresReads.isMarketActive(k),
             this.reads.getBook(k, true),
             this.reads.getBook(k, false),
             this.futuresReads.getMarketStats(k),
+            this.reads.getPassiveSnapshot(k),
           ]);
 
           return {
@@ -146,6 +149,7 @@ export class FuturesOrderBookStore {
             sellCount: sellIds.length,
             longHolders: stats.longHolders,
             shortHolders: stats.shortHolders,
+            passiveSnapshot,
           } as ActiveFuturesMarketRow;
         }),
       );

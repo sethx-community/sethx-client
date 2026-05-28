@@ -1878,13 +1878,7 @@ export const VAULT_ABI = [
     inputs: [],
     outputs: [{ type: 'address[]' }],
   },
-  {
-    type: 'function',
-    name: 'getERC1155Tokens',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'address[]' }],
-  },
+
 
   // === View: Balances ===
   {

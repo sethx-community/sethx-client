@@ -53,6 +53,7 @@
             <div class="text-right">Init Margin</div>
             <div class="text-right">Maint Margin</div>
             <div class="text-right">Settlement</div>
+            <div class="text-right">Passive MM</div>
             <div class="text-right">Info</div>
           </div>
 
@@ -86,6 +87,7 @@
                 <div class="text-right sethx-readonly-value">{{ formatPercentBps(m.market?.initialMarginBps) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatPercentBps(m.market?.maintenanceMarginBps) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatSettlementPrice(m) }}</div>
+                <div class="text-right sethx-readonly-value" [title]="passiveQuote(m)">{{ passiveStatus(m) }}</div>
                 <div class="text-right">
                   <button type="button" class="sethx-action-link" title="Show market information" (click)="toggleMarketInfo(m.marketKey, $event)">Info</button>
                 </div>

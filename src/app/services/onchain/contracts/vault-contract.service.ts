@@ -11,9 +11,6 @@ export class VaultContractService extends EthersContractService<Contract> {
   protected readonly abi = CONTRACT_ABIS.SethxVault;
   protected readonly defaultAddress = getContractAddress("SethxVault");
 
-  private hasFunction(name: string): boolean {
-    return Array.isArray(this.abi) && this.abi.some((entry: any) => entry?.type === "function" && entry?.name === name);
-  }
 
   constructor(wallet: WalletConnectService, error: ErrorService) {
     super(wallet, error);
@@ -31,11 +28,6 @@ export class VaultContractService extends EthersContractService<Contract> {
     return Array.from(res as any) as string[];
   }
 
-  async getERC1155Tokens(): Promise<string[]> {
-    if (!this.hasFunction("getERC1155Tokens")) return [];
-    const res = await this.read("getERC1155Tokens" as any, [] as any);
-    return Array.from(res as any) as string[];
-  }
 
   // === Balances ===
 

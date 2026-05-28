@@ -12,7 +12,8 @@ export const IGNITION_ARTIFACT_MAP = {
   EthUsdChainlinkOracle: 'ChainlinkMarketOraclesModule#EthUsdChainlinkOracle',
   LinkUsdChainlinkOracle: 'ChainlinkMarketOraclesModule#LinkUsdChainlinkOracle',
   SethxFeeConversionOracle: 'SethxFeeConversionOracleModule#SethxFeeConversionOracle',
-  TimelockControllerWrapper: 'TimelockModule#TimelockControllerWrapper',
+  SethxTimelock: 'TimelockModule#SethxTimelock',
+  TimelockControllerWrapper: 'TimelockModule#SethxTimelock',
   DerivativeSettlementOracle:
     'ValuationMockOraclesModule#DerivativeSettlementOracle',
   QuoteCollateralOracle: 'ValuationMockOraclesModule#QuoteCollateralOracle',
@@ -45,6 +46,8 @@ export const IGNITION_ARTIFACT_MAP = {
   FuturesValuationAdapter: 'ValuationAdaptersModule#FuturesValuationAdapter',
   ValuationModule: 'ValuationModuleModule#ValuationModule',
   LiquidationEngine: 'LiquidationEngineModule#LiquidationEngine',
+  PassiveFuturesSnapshotPublisher:
+    'PassiveFuturesSnapshotPublisherModule#PassiveFuturesSnapshotPublisher',
   PassiveFuturesPoolFactory:
     'PassiveFuturesPoolFactoryModule#PassiveFuturesPoolFactory',
   RiskModule: 'RiskModuleModule#RiskModule',

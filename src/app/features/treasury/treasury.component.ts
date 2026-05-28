@@ -7,7 +7,7 @@ import { TreasuryDataService } from '../../services/shared/data/treasury-data.se
 import { TreasuryActionKey, TreasuryModeService } from '../../services/shared/treasury-mode.service';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 
-type PermissionKey = 'callVault' | 'manageLiquidity' | 'managePayments' | 'tradeSethx';
+type PermissionKey = 'callVault' | 'manageLiquidity' | 'managePayments' | 'tradeSethx' | 'publishPassiveQuotes' | 'manageOracleFunding';
 type PermissionRow = { key: PermissionKey; label: string; description: string };
 type ActionRow = { key: TreasuryActionKey; label: string; description: string };
 
@@ -53,6 +53,8 @@ export class TreasuryComponent implements OnInit {
     { key: 'manageLiquidity', label: 'Manage Liquidity', description: 'Move treasury capital through passive pools and treasury accounts.' },
     { key: 'managePayments', label: 'Manage Payments', description: 'Pay governance-approved recipients from payment modules.' },
     { key: 'tradeSethx', label: 'Trade SETHX', description: 'Use treasury trading modules for approved SETHX actions.' },
+    { key: 'publishPassiveQuotes', label: 'Publish Passive Quotes', description: 'Publish passive futures quote snapshots through the approved publisher flow.' },
+    { key: 'manageOracleFunding', label: 'Manage Oracle Funding', description: 'Manage oracle-funding related treasury actions.' },
   ];
 
   readonly actionRows: ActionRow[] = [

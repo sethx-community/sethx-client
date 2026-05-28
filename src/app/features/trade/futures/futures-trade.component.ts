@@ -159,6 +159,7 @@ export class FuturesTradeComponent {
       { label: 'Best Ask', value: this.formatFuturesPrice(this.bestFuturesAsk()), tone: 'down' },
       { label: 'Spread', value: this.formatFuturesPrice(this.futuresSpread()) },
       { label: 'Settlement', value: this.formatSettlementPriceFull(row) },
+      { label: 'Passive MM', value: this.passiveStatus(row), tone: row?.passiveSnapshot?.active ? 'up' : 'muted' },
       { label: 'Initial margin', value: this.formatPercentBps(row?.market?.initialMarginBps) },
     ];
   }
@@ -250,6 +251,7 @@ export class FuturesTradeComponent {
   }
 
   readonly ZERO_BI = 0n;
+  readonly ZERO_ADDRESS = ethers.ZeroAddress;
 
   settlementPriceFor(m: any): bigint {
     return (m?.market?.lastSettlementPrice ?? this.ZERO_BI) as bigint;
@@ -275,6 +277,28 @@ export class FuturesTradeComponent {
     return `${parts[0]}.${frac.slice(0, 5)}...`;
   }
 
+
+
+  passiveStatus(row: any): string {
+    const s = row?.passiveSnapshot;
+    if (!s || !s.pool || s.pool === this.ZERO_ADDRESS.toLowerCase()) return 'No pool';
+    return s.active ? 'Active quote' : 'Pool only';
+  }
+
+  passiveQuote(row: any): string {
+    const s = row?.passiveSnapshot;
+    if (!s || !s.active) return '—';
+    const decimals = row?.market?.quoteTokenDecimals ?? 18;
+    const bid = s.bidSize > 0n ? `${this.ob.store.formatQuotePrice(s.bidPrice, decimals)} x ${this.ob.store.formatContracts(s.bidSize)}` : '—';
+    const ask = s.askSize > 0n ? `${this.ob.store.formatQuotePrice(s.askPrice, decimals)} x ${this.ob.store.formatContracts(s.askSize)}` : '—';
+    return `${bid} / ${ask}`;
+  }
+
+  passivePool(row: any): string {
+    const pool = row?.passiveSnapshot?.pool;
+    if (!pool || pool === this.ZERO_ADDRESS.toLowerCase()) return '—';
+    return this.shortAddress(pool);
+  }
 
   formatMultiplier(m: any): string {
     const raw = BigInt(m?.market?.multiplier ?? 0n);
@@ -347,6 +371,9 @@ export class FuturesTradeComponent {
       { label: 'Current required margin / unit', value: this.formatCurrentRequiredMarginPerUnit(row) },
       { label: 'Initial margin', value: this.formatPercentBps(m.initialMarginBps) },
       { label: 'Maintenance margin', value: this.formatPercentBps(m.maintenanceMarginBps) },
+      { label: 'Passive pool', value: row?.passiveSnapshot?.pool || '—', mono: true, copyable: !!row?.passiveSnapshot?.pool, fullWidth: true },
+      { label: 'Passive bid / ask', value: this.passiveQuote(row), fullWidth: true },
+      { label: 'Passive valid until', value: row?.passiveSnapshot?.validUntil ? this.formatTs(row.passiveSnapshot.validUntil) : '—' },
     ];
   }
 

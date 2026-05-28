@@ -10,6 +10,7 @@ export type ContractName =
   | 'EthUsdChainlinkOracle'
   | 'LinkUsdChainlinkOracle'
   | 'SethxFeeConversionOracle'
+  | 'SethxTimelock'
   | 'TimelockControllerWrapper'
   | 'DerivativeSettlementOracle'
   | 'QuoteCollateralOracle'
@@ -40,6 +41,7 @@ export type ContractName =
   | 'FuturesValuationAdapter'
   | 'ValuationModule'
   | 'LiquidationEngine'
+  | 'PassiveFuturesSnapshotPublisher'
   | 'PassiveFuturesPoolFactory'
   | 'RiskModule'
   | 'OptionsValuationAdapter'
@@ -72,6 +74,7 @@ export const CONTRACT_NAMES = [
   'ValuationModule',
   'FuturesValuationAdapter',
   'OptionsValuationAdapter',
+  'PassiveFuturesSnapshotPublisher',
   'PassiveFuturesPoolFactory',
   'SethxToken',
   'MockERC20A',
@@ -84,4 +87,7 @@ export const CONTRACT_NAMES = [
   'EthUsdChainlinkOracle',
   'LinkUsdChainlinkOracle',
   'SethxFeeConversionOracle',
+  'SethxTimelock',
+  'TimelockControllerWrapper',
+  'SethxGovernor',
 ] as const satisfies readonly ContractName[];
