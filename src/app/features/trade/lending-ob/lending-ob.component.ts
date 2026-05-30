@@ -21,7 +21,9 @@ import { TradeSettingsService } from '../../../services/shared/trade-settings.se
 import { AccountsChainService } from '../../../services/onchain/accounts.service';
 import { LendingMarketSelectionService } from '../../../services/shared/lending-market/lending-market-selection.service';
 import { TriggerService } from '../../../services/shared/trigger.service';
+import { MarketTimeService } from '../../../services/shared/market-time.service';
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
+import { TreasuryModeService } from '../../../services/shared/treasury-mode.service';
 import { LendingOrderModalComponent } from '../../../core/overlay/order-modal/lendingorder-modal.component';
 import type { LendingOrderModalData } from '../../../../types/order_flow/order-flow.types';
 
@@ -49,7 +51,9 @@ export class LendingObComponent {
   private readonly accounts = inject(AccountsChainService);
   private readonly selection = inject(LendingMarketSelectionService);
   private readonly trigger = inject(TriggerService);
+  private readonly marketTime = inject(MarketTimeService);
   private readonly flow = inject(OrderFlowService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   readonly ethers = ethers;
   readonly view = signal<LendingView>('markets');
@@ -63,10 +67,13 @@ export class LendingObComponent {
   readonly marketLimit = signal(25);
   readonly marketsWithMyOrdersOnly = signal(false);
   readonly myOrdersOnly = signal(false);
+  readonly ladderFocus = signal(5);
+  readonly showAllRows = signal(false);
+  readonly riskTierInfoOpen = signal(false);
 
-  readonly selectedAccount = this.settings.selectedAccountId;
+  readonly selectedAccount = computed(() => this.treasuryMode.canUse('lend') ? this.treasuryMode.selectedTreasuryAccount() : this.settings.selectedAccountId());
 
-  readonly marketSpecs = computed(() => this.buildMarketSpecs());
+  readonly marketSpecs = computed(() => this.buildMarketSpecs(this.marketTime.chainTimestamp()));
 
   readonly marketRowsResource = resource<
     LendingMarketRow[],
@@ -155,11 +162,12 @@ export class LendingObComponent {
   readonly myBorrowOrders = computed(() => this.myOpenOrders().filter((order) => order.side === 1));
 
   readonly selectedAccountRecord = computed(() => {
+    if (this.treasuryMode.canUse('lend')) return null;
     const key = this.selectedAccount();
     return this.accounts.accountRecords().find((account) => account.address === key) ?? null;
   });
 
-  readonly isSelectedAccountLending = computed(() => this.selectedAccountRecord()?.type === 'lending');
+  readonly isSelectedAccountLending = computed(() => !this.treasuryMode.canUse('lend') && this.selectedAccountRecord()?.type === 'lending');
 
   readonly pageMetrics = computed<MarketSummaryMetric[]>(() => {
     const rows = this.configuredMarketRows();
@@ -183,6 +191,7 @@ export class LendingObComponent {
       { label: 'Best lend APR', value: this.bestLendRateText(row), tone: 'up' },
       { label: 'Best borrow APR', value: this.bestBorrowRateText(row), tone: 'down' },
       { label: 'Spread', value: this.rateSpreadText(row) },
+      { label: 'Total principal', value: this.formatEth(row.totalPrincipal) },
       { label: 'Outstanding', value: this.formatEth(row.outstandingFaceValue) },
       { label: 'Recovery', value: this.recoveryRateText(row) },
       { label: 'Status', value: this.marketStatusText(row), tone: row.active ? 'up' : 'muted' },
@@ -213,7 +222,7 @@ export class LendingObComponent {
       { label: 'Market key', value: row.marketKey, mono: true },
       { label: 'Borrow asset', value: row.tokenLabel },
       { label: 'Maturity', value: this.expiryLabel(row.expiry) },
-      { label: 'Risk level', value: `R${row.riskLevel}` },
+      { label: 'Risk tier', value: `R${row.riskLevel}` },
       { label: 'Max LTV', value: this.formatBps(row.maxLtvBps) },
       { label: 'Liquidation LTV', value: this.formatBps(row.liquidationLtvBps) },
       { label: 'Total principal', value: this.formatEth(row.totalPrincipal) },
@@ -237,6 +246,14 @@ export class LendingObComponent {
 
   setMyOrdersOnly(value: boolean): void {
     this.myOrdersOnly.set(!!value);
+  }
+
+  setLadderFocus(value: number): void {
+    this.ladderFocus.set(Math.max(3, Math.min(20, Number(value) || 5)));
+  }
+
+  toggleShowAllRows(): void {
+    this.showAllRows.update((v) => !v);
   }
 
   marketsPageLabel(): string {
@@ -305,13 +322,17 @@ export class LendingObComponent {
     this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: !curr[marketKey] }));
   }
 
+  closeMarketInfo(marketKey: string): void {
+    this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: false }));
+  }
+
   isMarketInfoOpen(marketKey: string): boolean {
-    return !!this.expandedMarketInfo()[marketKey];
+    return !!this.expandedMarketInfo()[marketKey] || this.hoveredMarketKey() === marketKey;
   }
 
 
   canUseMarket(row: LendingMarketRow): boolean {
-    const now = Math.floor(Date.now() / 1000);
+    const now = this.marketTime.chainTimestamp();
     return row.riskEnabled && !row.primarySettled && (!row.exists || row.active) && row.expiry > now;
   }
 
@@ -342,7 +363,7 @@ export class LendingObComponent {
       riskLevel: row?.riskLevel ?? order.riskLevel,
       marketExpiry: row?.expiry ?? null,
       defaultOrderId: order.orderId.toString(),
-      selectedAccountType: this.selectedAccountRecord()?.type ?? null,
+      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -358,7 +379,7 @@ export class LendingObComponent {
       riskLevel: market?.riskLevel ?? row.market?.riskLevel ?? null,
       marketExpiry: market?.expiry ?? (row.market ? Number(row.market.expiry) : null),
       defaultAmountHuman: ethers.formatEther(row.faceValue),
-      selectedAccountType: this.selectedAccountRecord()?.type ?? null,
+      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -386,7 +407,7 @@ export class LendingObComponent {
       defaultPrincipalHuman: ethers.formatEther(row.faceValue),
       repayMarketKey: row.marketKey,
       repayMarketLabel: oldMarket ? this.marketLabel(oldMarket) : this.debtMarketLabel(row),
-      selectedAccountType: this.selectedAccountRecord()?.type ?? null,
+      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -402,7 +423,7 @@ export class LendingObComponent {
       marketExpiry: market?.expiry ?? (row.market ? Number(row.market.expiry) : null),
       defaultBondIndex: row.bondIndex.toString(),
       defaultClaimAction: action,
-      selectedAccountType: this.selectedAccountRecord()?.type ?? null,
+      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -445,17 +466,31 @@ export class LendingObComponent {
     return 'is-warning';
   }
 
+  toggleRiskTierInfo(ev?: Event): void {
+    ev?.stopPropagation?.();
+    this.riskTierInfoOpen.update((open) => !open);
+  }
+
+  riskTierLtvHelp(row: LendingMarketRow | null = this.selectedMarket()): string {
+    const tier = row?.riskLevel ? `R${row.riskLevel}` : 'Selected tier';
+    const maxLtv = row ? this.formatBps(row.maxLtvBps) : '—';
+    const liqLtv = row ? this.formatBps(row.liquidationLtvBps) : '—';
+    return `${tier}: Max LTV ${maxLtv}; Liquidation LTV ${liqLtv}.`;
+  }
+
   marketInfoItems(row: LendingMarketRow): MarketDetailItem[] {
     return [
       { label: 'Market key', value: row.marketKey, mono: true, copyable: true, fullWidth: true },
       { label: 'Borrow asset', value: row.tokenLabel },
       { label: 'Maturity', value: this.expiryLabel(row.expiry) },
-      { label: 'Risk level', value: `R${row.riskLevel}` },
+      { label: 'Risk tier', value: `R${row.riskLevel}` },
       { label: 'Max LTV', value: this.formatBps(row.maxLtvBps) },
       { label: 'Liquidation LTV', value: this.formatBps(row.liquidationLtvBps) },
       { label: 'Best lend APR', value: this.bestLendRateText(row) },
       { label: 'Best borrow APR', value: this.bestBorrowRateText(row) },
+      { label: 'Total principal value', value: this.formatEth(row.totalPrincipal) },
       { label: 'Matched principal', value: this.formatEth(row.totalPrincipal) },
+      { label: 'Outstanding principal', value: this.formatEth(row.outstandingPrincipal) },
       { label: 'Outstanding face', value: this.formatEth(row.outstandingFaceValue) },
       { label: 'Utilization', value: this.utilizationText(row) },
       { label: 'Recovery estimate', value: this.recoveryRateText(row) },
@@ -503,6 +538,7 @@ export class LendingObComponent {
 
   selectedAccountLabel(): string {
     const account = this.selectedAccount();
+    if (this.treasuryMode.canUse('lend')) return account ? `Treasury ${this.treasuryMode.short(account)}` : 'No treasury account selected';
     return account ? this.accounts.accountLabel(account) : 'No account selected';
   }
 
@@ -582,7 +618,7 @@ export class LendingObComponent {
   timeLeftText(unixSeconds: number | bigint | null | undefined): string {
     const seconds = Number(unixSeconds ?? 0);
     if (!seconds) return '—';
-    const diff = seconds - Math.floor(Date.now() / 1000);
+    const diff = seconds - this.marketTime.chainTimestamp();
     if (diff <= 0) return 'Matured';
     const days = Math.floor(diff / 86400);
     if (days > 0) return `${days}d`;
@@ -608,6 +644,44 @@ export class LendingObComponent {
 
   trackMarket = (_: number, row: LendingMarketRow) => row.marketKey;
   trackOrder = (_: number, order: LendingOrder) => order.orderId.toString();
+
+  lendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
+    const lends = this.selectedLendOrders();
+    const borrows = this.selectedBorrowOrders();
+    const length = Math.max(lends.length, borrows.length);
+    return Array.from({ length }, (_, index) => ({
+      key: `${lends[index]?.orderId?.toString() ?? 'empty-lend'}:${borrows[index]?.orderId?.toString() ?? 'empty-borrow'}:${index}`,
+      lend: lends[index] ?? null,
+      borrow: borrows[index] ?? null,
+    }));
+  }
+
+  focusLendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
+    return this.lendingBookRows().slice(0, this.ladderFocus());
+  }
+
+  restLendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
+    return this.lendingBookRows().slice(this.ladderFocus());
+  }
+
+  selectedMarketDebts(): LendingDebtRow[] {
+    const key = this.selectedMarketKey();
+    if (!key) return [];
+    return this.accountSnapshot().debts.filter((row) => row.marketKey.toLowerCase() === key.toLowerCase());
+  }
+
+  selectedMarketBonds(): LendingBondLotRow[] {
+    const key = this.selectedMarketKey();
+    if (!key) return [];
+    return this.accountSnapshot().bonds.filter((row) => row.marketKey.toLowerCase() === key.toLowerCase());
+  }
+
+  selectedMarketHasPosition(): boolean {
+    return this.selectedMarketDebts().length > 0 || this.selectedMarketBonds().length > 0;
+  }
+
+  trackLendingBookRow = (_: number, row: { key: string }) => row.key;
+
   trackDebt = (_: number, row: LendingDebtRow) => row.marketKey;
   trackBond = (_: number, row: LendingBondLotRow) => row.bondIndex.toString();
 
@@ -618,6 +692,8 @@ export class LendingObComponent {
       label: this.marketLabel(row),
       riskLevel: row.riskLevel,
       expiry: row.expiry,
+      maxLtvBps: row.maxLtvBps,
+      liquidationLtvBps: row.liquidationLtvBps,
     });
   }
 
@@ -632,10 +708,26 @@ export class LendingObComponent {
       marketLabel: this.marketLabel(row),
       riskLevel: row.riskLevel,
       marketExpiry: row.expiry,
+      maxLtvBps: row.maxLtvBps,
+      liquidationLtvBps: row.liquidationLtvBps,
+      riskTierConfigs: this.riskTierConfigsForExpiry(row.expiry),
       defaultSide,
-      selectedAccountType: this.selectedAccountRecord()?.type ?? null,
+      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
       selectedAccountLabel: this.selectedAccountLabel(),
     };
+  }
+
+
+  private riskTierConfigsForExpiry(expiry: number): Array<{ riskLevel: number; maxLtvBps: number | null; liquidationLtvBps: number | null }> {
+    const byRisk = new Map<number, { riskLevel: number; maxLtvBps: number | null; liquidationLtvBps: number | null }>();
+    for (const candidate of this.marketRows().filter((market) => market.expiry === expiry && market.riskEnabled)) {
+      byRisk.set(candidate.riskLevel, {
+        riskLevel: candidate.riskLevel,
+        maxLtvBps: Number.isFinite(Number(candidate.maxLtvBps)) ? Number(candidate.maxLtvBps) : null,
+        liquidationLtvBps: Number.isFinite(Number(candidate.liquidationLtvBps)) ? Number(candidate.liquidationLtvBps) : null,
+      });
+    }
+    return [...byRisk.values()].sort((a, b) => a.riskLevel - b.riskLevel);
   }
 
   private openLendingModal(data: LendingOrderModalData): void {
@@ -643,8 +735,9 @@ export class LendingObComponent {
   }
 
   private shouldDisplayMarket(row: LendingMarketRow): boolean {
-    // Show actual created markets even if their risk tier is later disabled so users can still monitor, repay, cancel, and redeem.
-    // Show uncreated markets only when governance has enabled the risk tier and the first order can lazily create the market.
+    // Hide matured/closed market specs from the active market list.
+    // Existing positions and orders remain visible in My Orders, Loans, and Bonds.
+    if (!this.marketTime.isFutureTimestamp(row.expiry)) return false;
     return row.exists || row.riskEnabled;
   }
 
@@ -673,8 +766,8 @@ export class LendingObComponent {
     }));
   }
 
-  private buildMarketSpecs(): LendingMarketSpec[] {
-    const expiries = this.nextMonthlyExpiries(6);
+  private buildMarketSpecs(chainTimestamp: number): LendingMarketSpec[] {
+    const expiries = this.nextMonthlyExpiries(6, chainTimestamp);
     const specs: LendingMarketSpec[] = [];
     for (const expiry of expiries) {
       for (const riskLevel of RISK_LEVELS) {
@@ -684,9 +777,9 @@ export class LendingObComponent {
     return specs;
   }
 
-  private nextMonthlyExpiries(count: number): number[] {
+  private nextMonthlyExpiries(count: number, chainTimestamp: number): number[] {
     const out: number[] = [];
-    const now = new Date();
+    const now = new Date(chainTimestamp * 1000);
     let monthOffset = 0;
 
     while (out.length < count && monthOffset < count + 18) {
@@ -694,7 +787,7 @@ export class LendingObComponent {
       const m = now.getUTCMonth() + monthOffset;
       const expiry = this.lastFridayAtNoonUtc(y, m);
       const expirySeconds = Math.floor(expiry.getTime() / 1000);
-      if (expirySeconds > Math.floor(Date.now() / 1000)) out.push(expirySeconds);
+      if (expirySeconds > chainTimestamp) out.push(expirySeconds);
       monthOffset++;
     }
 

@@ -3,7 +3,7 @@
     <div>
       <div class="text-base font-bold text-white">{{ titleText() }}</div>
       <div class="mt-1 text-xs leading-relaxed text-frame">
-        Enter an amount, review the transaction details, then confirm with your wallet.
+        Enter the details, review the transaction, then confirm with your wallet.
       </div>
     </div>
 
@@ -45,9 +45,35 @@
       </section>
     }
 
-    <section class="space-y-2 rounded-xl border border-trade-border bg-background/60 p-3">
-      <div class="flex items-center justify-between gap-3">
-        <div class="text-xs font-bold uppercase tracking-[0.18em] text-white">Amount</div>
+    @if (data.asset === "NFT") {
+      <section class="space-y-2 rounded-xl border border-trade-border bg-background/60 p-3">
+        <div class="text-xs font-bold uppercase tracking-[0.18em] text-white">NFT</div>
+
+        <input
+          class="sethx-input"
+          placeholder="NFT contract address"
+          [ngModel]="nftAddress()"
+          (ngModelChange)="nftAddress.set($event)"
+        />
+
+        <input
+          class="sethx-input"
+          placeholder="Token ID"
+          inputmode="numeric"
+          [ngModel]="nftTokenId()"
+          (ngModelChange)="nftTokenId.set($event)"
+        />
+
+        @if (nftAddress() && !isValidNftAddress()) {
+          <div class="text-[11px] text-red-500">Invalid NFT contract address.</div>
+        }
+      </section>
+    }
+
+    @if (data.asset !== "NFT") {
+      <section class="space-y-2 rounded-xl border border-trade-border bg-background/60 p-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-xs font-bold uppercase tracking-[0.18em] text-white">Amount</div>
         <button type="button" class="text-[11px] text-textlight hover:text-white" (click)="refreshWalletBalance()">Refresh wallet</button>
       </div>
       <input
@@ -61,6 +87,7 @@
         <span class="text-white">{{ walletBalanceText() }}</span>
       </div>
     </section>
+    }
 
     @if (error()) {
       <div class="rounded border border-down/50 bg-background/70 p-3 text-[11px] text-down break-words">
@@ -89,8 +116,9 @@
       type="button"
       class="sethx-button-primary w-auto min-w-[120px]"
       [disabled]="
-        !amount() ||
+        (data.asset !== 'NFT' && !amount()) ||
         (data.asset === 'TOKEN' && !isValidTokenAddress()) ||
+        (data.asset === 'NFT' && (!isValidNftAddress() || !nftTokenId())) ||
         !selectedAccount() ||
         writing()
       "

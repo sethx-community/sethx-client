@@ -6,6 +6,8 @@ import { OptionsOrderModalComponent } from '../../../core/overlay/order-modal/op
 import { LadderRow } from '../../../services/shared/options-orderbook/options-orderbook.store';
 import { OrderbookSelectionService, MarketDetailPanelComponent, SpotSummaryHeaderComponent, type MarketDetailItem, type SpotSummaryMetric } from '../../../shared/orderbook';
 import { OrderReviewFlowComponent } from '../../../shared/order-flow';
+import { TokenService } from '../../../services/shared/token.service';
+import { norm } from '../../../core/tokens/token-normalize';
 
 import {
   optionsPageActions,
@@ -27,6 +29,7 @@ export class OptionsTradeComponent {
   readonly ob = inject(OptionsOrderBookFacade);
   readonly flow = inject(OrderFlowService);
   readonly orderSelection = inject(OrderbookSelectionService);
+  private readonly tokens = inject(TokenService);
 
   // ================= OrderFlowLauncher =================
   readonly ctx: OptionsTradePageCtx = {};
@@ -36,6 +39,8 @@ export class OptionsTradeComponent {
   readonly expandedMarketInfo = signal<Record<string, boolean>>({});
   readonly hoveredMarketKey = signal<string | null>(null);
   readonly copiedValue = signal<string | null>(null);
+  readonly mainTokens = this.tokens.main;
+  readonly whitelistTokens = this.tokens.whitelist;
 
   // ================= Hover / Pin (order details) =================
   readonly hoveredOrder = signal<any | null>(null);
@@ -128,6 +133,20 @@ export class OptionsTradeComponent {
     });
   }
 
+  optionLadderRows(): Array<{ key: string; bid: LadderRow | null; ask: LadderRow | null }> {
+    const bids = this.ob.store.bids();
+    const asks = this.ob.store.asks();
+    const length = Math.max(bids.length, asks.length);
+    return Array.from({ length }, (_, index) => ({
+      key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`,
+      bid: bids[index] ?? null,
+      ask: asks[index] ?? null,
+    }));
+  }
+
+  trackOptionLadderRow = (_: number, row: { key: string }) => row.key;
+
+
   marketsMetrics(): SpotSummaryMetric[] {
     return [
       { label: 'Markets', value: this.ob.store.visibleMarkets().length },
@@ -135,6 +154,12 @@ export class OptionsTradeComponent {
       { label: 'My Orders', value: this.ob.store.myOrders().length },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
+  }
+
+  selectedMarketPositions(): any[] {
+    const key = this.ob.store.selectedMarketKey();
+    if (!key) return [];
+    return this.ob.store.myPositions().filter((p: any) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
   }
 
   positionsMetrics(): SpotSummaryMetric[] {
@@ -221,6 +246,35 @@ export class OptionsTradeComponent {
     }
   }
 
+  optionInfo(row: any): any {
+    return row?.market ?? row?.derived ?? row?.order ?? null;
+  }
+
+  optionAssetToken(row: any): string {
+    return this.optionInfo(row)?.assetToken ?? '';
+  }
+
+  optionQuoteToken(row: any): string {
+    return this.optionInfo(row)?.quoteToken ?? '';
+  }
+
+  optionTypeLabel(row: any): string {
+    return Number(this.optionInfo(row)?.optionType ?? 0) === 0 ? 'CALL' : 'PUT';
+  }
+
+  orderOptionTypeLabel(row: LadderRow | null): string {
+    return Number(row?.order?.optionType ?? 0) === 0 ? 'CALL' : 'PUT';
+  }
+
+  isWhitelistedToken(address: string | null | undefined): boolean {
+    const key = norm(String(address ?? ''));
+    if (!key) return false;
+    return (
+      this.mainTokens().some((token) => norm(token.address) === key) ||
+      this.whitelistTokens().some((token) => norm(token.address) === key)
+    );
+  }
+
   orderMarketTitle(row: LadderRow | null): string {
     if (!row?.order) return '—';
     const type = Number(row.order.optionType ?? 0) === 0 ? 'CALL' : 'PUT';
@@ -242,6 +296,11 @@ export class OptionsTradeComponent {
   toggleMarketInfo(marketKey: string, ev?: Event): void {
     ev?.stopPropagation?.();
     this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: !curr[marketKey] }));
+  }
+
+  closeMarketInfo(marketKey: string): void {
+    this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: false }));
+    if (this.hoveredMarketKey() === marketKey) this.hoveredMarketKey.set(null);
   }
 
   isMarketInfoOpen(marketKey: string): boolean {
@@ -272,16 +331,13 @@ export class OptionsTradeComponent {
   optionMarketDetailItems(row: any): MarketDetailItem[] {
     const m = row?.market ?? row?.derived ?? {};
     return [
-      { label: 'Market key', value: row?.marketKey, mono: true },
+      { label: 'Market key', value: row?.marketKey, mono: true, copyable: true, fullWidth: true },
       { label: 'Type', value: (m.optionType ?? 0) === 0 ? 'CALL' : 'PUT' },
       { label: 'Asset token', value: this.ob.store.tokenLabel(m.assetToken) },
       { label: 'Quote token', value: this.ob.store.tokenLabel(m.quoteToken) },
-      { label: 'Oracle address', value: m.oracle || '—', mono: true },
-      { label: 'Latest oracle price', value: this.latestOraclePriceLabel(row) },
-      { label: 'Latest oracle update', value: this.latestOracleTimeLabel(row) },
       { label: 'Strike', value: m.strikePrice !== undefined ? this.ob.store.formatPriceFixed(m.strikePrice, m.assetToken, m.quoteToken) : '—' },
       { label: 'Expiry', value: this.formatExpiry(m.expiry ?? m.optionExpiry) },
-      { label: 'Settlement', value: m.settled ? this.latestOraclePriceLabel(row) : 'Open' },
+      { label: 'Settlement', value: m.settled ? 'Settled' : 'Open' },
     ];
   }
 

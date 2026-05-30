@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ethers } from 'ethers';
+import { ethers, JsonRpcProvider } from 'ethers';
 
 import type {
   ConfirmationField,
@@ -7,6 +7,10 @@ import type {
 } from '../../core/modals/confirmation/confirmation-modal.component';
 import { ETH_ADDRESS } from '../shared/main.tokens';
 import { TriggerService } from '../shared/trigger.service';
+import { WalletConnectService } from '../../wallet/wallet-connect.service';
+import { CURRENT_NETWORK } from '../../constants/network.config';
+import { NETWORKS } from '../../constants/networks';
+import { parseExpirySelection, resolveExpiryForContract } from '../../shared/expiry/expiry-settings';
 import { TradeSettingsService } from '../shared/trade-settings.service';
 import { TransactionReceiptService } from '../../shared/transaction-receipt';
 import { AccountsChainService } from './accounts.service';
@@ -84,6 +88,7 @@ export class LendingOrderDraftService {
   private readonly portfolio = inject(PortfolioService);
   private readonly valuation = inject(ValuationModuleReadService);
   private readonly trigger = inject(TriggerService);
+  private readonly wallet = inject(WalletConnectService);
   readonly txReceipt = inject(TransactionReceiptService);
 
   readonly mode = signal<LendingDraftMode>('place');
@@ -143,10 +148,8 @@ export class LendingOrderDraftService {
 
     if (data.defaultOrderExpiry) {
       this.orderExpirySec.set(String(data.defaultOrderExpiry));
-    } else if (data.defaultMarketExpiry) {
-      this.orderExpirySec.set(String(this.defaultOrderExpiry(data.defaultMarketExpiry)));
     } else {
-      this.orderExpirySec.set('');
+      this.orderExpirySec.set('rel:604800');
     }
 
     this.txReceipt.clear();
@@ -222,13 +225,15 @@ export class LendingOrderDraftService {
     const principal = parsePositiveEth(this.principalHuman(), 'Principal');
     const rateBps = parseAprBps(this.aprPercent());
     const marketExpiry = parsePositiveInteger(this.marketExpirySec(), 'Market maturity');
-    const orderExpiry = parsePositiveInteger(this.orderExpirySec(), 'Order expiry');
     const riskLevel = Number(parsePositiveInteger(this.riskLevel(), 'Risk level'));
     const side = this.side();
+    const chainNow = await this.latestChainTimestamp();
+    const orderExpiry = this.resolveOrderExpiry(chainNow);
 
-    const now = BigInt(Math.floor(Date.now() / 1000));
-    if (marketExpiry <= now) throw new Error('Market maturity must be in the future.');
-    if (orderExpiry <= now) throw new Error('Order expiry must be in the future.');
+    if (chainNow === null) throw new Error('Could not read connected chain time. Try refreshing and reconnecting your wallet.');
+    if (marketExpiry <= chainNow) throw new Error('Market maturity must be in the future for the connected chain.');
+    if (orderExpiry <= 0n) throw new Error('Order expiry is required.');
+    if (orderExpiry <= chainNow) throw new Error(`Order expiry must be in the future for the connected chain. Chain time: ${unixToUtcDate(chainNow)}.`);
     if (orderExpiry > marketExpiry) throw new Error('Order expiry cannot be later than market maturity.');
     if (side === 1 && !this.isLendingAccount()) {
       throw new Error('Borrow orders require a lending account. Select a lending account before borrowing.');
@@ -261,6 +266,7 @@ export class LendingOrderDraftService {
       { label: 'Borrow asset', value: 'ETH' },
       { label: 'Maturity', value: unixToUtcDate(marketExpiry) },
       { label: 'Risk tier', value: `R${riskLevel}` },
+      ...this.riskTierFields(borrowPreview),
       { label: 'Principal', value: `${this.principalHuman()} ETH` },
       { label: 'APR', value: formatAprFromBps(rateBps) },
       { label: 'Order expiry', value: unixToUtcDate(orderExpiry) },
@@ -288,6 +294,35 @@ export class LendingOrderDraftService {
     });
   }
 
+
+
+  private resolveOrderExpiry(chainNow: bigint | null): bigint {
+    return resolveExpiryForContract(this.orderExpirySec(), chainNow);
+  }
+
+  private async latestChainTimestamp(): Promise<bigint | null> {
+    try {
+      let provider: any = this.wallet.provider?.() ?? null;
+      if (!provider) {
+        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
+        provider = new JsonRpcProvider(rpcUrl);
+      }
+      const block = await provider.getBlock('latest');
+      const ts = block?.timestamp;
+      return typeof ts === 'number' && Number.isFinite(ts) && ts > 0 ? BigInt(ts) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private riskTierFields(preview: BorrowValuationPreview | null): ConfirmationField[] {
+    const tier = preview?.riskTier ?? null;
+    if (!tier) return [];
+    return [
+      { label: 'Max LTV', value: this.formatBps(tier.maxLtvBps), tone: 'muted' },
+      { label: 'Liquidation LTV', value: this.formatBps(tier.liquidationLtvBps), tone: 'muted' },
+    ];
+  }
 
   private borrowValuationFields(preview: BorrowValuationPreview | null): ConfirmationField[] {
     if (!preview) return [];
@@ -452,10 +487,14 @@ export class LendingOrderDraftService {
 
   private availableEthRaw(): bigint {
     const balances = this.portfolio.accountBalances?.() ?? {};
-    const eth = balances[n(ETH_ADDRESS)];
+    const eth =
+      balances[n(ETH_ADDRESS)] ??
+      balances[n(ETH_BORROW_TOKEN)] ??
+      balances['eth'] ??
+      balances['native'];
     if (!eth) return 0n;
-    const balance = eth.balance ?? 0n;
-    const locked = eth.locked ?? 0n;
+    const balance = BigInt(eth.balance ?? 0n);
+    const locked = BigInt(eth.locked ?? 0n);
     return balance > locked ? balance - locked : 0n;
   }
 }

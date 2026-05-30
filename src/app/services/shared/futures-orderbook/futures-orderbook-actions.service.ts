@@ -1,4 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
+import { ethers } from 'ethers';
 
 import type {
   ConfirmationField,
@@ -105,9 +106,9 @@ export class FuturesOrderBookActionsService {
     const amountInput = this.store.fillAmountByOrderId(order.orderId).trim();
     let amount: bigint;
     try {
-      amount = BigInt(amountInput || '0');
+      amount = ethers.parseUnits((amountInput || '0').replace(',', '.'), 18);
     } catch {
-      this.confirmError.set('Enter a whole contract amount to fill.');
+      this.confirmError.set('Enter a valid contract amount to fill.');
       this.confirmOpen.set(true);
       return;
     }
@@ -132,7 +133,7 @@ export class FuturesOrderBookActionsService {
       { label: 'Maker side', value: order.side === 0 ? 'Buy / Long' : 'Sell / Short' },
       { label: 'Your taker side', value: actionLabel },
       { label: 'Market key', value: order.marketKey, tone: 'muted' },
-      { label: 'Fill amount', value: amount.toString() },
+      { label: 'Fill amount', value: this.store.formatContracts(amount) },
       { label: 'Limit price', value: `${this.formatOrderPrice(order)} ETH` },
       { label: 'Payment token', value: 'ETH' },
       {
@@ -159,7 +160,7 @@ export class FuturesOrderBookActionsService {
   }
 
   private formatOrderPrice(order: FuturesOrder): string {
-    const decimals = this.store.selectedMarketRow()?.market?.quoteTokenDecimals ?? 18;
-    return this.store.formatQuotePrice(order.price, decimals);
+    const decimals = this.store.selectedMarketRow()?.market?.oraclePriceDecimals ?? 18;
+    return this.store.formatOraclePrice(order.price, decimals);
   }
 }

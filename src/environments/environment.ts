@@ -8,6 +8,7 @@ export const environment: SethxClientEnvironment = {
   chainName: 'Hardhat Local',
   nativeCurrencySymbol: 'ETH',
   rpcUrl: 'http://127.0.0.1:8545',
+  websocketRpcUrl: 'ws://127.0.0.1:8545',
   blockExplorerUrl: '',
 
   siteUrl: 'http://localhost:4200',
@@ -18,5 +19,4 @@ export const environment: SethxClientEnvironment = {
 
   reownProjectId: 'a06102eecc532a455cd608c2934914c2',
 
-  contracts: {},
 };

@@ -6,7 +6,7 @@
 
   <div class="sethx-modal-body">
     <div class="sethx-panel-copy">
-      Futures orders are routed through the selected account contract. The form captures market, side, price, amount, and expiry; the shared order-flow review handles margin, fees, locks, balances, receipt, and confirmation.
+      Futures orders are routed through the selected account contract. Select a futures market or paste an existing market key, then choose side, price, amount, and expiry; the shared order-flow review handles margin, fees, locks, balances, receipt, and confirmation.
     </div>
 
     @if (vm.mode() === "cancel") {
@@ -37,7 +37,7 @@
             (ngModelChange)="vm.marketKey.set($event)"
             placeholder="Or paste market key / market identifier"
           />
-          <div class="sethx-meta-text sethx-field-helper">Review shows the market ticker/name and full market key before signing.</div>
+          <div class="sethx-meta-text sethx-field-helper">Select a market from the list or paste an existing market key. Review shows the market ticker/name and full market key before signing.</div>
         </div>
 
         <div>
@@ -141,7 +141,7 @@
       [explorerUrl]="txReceipt.explorerTxUrl()"
       [kind]="isQuote ? 'quote' : 'transaction'"
       riskNote="Futures execution can lock margin, P&L buffer, and fee budgets. Verify market, side, size, price, and expiry before signing."
-      (cancel)="vm.closeConfirm()"
+      (cancel)="handleReviewClose()"
       (confirm)="confirmAndClose()"
     />
   }

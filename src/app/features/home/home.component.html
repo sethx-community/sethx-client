@@ -1,73 +1,56 @@
 <div class="sethx-page space-y-5">
-  <header class="sethx-page-header overflow-hidden">
-    <div class="sethx-kicker">SETHX Client</div>
-    <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-      <div>
-        <h1 class="sethx-page-title">Local protocol client</h1>
-        <p class="sethx-page-copy mt-3 max-w-3xl">
-          This app is the local SETHX client for interacting with deployed smart contracts. Use it to review protocol state, manage accounts and assets, and access the configured market modules for the connected network.
-        </p>
-        <div class="mt-5 flex flex-wrap gap-3">
-          <a [routerLink]="['/', { outlets: { primary: ['accounts'], 'right-panel': ['accountsRightPanel'] } }]" class="sethx-button-primary">Open accounts</a>
-          <a [routerLink]="['/', { outlets: { primary: ['assets'], 'right-panel': ['assetsRightPanel'] } }]" class="sethx-button-secondary">View assets</a>
-          <a [routerLink]="['/', { outlets: { primary: ['protocol'], 'right-panel': null } }]" class="sethx-button-secondary">Review protocol</a>
-        </div>
-      </div>
-
-      <div class="rounded-3xl border border-trade-border bg-background/70 p-5">
-        <div class="sethx-kicker">Connected environment</div>
-        <dl class="mt-4 space-y-3 text-sm">
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-text-muted">Network</dt>
-            <dd class="font-semibold text-white">{{ networkName }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-text-muted">Chain ID</dt>
-            <dd class="font-semibold text-white">{{ chainId }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-text-muted">Wallet</dt>
-            <dd class="font-semibold text-white">{{ short(wallet.address()) }}</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-text-muted">Configured contracts</dt>
-            <dd class="font-semibold text-white">{{ configuredContractCount() }}</dd>
-          </div>
-        </dl>
-      </div>
+  <section class="sethx-table-card space-y-3" aria-labelledby="intro-title">
+    <div>
+      <div class="sethx-kicker">SETHX Client</div>
+      <h1 id="intro-title" class="sethx-page-title mt-2">A workspace for onchain actions</h1>
     </div>
-  </header>
-
-  <section class="grid gap-4 lg:grid-cols-3">
-    <article class="sethx-table-card">
-      <div class="sethx-kicker">Accounts</div>
-      <h2 class="sethx-section-title mt-2">Trading and lending accounts</h2>
-      <p class="sethx-page-copy mt-2">Create and manage protocol accounts, review vault access, and use wallet-scoped actions.</p>
-    </article>
-
-    <article class="sethx-table-card">
-      <div class="sethx-kicker">Markets</div>
-      <h2 class="sethx-section-title mt-2">{{ enabledProductCount() }} modules</h2>
-      <p class="sethx-page-copy mt-2">Token spot, NFT spot, futures, options, margin options, binary options, and lending modules are available from the left menu.</p>
-    </article>
-
-    <article class="sethx-table-card">
-      <div class="sethx-kicker">Safety</div>
-      <h2 class="sethx-section-title mt-2">Check before signing</h2>
-      <p class="sethx-page-copy mt-2">Always review network, contract addresses, calldata previews, and wallet confirmations before submitting transactions.</p>
-    </article>
+    <p class="sethx-page-copy max-w-3xl">
+      Use this client to test your local/testnet environment or interact with the SETHX protocol on main net. Use the navigation menu on the left to explore. Always review your connected environment.
+    </p>
   </section>
 
-  <section class="sethx-table-card space-y-4">
+  <section class="sethx-table-card space-y-3" aria-labelledby="connected-environment-title">
     <div>
-      <h2 class="sethx-section-title">Configured modules</h2>
-      <p class="sethx-page-copy mt-1">The enabled modules are read from the client protocol configuration.</p>
+      <div class="sethx-kicker">Connected environment</div>
+      <h2 id="connected-environment-title" class="sethx-section-title mt-2">Connection details</h2>
     </div>
-    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <article *ngFor="let product of products()" class="rounded-xl border border-trade-border bg-background/60 p-4">
-        <div class="text-sm font-semibold text-white">{{ product.label }}</div>
-        <p class="mt-2 text-xs leading-relaxed text-text-muted">{{ product.summary }}</p>
-      </article>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div class="flex items-center justify-between gap-4">
+        <dt class="text-text-muted">Network</dt>
+        <dd class="font-semibold text-white">{{ networkName }}</dd>
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <dt class="text-text-muted">Chain ID</dt>
+        <dd class="font-semibold text-white">{{ chainId }}</dd>
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <dt class="text-text-muted">Wallet</dt>
+        <dd class="flex min-w-0 items-center gap-2 font-semibold text-white">
+          <button
+            type="button"
+            class="sethx-copy-address"
+            [disabled]="!wallet.address()"
+            [attr.aria-label]="wallet.address() ? 'Copy connected wallet address' : 'No wallet connected'"
+            (click)="copyWalletAddress()"
+          >
+            <span class="truncate">{{ short(wallet.address()) }}</span>
+            <span class="text-[10px] text-frame">{{ copiedWallet() ? 'Copied' : 'Copy' }}</span>
+          </button>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="sethx-table-card space-y-3" aria-labelledby="safety-title">
+    <div>
+      <div class="sethx-kicker">Safety instructions</div>
+      <h2 id="safety-title" class="sethx-section-title mt-2">Check before signing</h2>
     </div>
+    <p class="sethx-page-copy">
+      Always review the active network, wallet address, contract address, calldata preview, and wallet confirmation before submitting transactions.
+    </p>
+    <p class="sethx-page-copy">
+      Whenever your wallet supports it, add or use named contracts for the SETHX protocol addresses. Named contracts make it easier to recognize the intended contract before you approve or sign an action.
+    </p>
   </section>
 </div>

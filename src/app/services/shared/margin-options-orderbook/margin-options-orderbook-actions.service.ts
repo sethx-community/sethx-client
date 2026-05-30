@@ -254,13 +254,39 @@ export class MarginOptionsOrderBookActionsService {
     expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom';
     customExpiryUnix?: bigint | null;
     quoteOnly?: boolean;
+    newMarket?: { ticker: string; optionType: number; oracle: string; strikePriceHuman: string; marketExpiry: bigint; collateralBps: bigint } | null;
   }): Promise<void> {
-    const row = args.marketKey
-      ? this.store.activeMarkets().find((m) => m.marketKey === String(args.marketKey).toLowerCase()) ?? this.store.selectedMarket()
+    const requestedMarketKey = String(args.marketKey ?? '').toLowerCase();
+    const hasNewMarket = !!args.newMarket?.oracle && !!args.newMarket?.marketExpiry && !!args.newMarket?.strikePriceHuman;
+    const storeRow = requestedMarketKey
+      ? this.store.activeMarkets().find((m) => m.marketKey === requestedMarketKey) ?? this.store.selectedMarket()
       : this.store.selectedMarket();
-    if (!row) throw new Error('Select a margin option market');
+    const loadedMarket = !storeRow && requestedMarketKey ? await this.reads.getMarket(requestedMarketKey) : null;
+    const row = storeRow ?? (loadedMarket ? { marketKey: requestedMarketKey, market: loadedMarket } : null);
+    if (!row && !hasNewMarket) throw new Error('Select an existing margin option market or enter a new market oracle, expiry and strike');
 
-    const m = row.market;
+    const syntheticMarket = hasNewMarket ? {
+      initialized: false,
+      active: true,
+      settled: false,
+      optionType: BigInt(args.newMarket!.optionType),
+      ticker: args.newMarket!.ticker,
+      oracle: ethers.getAddress(args.newMarket!.oracle),
+      paymentToken: ZERO,
+      oraclePriceDecimals: 18,
+      paymentTokenDecimals: 18,
+      strikePrice: ethers.parseUnits(String(args.newMarket!.strikePriceHuman).replace(',', '.'), 18),
+      expiry: args.newMarket!.marketExpiry,
+      collateralBps: args.newMarket!.collateralBps,
+      settlementPrice: 0n,
+      settlementPricePending: false,
+      settlementPriceRequestedAt: 0n,
+      totalSize: 0n,
+      totalClaimed: 0n,
+      totalWriterMargin: 0n,
+      totalPaidOut: 0n,
+    } as any : null;
+    const m = row?.market ?? syntheticMarket!;
     const size = ethers.parseUnits(String(args.sizeHuman ?? '0').replace(',', '.'), m.paymentTokenDecimals || 18);
     if (size <= 0n) throw new Error('Enter an option size');
 
@@ -280,16 +306,29 @@ export class MarginOptionsOrderBookActionsService {
     const disabledByPastExpiry = expiry !== 0n && expiry <= now;
 
     const premium = this.premiumRaw(size, askPrice);
-    const writerMargin = intent === 2 ? await this.reads.getRequiredMargin(row.marketKey, size) : 0n;
+    const writerMargin = intent === 2 && row ? await this.reads.getRequiredMargin(row.marketKey, size) : intent === 2 ? (size * m.strikePrice * m.collateralBps / ONE_E18 / 10_000n) : 0n;
     const feeBase = this.feePayingPremium(intent, premium);
     const fee = feeBase > 0n ? await this.quoteFee(m.paymentToken, feeBase) : null;
     const disabled = !!args.quoteOnly || disabledByExpiry || disabledByPastExpiry;
 
     this.pendingConfirmAction = disabled
       ? null
-      : async () => this.accountContract.placeOrderMarginOption({
+      : async () => row ? this.accountContract.placeOrderMarginOption({
           orderBook: this.orderBookAddress,
           marketKey: row.marketKey,
+          intent,
+          size,
+          askPrice,
+          expiry,
+          feeToken: this.preferredFeeToken(),
+        }) : this.accountContract.placeOrderMarginOptionForMarket({
+          orderBook: this.orderBookAddress,
+          ticker: args.newMarket!.ticker,
+          optionType: args.newMarket!.optionType,
+          oracle: ethers.getAddress(args.newMarket!.oracle),
+          strikePrice: ethers.parseUnits(String(args.newMarket!.strikePriceHuman).replace(',', '.'), 18),
+              marketExpiry: args.newMarket!.marketExpiry,
+          collateralBps: args.newMarket!.collateralBps,
           intent,
           size,
           askPrice,
@@ -299,7 +338,7 @@ export class MarginOptionsOrderBookActionsService {
 
     const baseLockFields = this.appendLockSplitFields([
       { label: 'Action', value: args.quoteOnly ? 'Margin option quote' : this.fmt.intentLabel(intent) },
-      { label: 'Market', value: this.fmt.marketTitle(m) },
+      { label: 'Market', value: row ? this.fmt.marketTitle(m) : `${args.newMarket!.ticker} (new market)` },
       { label: 'Size', value: this.fmt.formatQuantity(size) },
       { label: 'Premium price', value: this.fmt.formatPrice(askPrice, m.paymentToken) },
       { label: 'Order expiry', value: expiry === 0n ? 'Default / market expiry' : `${new Date(Number(expiry) * 1000).toLocaleString()} (unix ${expiry.toString()})` },
@@ -316,7 +355,7 @@ export class MarginOptionsOrderBookActionsService {
     });
 
     const lockFields = intent === 2
-      ? this.appendMarketConfigWarningFields(baseLockFields, { market: m, size, contractWriterMargin: writerMargin })
+      ? (row ? this.appendMarketConfigWarningFields(baseLockFields, { market: m, size, contractWriterMargin: writerMargin }) : baseLockFields)
       : baseLockFields;
 
     const fields = this.appendFeeFields(lockFields, fee);

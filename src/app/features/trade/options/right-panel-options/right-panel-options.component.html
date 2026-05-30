@@ -1,16 +1,16 @@
 <div class="sethx-panel">
-  <div class="h-2"></div>
-
-  <aside class="h-full flex flex-col min-h-0 space-y-6">
+  <aside class="sethx-right-panel-stack">
     <section class="sethx-panel-section sethx-panel-card">
       <div class="sethx-panel-heading">Account Actions</div>
       <div class="sethx-panel-section-title">Select Account / Fee Token</div>
       <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
     </section>
 
-    <section class="sethx-panel-section sethx-panel-card" *ngIf="isMarketOrderView()">
-      <div class="sethx-panel-heading">Market Actions</div>
-      <ng-container *ngIf="selectedMarket() as market; else noOptionsMarketSelected">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Trade Actions</div>
+      <div class="sethx-panel-section-title">Options</div>
+      <p class="sethx-panel-copy">Place an options order or review the current fee estimate. Select an order in the ladder to fill or cancel it here.</p>
+      <ng-container *ngIf="selectedMarket() as market">
         <div class="space-y-2 text-[11px]">
           <div class="flex justify-between gap-3">
             <span class="sethx-field-label !mb-0">Market</span>
@@ -33,14 +33,11 @@
             </span>
           </div>
         </div>
-        <div class="mt-4 space-y-2">
-          <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button>
-          <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button>
-        </div>
-      </ng-container>
-      <ng-template #noOptionsMarketSelected>
-        <p class="sethx-panel-copy">Select an option market in the center view to quote fees or place an order.</p>
-      </ng-template>
+        </ng-container>
+      <div class="mt-4 grid gap-2">
+        <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button>
+        <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button>
+      </div>
     </section>
 
     <ng-container *ngIf="isOrdersView()">

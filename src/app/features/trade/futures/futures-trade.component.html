@@ -3,7 +3,7 @@
     <div class="sethx-kicker">SETHX</div>
     <h1 class="sethx-page-title">Futures</h1>
     <p class="sethx-page-copy">
-      Trade futures markets through the onchain futures order book. Select a market to review longs, shorts, margin exposure, and resting orders. Market actions stay in the header; selected-order and selected-position actions stay in the right panel.
+      Trade futures markets through the onchain futures order book. Select a market to review longs, shorts, margin exposure, and resting orders.
     </p>
   </header>
 
@@ -26,15 +26,12 @@
       <app-spot-summary-header
         eyebrow="Futures"
         title="Active Futures Markets"
-        subtitle="Select a futures market to view the order ladder and margin details. Use the shared order flow to quote margin, fees, and locks before signing."
+        subtitle="Select a futures market to view the order ladder and margin details."
         [metrics]="marketsMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="sethx-toolbar">
+      <div class="sethx-toolbar sethx-market-filter-toolbar">
         <div class="sethx-section-title text-base">Markets</div>
         <div class="sethx-toolbar-actions">
           <input class="sethx-input !w-[260px] !py-1" [value]="ob.store.marketSearch()" (input)="setMarketSearch($any($event.target).value)" placeholder="Search ticker / market key…" />
@@ -43,18 +40,17 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[980px] text-xs">
           <div class="sethx-table-header sethx-futures-market-grid">
             <div>Market</div>
             <div class="text-right">Status</div>
             <div class="text-right">Orders</div>
-            <div class="text-right">Long / Short</div>
+            <div class="text-right">OI Notional</div>
             <div class="text-right">Init Margin</div>
             <div class="text-right">Maint Margin</div>
             <div class="text-right">Settlement</div>
-            <div class="text-right">Passive MM</div>
-            <div class="text-right">Info</div>
+            <div class="text-right">Details</div>
           </div>
 
           <ng-container *ngFor="let m of ob.store.visibleMarkets(); trackBy: trackMarket">
@@ -83,13 +79,12 @@
                   </span>
                 </div>
                 <div class="text-right sethx-readonly-value">{{ m.buyCount }} / {{ m.sellCount }}</div>
-                <div class="text-right sethx-readonly-value">{{ m.longHolders }} / {{ m.shortHolders }}</div>
+                <div class="text-right sethx-readonly-value">{{ formatMarketNotional(m) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatPercentBps(m.market?.initialMarginBps) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatPercentBps(m.market?.maintenanceMarginBps) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatSettlementPrice(m) }}</div>
-                <div class="text-right sethx-readonly-value" [title]="passiveQuote(m)">{{ passiveStatus(m) }}</div>
                 <div class="text-right">
-                  <button type="button" class="sethx-action-link" title="Show market information" (click)="toggleMarketInfo(m.marketKey, $event)">Info</button>
+                  <button type="button" class="sethx-action-link" title="Show market details" (click)="toggleMarketInfo(m.marketKey, $event)">Details</button>
                 </div>
               </div>
 
@@ -127,10 +122,7 @@
         [subtitle]="ob.store.selectedMarketKey() || ''"
         [subtitleMono]="true"
         [metrics]="selectedMarketSummaryMetrics(ob.store.selectedMarketRow())"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
       <section class="sethx-edit-panel" *ngIf="ob.store.selectedMarketPosition() as p; else noSelectedMarketPosition">
@@ -146,11 +138,11 @@
           </div>
           <div>
             <div class="sethx-field-label !mb-0">Long margin</div>
-            <div class="sethx-readonly-value">{{ ob.store.formatSize(p.longMargin, p.market?.quoteTokenDecimals ?? 18) }}</div>
+            <div class="sethx-readonly-value">{{ ob.store.formatSize(p.longMargin, 18) }}</div>
           </div>
           <div>
             <div class="sethx-field-label !mb-0">Short margin</div>
-            <div class="sethx-readonly-value">{{ ob.store.formatSize(p.shortMargin, p.market?.quoteTokenDecimals ?? 18) }}</div>
+            <div class="sethx-readonly-value">{{ ob.store.formatSize(p.shortMargin, 18) }}</div>
           </div>
           <div>
             <div class="sethx-field-label !mb-0">Required</div>
@@ -166,45 +158,76 @@
         <section class="sethx-info-note">No active position for this market in the selected account.</section>
       </ng-template>
 
-      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section class="sethx-orderbook-panel">
-          <div class="sethx-toolbar mb-3"><div class="sethx-table-section">Buy / Long Book</div><label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label></div>
-          <div class="sethx-table-header sethx-futures-order-grid">
-            <div>ID</div><div class="text-right">Amount</div><div class="text-right">Price</div>
-          </div>
-          <ng-container *ngFor="let r of ob.store.buyOrders(); trackBy: trackOrder">
-            <div
-              class="sethx-table-row sethx-table-row-action sethx-futures-order-grid items-center"
-              [class.is-selected]="isSelectedOrder(r)"
-              (click)="selectOrder(r, 'buy', $event)"
-            >
-              <div class="sethx-address-value-muted truncate">{{ r.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isOwnOrder(r)">mine</span></div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatContracts(r.amount) }}</div>
-              <div class="text-right sethx-orderbook-side-bid font-semibold">{{ ob.store.formatQuotePrice(r.price, ob.store.selectedMarketRow()?.market?.quoteTokenDecimals ?? 18) }}</div>
-            </div>
-          </ng-container>
-          <div class="sethx-table-empty" *ngIf="ob.store.buyOrders().length === 0">No buy orders.</div>
-        </section>
-
-        <section class="sethx-orderbook-panel">
-          <div class="sethx-toolbar mb-3"><div class="sethx-table-section">Sell / Short Book</div><label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label></div>
-          <div class="sethx-table-header sethx-futures-order-grid">
-            <div>ID</div><div class="text-right">Amount</div><div class="text-right">Price</div>
-          </div>
-          <ng-container *ngFor="let r of ob.store.sellOrders(); trackBy: trackOrder">
-            <div
-              class="sethx-table-row sethx-table-row-action sethx-futures-order-grid items-center"
-              [class.is-selected]="isSelectedOrder(r)"
-              (click)="selectOrder(r, 'sell', $event)"
-            >
-              <div class="sethx-address-value-muted truncate">{{ r.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isOwnOrder(r)">mine</span></div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatContracts(r.amount) }}</div>
-              <div class="text-right sethx-orderbook-side-ask font-semibold">{{ ob.store.formatQuotePrice(r.price, ob.store.selectedMarketRow()?.market?.quoteTokenDecimals ?? 18) }}</div>
-            </div>
-          </ng-container>
-          <div class="sethx-table-empty" *ngIf="ob.store.sellOrders().length === 0">No sell orders.</div>
-        </section>
+      <div class="sethx-toolbar sethx-market-filter-toolbar">
+        <div class="sethx-toolbar-actions">
+          <label class="sethx-inline-control">
+            <input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" />
+            <span>My orders</span>
+          </label>
+        </div>
       </div>
+
+      <div class="sethx-ladder-toolbar">
+        <div class="sethx-section-title text-base">Order Ladder</div>
+      </div>
+
+      <div class="sethx-table-header grid grid-cols-[1fr_1fr_1fr_1fr]">
+        <div>Bid Amt</div>
+        <div class="text-center sethx-orderbook-side-bid">Bid Px</div>
+        <div class="text-center sethx-orderbook-side-ask">Ask Px</div>
+        <div class="text-right">Ask Amt</div>
+      </div>
+
+      <div class="text-xs font-mono sethx-tabular-nums max-h-[420px] overflow-y-auto sethx-scroll-stable">
+        <ng-container *ngFor="let r of futuresLadderRows(); trackBy: trackFuturesLadderRow">
+          <div class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3 relative overflow-visible">
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-amount-bid"
+              [disabled]="!r.bid"
+              [class.is-selected]="isSelectedOrder(r.bid)"
+              [title]="r.bid ? 'Select bid order' : 'No bid order'"
+              (click)="selectLadderOrder(r.bid, 'buy', $event)"
+            >
+              <span *ngIf="r.bid">{{ ob.store.formatContracts(r.bid.amount) }} <span class="ml-2 sethx-status-pill" *ngIf="isOwnOrder(r.bid)">mine</span></span>
+              <span *ngIf="!r.bid">—</span>
+            </button>
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-price-bid"
+              [disabled]="!r.bid"
+              [class.is-selected]="isSelectedOrder(r.bid)"
+              (click)="selectLadderOrder(r.bid, 'buy', $event)"
+            >
+              <span *ngIf="r.bid">{{ formatFuturesOrderPrice(r.bid) }}</span>
+              <span *ngIf="!r.bid">—</span>
+            </button>
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-price-ask"
+              [disabled]="!r.ask"
+              [class.is-selected]="isSelectedOrder(r.ask)"
+              (click)="selectLadderOrder(r.ask, 'sell', $event)"
+            >
+              <span *ngIf="r.ask">{{ formatFuturesOrderPrice(r.ask) }}</span>
+              <span *ngIf="!r.ask">—</span>
+            </button>
+            <button
+              type="button"
+              class="sethx-orderbook-cell-button sethx-orderbook-amount-ask"
+              [disabled]="!r.ask"
+              [class.is-selected]="isSelectedOrder(r.ask)"
+              [title]="r.ask ? 'Select ask order' : 'No ask order'"
+              (click)="selectLadderOrder(r.ask, 'sell', $event)"
+            >
+              <span *ngIf="r.ask"><span class="mr-2 sethx-status-pill" *ngIf="isOwnOrder(r.ask)">mine</span>{{ ob.store.formatContracts(r.ask.amount) }}</span>
+              <span *ngIf="!r.ask">—</span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="sethx-table-empty" *ngIf="!ob.store.buyOrders().length && !ob.store.sellOrders().length">No orders for this market.</div>
     </ng-container>
 
 
@@ -212,15 +235,12 @@
       <app-spot-summary-header
         eyebrow="Futures orders"
         title="My Orders"
-        subtitle="Selected-account futures orders across all listed markets. Select a row to fill or cancel from the right panel."
+        subtitle=""
         [metrics]="myOrdersMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[980px] text-xs">
           <div class="sethx-table-header grid grid-cols-[0.7fr_1.4fr_0.9fr_0.9fr_0.9fr_1fr_0.7fr] gap-x-4">
             <div>Order ID</div>
@@ -257,10 +277,10 @@
               </div>
               <div class="uppercase" [ngClass]="r.side === 0 ? 'text-up' : 'text-down'">{{ r.sideLabel }}</div>
               <div class="text-right sethx-readonly-value">{{ ob.store.formatContracts(r.amount) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ ob.store.formatQuotePrice(r.price, 18) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ formatFuturesOrderPrice(r) }}</div>
               <div class="text-right sethx-meta-text">{{ formatTs(r.expiry) }}</div>
               <div class="text-right">
-                <button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(r, $event)">Details</button>
+                <button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(r); $event.stopPropagation()">Details</button>
               </div>
             </div>
           </ng-container>
@@ -274,18 +294,15 @@
       <app-spot-summary-header
         eyebrow="Futures exposure"
         title="My Positions"
-        subtitle="Selected-account futures exposure across all listed markets. Select a row to manage the position from the right panel."
+        subtitle=""
         [metrics]="positionsMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[980px] text-xs">
           <div class="sethx-table-header sethx-futures-position-grid">
-            <div>Market</div><div class="text-right">Long</div><div class="text-right">Short</div><div class="text-right">Long Req.</div><div class="text-right">Short Req.</div><div class="text-right">Margin</div><div class="text-right">Long Recl.</div><div class="text-right">Short Recl.</div>
+            <div>Market</div><div class="text-right">Long contracts</div><div class="text-right">Short contracts</div><div class="text-right">Long required margin</div><div class="text-right">Short required margin</div><div class="text-right">Total margin</div><div class="text-right">Long reclaimable</div><div class="text-right">Short reclaimable</div>
           </div>
 
           <ng-container *ngFor="let r of ob.store.myPositions(); trackBy: trackMarket">
@@ -293,11 +310,11 @@
               <div class="truncate"><div class="sethx-readonly-value-strong truncate">{{ r.market?.ticker || '—' }}</div><div class="mt-1 flex items-center gap-2 min-w-0"><span class="sethx-address-value truncate text-[11px]" [title]="r.marketKey">{{ r.marketKey }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === r.marketKey" [attr.aria-label]="'Copy market key ' + r.marketKey" [title]="copiedValue() === r.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(r.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== r.marketKey" [class.fa-circle-check]="copiedValue() === r.marketKey" aria-hidden="true"></i></button></div></div>
               <div class="text-right sethx-readonly-value">{{ ob.store.formatContracts(r.longSize) }}</div>
               <div class="text-right sethx-readonly-value">{{ ob.store.formatContracts(r.shortSize) }}</div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.longRequiredMargin, r.market?.quoteTokenDecimals ?? 18) }}</div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.shortRequiredMargin, r.market?.quoteTokenDecimals ?? 18) }}</div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.margin, r.market?.quoteTokenDecimals ?? 18) }}</div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.longReclaimableMargin, r.market?.quoteTokenDecimals ?? 18) }}</div>
-              <div class="text-right sethx-readonly-value">{{ ob.store.formatSize(r.shortReclaimableMargin, r.market?.quoteTokenDecimals ?? 18) }}</div>
+              <div class="text-right sethx-readonly-value">{{ formatEthValue(r.longRequiredMargin) + ' ETH' }}</div>
+              <div class="text-right sethx-readonly-value">{{ formatEthValue(r.shortRequiredMargin) + ' ETH' }}</div>
+              <div class="text-right sethx-readonly-value">{{ formatEthValue(r.margin) + ' ETH' }}</div>
+              <div class="text-right sethx-readonly-value">{{ formatEthValue(r.longReclaimableMargin) + ' ETH' }}</div>
+              <div class="text-right sethx-readonly-value">{{ formatEthValue(r.shortReclaimableMargin) + ' ETH' }}</div>
             </div>
           </ng-container>
 

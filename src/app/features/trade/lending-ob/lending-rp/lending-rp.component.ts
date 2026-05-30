@@ -10,6 +10,7 @@ import {
 import { LendingMarketSelectionService } from '../../../../services/shared/lending-market/lending-market-selection.service';
 import { AccountsChainService } from '../../../../services/onchain/accounts.service';
 import { TradeSettingsService } from '../../../../services/shared/trade-settings.service';
+import { TreasuryModeService } from '../../../../services/shared/treasury-mode.service';
 
 @Component({
   selector: 'app-right-panel-lending-orderbook',
@@ -22,6 +23,7 @@ export class LendingRpComponent {
   private readonly selection = inject(LendingMarketSelectionService);
   private readonly accounts = inject(AccountsChainService);
   private readonly settings = inject(TradeSettingsService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   readonly actions = lendingOrderbookPageActions;
   readonly ctx = computed<LendingOrderbookPageCtx>(() => ({
@@ -29,16 +31,23 @@ export class LendingRpComponent {
     selectedMarketLabel: this.selection.selectedMarketLabel(),
     selectedRiskLevel: this.selection.selectedRiskLevel(),
     selectedExpiry: this.selection.selectedExpiry(),
+    selectedMaxLtvBps: this.selection.selectedMaxLtvBps(),
+    selectedLiquidationLtvBps: this.selection.selectedLiquidationLtvBps(),
     selectedAccountType: this.selectedAccountType(),
     selectedAccountLabel: this.selectedAccountLabel(),
   }));
 
   readonly selectedAccountType = computed(() => {
+    if (this.treasuryMode.canUse('lend')) return 'normal';
     const account = this.settings.selectedAccountId();
     return account ? this.accounts.accountType(account) : null;
   });
 
   readonly selectedAccountLabel = computed(() => {
+    if (this.treasuryMode.canUse('lend')) {
+      const account = this.treasuryMode.selectedTreasuryAccount();
+      return account ? `Treasury ${this.treasuryMode.short(account)}` : null;
+    }
     const account = this.settings.selectedAccountId();
     return account ? this.accounts.accountLabel(account) : null;
   });

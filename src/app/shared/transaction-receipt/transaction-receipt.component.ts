@@ -12,6 +12,8 @@ export class TransactionReceiptComponent {
   @Input() receipt: TransactionReceiptState | null = null;
   @Input() explorerUrl: string | null = null;
 
+  copied = false;
+
   visible(): boolean { return !!this.receipt && this.receipt.status !== 'idle'; }
   statusLabel(): string {
     switch (this.receipt?.status) {
@@ -29,5 +31,15 @@ export class TransactionReceiptComponent {
       default: return 'border-frame text-frame';
     }
   }
-  shortHash(hash: string): string { return hash.length > 13 ? `${hash.slice(0, 8)}...${hash.slice(-5)}` : hash; }
+  async copyTxHash(hash: string): Promise<void> {
+    if (!hash) return;
+    try {
+      await navigator.clipboard.writeText(hash);
+      this.copied = true;
+      window.setTimeout(() => { this.copied = false; }, 1400);
+    } catch {
+      // Full hash remains selectable when clipboard access is unavailable.
+    }
+  }
 }
+

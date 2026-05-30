@@ -43,15 +43,12 @@
       <app-spot-summary-header
         eyebrow="NFT spot"
         title="Active NFT Spot Markets"
-        subtitle="Select a collection/token market to view bids and asks. Create new bids or asks from the same flow."
+        subtitle="Select a collection/token market to view bids and asks."
         [metrics]="marketsMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="sethx-toolbar">
+      <div class="sethx-toolbar sethx-market-filter-toolbar">
         <div class="sethx-section-title text-base">Markets</div>
 
         <div class="sethx-toolbar-actions">
@@ -74,19 +71,22 @@
       </div>
 
 
-      <div class="sethx-table-header grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr_56px] gap-x-4">
+      <div class="sethx-scroll-stable overflow-x-auto">
+        <div class="min-w-[920px] text-xs">
+      <div class="sethx-table-header grid grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_0.7fr_0.8fr_56px] gap-x-4">
         <div>NFT</div>
         <div class="text-right">Best Bid</div>
         <div class="text-right">Best Ask</div>
+        <div class="text-right">Quote volume</div>
         <div class="text-right">Orders</div>
         <div class="text-right">My Orders</div>
-        <div class="text-right">Info</div>
+        <div class="text-right">Details</div>
       </div>
 
       <ng-container *ngFor="let market of visibleMarkets(); trackBy: trackMarket">
         <div class="sethx-market-row-shell" (mouseenter)="hoveredMarket.set(market)" (mouseleave)="hoveredMarket.set(null)">
           <div
-            class="sethx-table-row sethx-table-row-action grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr_56px] gap-x-4 items-center"
+            class="sethx-table-row sethx-table-row-action grid grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_0.7fr_0.8fr_56px] gap-x-4 items-center"
             (click)="openMarket(market)"
           >
           <div class="flex min-w-0 items-center gap-3">
@@ -96,20 +96,34 @@
             </div>
             <div class="min-w-0 truncate">
               <div class="sethx-readonly-value-strong truncate">{{ market.metadataName || (market.collection + ' #' + market.tokenId) }}</div>
-              <div class="sethx-address-value truncate text-[11px]">{{ market.collection }} #{{ market.tokenId }} · {{ market.quoteSymbol }}</div>
+              <div class="mt-1 flex min-w-0 items-center gap-2 text-[11px]">
+                <span class="sethx-address-value truncate" [title]="market.collectionAddress">{{ market.collection }} #{{ market.tokenId }}</span>
+                <button
+                  type="button"
+                  class="sethx-copy-button shrink-0"
+                  [class.is-copied]="copiedValue() === market.collectionAddress"
+                  [title]="copiedValue() === market.collectionAddress ? 'Copied' : 'Copy collection address'"
+                  (click)="copyValue(market.collectionAddress, $event)"
+                >
+                  <i class="fa-regular" [class.fa-copy]="copiedValue() !== market.collectionAddress" [class.fa-circle-check]="copiedValue() === market.collectionAddress" aria-hidden="true"></i>
+                </button>
+                <span class="sethx-muted-value">·</span>
+                <span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(market.quoteToken)">{{ market.quoteSymbol }}</span>
+              </div>
             </div>
           </div>
           <div class="text-right sethx-orderbook-side-bid font-semibold">{{ market.bestBid }}</div>
           <div class="text-right sethx-orderbook-side-ask font-semibold">{{ market.bestAsk }}</div>
+          <div class="text-right sethx-readonly-value">{{ market.quoteVolume }}</div>
           <div class="text-right sethx-readonly-value">{{ market.totalOrders }}</div>
           <div class="text-right sethx-readonly-value">{{ market.myOrders }}</div>
           <div class="text-right">
             <button
               type="button"
               class="sethx-action-link"
-              title="Show market information"
+              title="Show market details"
               (click)="showMarketInfo(market, $event)"
-            >Info</button>
+            >Details</button>
           </div>
         </div>
 
@@ -125,6 +139,9 @@
         </div>
       </ng-container>
 
+        </div>
+      </div>
+
       <div class="sethx-table-empty" *ngIf="visibleMarkets().length === 0">
         No NFT spot markets found.
       </div>
@@ -135,12 +152,9 @@
       <app-spot-summary-header
         eyebrow="NFT inventory"
         title="My NFTs"
-        subtitle="NFTs currently held by the active protocol account vault."
+        subtitle=""
         [metrics]="myNftsMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
       <div class="sethx-toolbar">
@@ -156,16 +170,17 @@
         </label>
       </div>
 
-      <div class="sethx-table-header grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_1fr] gap-x-4">
+      <div class="sethx-scroll-stable overflow-x-auto">
+        <div class="min-w-[760px] text-xs">
+      <div class="sethx-table-header grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr] gap-x-4">
         <div>NFT</div>
         <div class="text-right">Token ID</div>
         <div class="text-right">Status</div>
         <div class="text-right">Open Ask</div>
-        <div class="text-right">Action</div>
       </div>
 
       <ng-container *ngFor="let nft of myNfts(); trackBy: trackNft">
-        <div class="sethx-table-row grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_1fr] gap-x-4 items-center">
+        <div class="sethx-table-row grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr] gap-x-4 items-center">
           <div class="flex min-w-0 items-center gap-3">
             <div class="sethx-nft-thumb" [class.is-empty]="!nft.imageUrl">
               <img *ngIf="nft.imageUrl" [src]="nft.imageUrl" [alt]="nft.metadataName || nft.collection" />
@@ -173,7 +188,18 @@
             </div>
             <div class="min-w-0 truncate">
               <div class="sethx-readonly-value-strong truncate">{{ nft.metadataName || (nft.collection + ' #' + nft.tokenId) }}</div>
-              <div class="sethx-address-value truncate text-[11px]">{{ nft.collection }} #{{ nft.tokenId }}</div>
+              <div class="mt-1 flex min-w-0 items-center gap-2 text-[11px]">
+                <span class="sethx-address-value truncate" [title]="nft.collectionAddress">{{ nft.collection }} #{{ nft.tokenId }}</span>
+                <button
+                  type="button"
+                  class="sethx-copy-button shrink-0"
+                  [class.is-copied]="copiedValue() === nft.collectionAddress"
+                  [title]="copiedValue() === nft.collectionAddress ? 'Copied' : 'Copy collection address'"
+                  (click)="copyValue(nft.collectionAddress, $event)"
+                >
+                  <i class="fa-regular" [class.fa-copy]="copiedValue() !== nft.collectionAddress" [class.fa-circle-check]="copiedValue() === nft.collectionAddress" aria-hidden="true"></i>
+                </button>
+              </div>
             </div>
           </div>
           <div class="text-right sethx-address-value-muted">{{ nft.tokenId }}</div>
@@ -184,19 +210,11 @@
             </span>
           </div>
           <div class="text-right sethx-readonly-value">{{ nft.openAsk ? nft.openAsk.price : '—' }}</div>
-          <div class="text-right flex justify-end gap-2">
-            <button
-              type="button"
-              class="sethx-button-secondary !py-1"
-              [disabled]="nft.locked"
-              [title]="nft.locked ? 'This NFT is already locked by an open order or settlement.' : 'Create an ask for this NFT'"
-              (click)="sellNft(nft, $event)"
-            >
-              Sell this NFT
-            </button>
-          </div>
         </div>
       </ng-container>
+
+        </div>
+      </div>
 
       <div class="sethx-table-empty" *ngIf="myNfts().length === 0">
         No NFTs found in the active protocol account vault. Deposit an NFT into the account first, then refresh this page.
@@ -207,15 +225,12 @@
       <app-spot-summary-header
         eyebrow="NFT spot orders"
         title="My Orders"
-        subtitle="Selected-account NFT spot orders. Select a row to open the same accept/cancel assessment flow in the right panel."
+        subtitle=""
         [metrics]="myOrdersMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[960px] text-xs">
           <div class="sethx-table-header grid grid-cols-[0.8fr_1.4fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4">
             <div>Order ID</div>
@@ -236,11 +251,35 @@
               <div class="sethx-address-value-muted truncate">{{ order.id }}</div>
               <div class="truncate">
                 <div class="sethx-readonly-value-strong truncate">{{ order.nftLabel }}</div>
-                <div class="mt-1 sethx-address-value truncate text-[11px]">{{ shortAddress(order.raw.nft) }} #{{ order.raw.tokenId.toString() }}</div>
+                <div class="mt-1 flex min-w-0 items-center gap-2 text-[11px]">
+                  <span class="sethx-address-value truncate" [title]="order.raw.nft">{{ shortAddress(order.raw.nft) }} #{{ order.raw.tokenId.toString() }}</span>
+                  <button
+                    type="button"
+                    class="sethx-copy-button shrink-0"
+                    [class.is-copied]="copiedValue() === order.raw.nft"
+                    [title]="copiedValue() === order.raw.nft ? 'Copied' : 'Copy NFT address'"
+                    (click)="copyValue(order.raw.nft, $event)"
+                  >
+                    <i class="fa-regular" [class.fa-copy]="copiedValue() !== order.raw.nft" [class.fa-circle-check]="copiedValue() === order.raw.nft" aria-hidden="true"></i>
+                  </button>
+                </div>
               </div>
               <div class="uppercase" [ngClass]="order.side === 'bid' ? 'text-up' : 'text-down'">{{ order.side }}</div>
               <div class="text-right sethx-readonly-value-strong">{{ order.price }}</div>
-              <div class="text-right sethx-address-value">{{ shortAddress(order.raw.quoteToken) }}</div>
+              <div class="text-right">
+                <span class="inline-flex min-w-0 items-center justify-end gap-2">
+                  <span class="sethx-token-address-inline" [class.is-whitelisted]="isWhitelistedToken(order.raw.quoteToken)" [title]="order.raw.quoteToken">{{ shortAddress(order.raw.quoteToken) }}</span>
+                  <button
+                    type="button"
+                    class="sethx-copy-button shrink-0"
+                    [class.is-copied]="copiedValue() === order.raw.quoteToken"
+                    [title]="copiedValue() === order.raw.quoteToken ? 'Copied' : 'Copy quote token address'"
+                    (click)="copyValue(order.raw.quoteToken, $event)"
+                  >
+                    <i class="fa-regular" [class.fa-copy]="copiedValue() !== order.raw.quoteToken" [class.fa-circle-check]="copiedValue() === order.raw.quoteToken" aria-hidden="true"></i>
+                  </button>
+                </span>
+              </div>
               <div class="sethx-meta-text">{{ order.expiresAt }}</div>
               <div class="text-right"><button type="button" class="sethx-action-link-primary" (click)="selectMyOrder(order, $event)">Details</button></div>
             </div>
@@ -274,10 +313,7 @@
         [subtitle]="selectedMarket()?.key ?? ''"
         [subtitleMono]="true"
         [metrics]="selectedMarketMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
       <div class="sethx-toolbar">
@@ -291,7 +327,12 @@
             <span>My orders</span>
           </label>
 
-          <button type="button" class="sethx-button-secondary !py-1" (click)="showAllRows.set(!showAllRows())">
+          <select class="sethx-select !w-auto !py-1" [value]="ladderFocus()" (change)="setLadderFocus(+$any($event.target).value)">
+            <option [value]="3">Focus 3</option>
+            <option [value]="5">Focus 5</option>
+            <option [value]="10">Focus 10</option>
+          </select>
+          <button type="button" class="sethx-button-secondary !py-1" (click)="toggleShowAllRows()">
             {{ showAllRows() ? 'Show less' : 'Show all' }}
           </button>
         </div>

@@ -176,9 +176,10 @@ export class BinaryOptionsOrderBookActionsService {
     return intent === 0 ? this.premiumRaw(payoutAmount, askPrice) : 0n;
   }
 
-  async requestPlace(args: { marketKey: string; intent: number; payoutHuman: string; priceHuman: string; expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix?: bigint | null; quoteOnly?: boolean }) {
+  async requestPlace(args: { marketKey: string; intent: number; payoutHuman: string; priceHuman: string; expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix?: bigint | null; quoteOnly?: boolean; newMarket?: { ticker: string; optionType: number; oracle: string; strikePriceHuman: string; marketExpiry: bigint } | null }) {
     const marketKey = String(args.marketKey ?? '').toLowerCase();
-    if (!marketKey) throw new Error('Select a binary market');
+    const hasNewMarket = !!args.newMarket?.oracle && !!args.newMarket?.marketExpiry && !!args.newMarket?.strikePriceHuman;
+    if (!marketKey && !hasNewMarket) throw new Error('Select an existing binary market or enter a new market oracle, expiry and strike');
     const payoutAmount = ethers.parseEther(String(args.payoutHuman ?? '0').replace(',', '.'));
     if (payoutAmount <= 0n) throw new Error('Enter a payout amount');
     const askPrice = ethers.parseEther(String(args.priceHuman ?? '0').replace(',', '.'));
@@ -187,7 +188,9 @@ export class BinaryOptionsOrderBookActionsService {
     const intent = Number(args.intent) as BinaryIntent;
     if (![0, 1, 2].includes(intent)) throw new Error('Unsupported binary order intent');
 
-    const market = this.store.selectedMarket()?.market;
+    const market = marketKey ? (this.store.activeMarkets().find((m) => m.marketKey === marketKey)?.market
+      ?? this.store.selectedMarket()?.market
+      ?? await this.reads.getMarket(marketKey)) : null;
     const now = await this.reads.latestTimestamp();
     const marketExpiry = market?.expiry ?? 0n;
     const offset = args.expiryPreset === '1h' ? 3600n : args.expiryPreset === '1d' ? 86400n : args.expiryPreset === '7d' ? 604800n : 0n;
@@ -207,9 +210,21 @@ export class BinaryOptionsOrderBookActionsService {
     const disabled = !!args.quoteOnly || disabledByExpiry || disabledByPastExpiry || insufficient;
 
     this.pendingConfirmAction = disabled ? null : async () => {
-      return await this.accountContract.placeOrderBinaryMarginOption({
+      return marketKey ? await this.accountContract.placeOrderBinaryMarginOption({
         orderBook: this.orderBookAddress,
         marketKey,
+        intent,
+        payoutAmount,
+        askPrice,
+        expiry,
+        feeToken: this.preferredFeeToken(),
+      }) : await this.accountContract.placeOrderBinaryMarginOptionForMarket({
+        orderBook: this.orderBookAddress,
+        ticker: args.newMarket!.ticker,
+        optionType: args.newMarket!.optionType,
+        oracle: ethers.getAddress(args.newMarket!.oracle),
+        strikePrice: ethers.parseUnits(String(args.newMarket!.strikePriceHuman).replace(',', '.'), 18),
+        marketExpiry: args.newMarket!.marketExpiry,
         intent,
         payoutAmount,
         askPrice,
@@ -228,7 +243,7 @@ export class BinaryOptionsOrderBookActionsService {
         ]
       : [
           { label: 'Action', value: this.intentLabel(intent) },
-          { label: 'Market', value: marketKey },
+          { label: 'Market', value: market ? `${this.fmt.condition(market.optionType, this.fmt.tokenLabel(market.baseToken), market.strikePrice)} · ${marketKey}` : `Binary market · ${marketKey}` },
           { label: 'Payout amount', value: this.fmt.formatEth(payoutAmount) },
           { label: 'Premium price', value: this.fmt.formatProbability(askPrice) },
           { label: 'Premium value', value: this.fmt.formatEth(premium) },
@@ -253,6 +268,7 @@ export class BinaryOptionsOrderBookActionsService {
   }
 
   async requestFill(order: BinaryOrder, marketKey: string, quoteOnly = false) {
+    const market = this.store.activeMarkets().find((m) => m.marketKey === String(marketKey ?? '').toLowerCase())?.market ?? null;
     const human = this.store.fillAmountByOrderId(order.orderId);
     let payoutAmount = ethers.parseEther(String(human ?? '0').replace(',', '.'));
     if (payoutAmount <= 0n) throw new Error('Enter a payout amount');
@@ -278,7 +294,7 @@ export class BinaryOptionsOrderBookActionsService {
     const fields = this.appendFeeFields([
       { label: 'Action', value: takerAction },
       { label: 'Order ID', value: order.orderId.toString() },
-      { label: 'Market', value: marketKey },
+      { label: 'Market', value: market ? `${this.fmt.condition(market.optionType, this.fmt.tokenLabel(market.baseToken), market.strikePrice)} · ${marketKey}` : `Binary market · ${marketKey}` },
       { label: 'Payout amount', value: this.fmt.formatEth(payoutAmount) },
       { label: 'Premium price', value: this.fmt.formatProbability(order.askPrice) },
       { label: makerIntent === 0 ? 'You receive premium' : 'You pay premium', value: this.fmt.formatEth(premium) },
@@ -312,12 +328,13 @@ export class BinaryOptionsOrderBookActionsService {
   }
 
   requestClaim(marketKey: string, payoutAmount: bigint, label = 'Claim payout') {
+    const market = this.store.activeMarkets().find((m) => m.marketKey === String(marketKey ?? '').toLowerCase())?.market ?? null;
     this.pendingConfirmAction = async () => await this.accountContract.claimBinaryMarginOption({ binaryContract: this.binaryContractAddress, marketKey, payoutAmount });
     this.openConfirmModal({
       title: label === 'Clear position' ? 'Clear binary holder position' : 'Claim binary option payout',
       confirmLabel: label,
       fields: [
-        { label: 'Market', value: marketKey },
+        { label: 'Market', value: market ? `${this.fmt.condition(market.optionType, this.fmt.tokenLabel(market.baseToken), market.strikePrice)} · ${marketKey}` : `Binary market · ${marketKey}` },
         { label: label === 'Clear position' ? 'Holder payout to clear' : 'Claim amount', value: this.fmt.formatEth(payoutAmount) },
         { label: 'Settlement rule', value: 'Above requires settlement price > strike. Below requires settlement price < strike. Equal does not pay.' },
         { label: 'Note', value: label === 'Clear position' ? 'This clears an out-of-the-money/equal holder position with zero ETH payout.' : 'This claims the winning binary payout in ETH.' },
@@ -326,12 +343,13 @@ export class BinaryOptionsOrderBookActionsService {
   }
 
   requestReclaim(marketKey: string, amount: bigint) {
+    const market = this.store.activeMarkets().find((m) => m.marketKey === String(marketKey ?? '').toLowerCase())?.market ?? null;
     this.pendingConfirmAction = async () => await this.accountContract.reclaimWriterBinaryMarginOption({ binaryContract: this.binaryContractAddress, marketKey });
     this.openConfirmModal({
       title: 'Reclaim binary writer margin',
       confirmLabel: 'Reclaim',
       fields: [
-        { label: 'Market', value: marketKey },
+        { label: 'Market', value: market ? `${this.fmt.condition(market.optionType, this.fmt.tokenLabel(market.baseToken), market.strikePrice)} · ${marketKey}` : `Binary market · ${marketKey}` },
         { label: 'Available writer margin', value: this.fmt.formatEth(amount) },
       ],
     });

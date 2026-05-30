@@ -82,6 +82,9 @@ export class DepositWithdrawModalComponent implements OnInit {
     tokenSymbol: string;
     decimals: number;
     isETH: boolean;
+    isNFT?: boolean;
+    nftAddress?: string;
+    tokenId?: string;
     accountAddress: string; // selected trading account
     spender: string; // account contract address (for approve)
   } | null>(null);
@@ -89,6 +92,10 @@ export class DepositWithdrawModalComponent implements OnInit {
   // ===== token selection (TOKEN only) =====
   readonly tokenSelected = signal<string>(''); // dropdown
   readonly tokenInput = signal<string>(''); // paste input
+
+  // ===== NFT selection (NFT only) =====
+  readonly nftAddress = signal<string>('');
+  readonly nftTokenId = signal<string>('');
 
   readonly tokenList = computed<TokenInfo[]>(() => this.tokens.list() ?? []);
 
@@ -116,6 +123,11 @@ export class DepositWithdrawModalComponent implements OnInit {
     const addr = this.tokenAddress();
     if (!addr) return false;
     return isNativeLike(addr) || isAddress(addr);
+  });
+
+  readonly isValidNftAddress = computed(() => {
+    const addr = this.nftAddress().trim();
+    return !!addr && isAddress(addr);
   });
 
   readonly tokenInfo = computed(() => {
@@ -147,7 +159,11 @@ export class DepositWithdrawModalComponent implements OnInit {
     const verb = this.data.intent === 'deposit' ? 'Deposit' : 'Withdraw';
 
     const asset =
-      this.data.asset === 'ETH' ? 'ETH' : (this.tokenSymbol() ?? 'Token');
+      this.data.asset === 'ETH'
+        ? 'ETH'
+        : this.data.asset === 'NFT'
+          ? 'NFT'
+          : (this.tokenSymbol() ?? 'Token');
 
     return `${verb} ${asset}`;
   }
@@ -161,6 +177,11 @@ export class DepositWithdrawModalComponent implements OnInit {
       // or if you want to preselect from list, you can set tokenSelected instead if match exists
     }
 
+    if (this.data.asset === 'NFT') {
+      if (this.data.nftAddress) this.nftAddress.set(this.data.nftAddress);
+      if (this.data.tokenId) this.nftTokenId.set(this.data.tokenId);
+    }
+
     void this.refreshWalletBalance();
   }
 
@@ -168,6 +189,8 @@ export class DepositWithdrawModalComponent implements OnInit {
   onTokenSelected(addr: string) {
     this.tokenSelected.set(addr);
     this.tokenInput.set('');
+    this.nftAddress.set('');
+    this.nftTokenId.set('');
     void this.refreshWalletBalance();
   }
   onTokenInput(addr: string) {
@@ -177,6 +200,11 @@ export class DepositWithdrawModalComponent implements OnInit {
   }
 
   async refreshWalletBalance(): Promise<void> {
+    if (this.data.asset === 'NFT') {
+      this.walletBalance.set(null);
+      return;
+    }
+
     const owner = this.wallet.address();
     const tokenAddress = this.tokenAddress();
 
@@ -203,6 +231,7 @@ export class DepositWithdrawModalComponent implements OnInit {
   }
 
   walletBalanceText(): string {
+    if (this.data.asset === 'NFT') return 'Not applicable';
     if (this.walletBalanceLoading()) return 'Loading…';
     const value = this.walletBalance();
     if (value == null) return '—';
@@ -215,6 +244,8 @@ export class DepositWithdrawModalComponent implements OnInit {
     this.amount.set('');
     this.tokenSelected.set('');
     this.tokenInput.set('');
+    this.nftAddress.set('');
+    this.nftTokenId.set('');
     this.error.set(null);
 
     this.showConfirmModal.set(false);
@@ -229,6 +260,7 @@ export class DepositWithdrawModalComponent implements OnInit {
     tokenSymbol: string;
     tokenAddress: string;
     amount: string;
+    tokenId?: string;
     accountLabel: string;
   }): ConfirmationField[] {
     return [
@@ -239,7 +271,8 @@ export class DepositWithdrawModalComponent implements OnInit {
       { label: 'Account', value: args.accountLabel },
       { label: 'Token', value: args.tokenSymbol },
       { label: 'Token Address', value: args.tokenAddress },
-      { label: 'Amount', value: args.amount },
+      ...(args.tokenId ? [{ label: 'Token ID', value: args.tokenId }] : []),
+      ...(args.amount ? [{ label: 'Amount', value: args.amount }] : []),
     ];
   }
 
@@ -259,6 +292,48 @@ export class DepositWithdrawModalComponent implements OnInit {
 
     const accountAddress = this.selectedAccount();
     if (!accountAddress) return;
+
+    if (this.data.asset === 'NFT') {
+      const nftAddress = this.nftAddress().trim();
+      const tokenId = this.nftTokenId().trim();
+
+      if (!isAddress(nftAddress)) {
+        this.error.set('Enter a valid NFT contract address.');
+        return;
+      }
+
+      if (!tokenId || !/^\d+$/.test(tokenId)) {
+        this.error.set('Enter a valid numeric token ID.');
+        return;
+      }
+
+      const label = this.accountLabel(accountAddress);
+      this.confirmData.set({
+        kind: this.data.intent,
+        amount: '',
+        tokenAddress: nftAddress,
+        tokenSymbol: 'NFT',
+        decimals: 0,
+        isETH: false,
+        isNFT: true,
+        nftAddress,
+        tokenId,
+        accountAddress,
+        spender: accountAddress,
+      });
+      this.confirmModalFields.set(
+        this.buildConfirmFields({
+          kind: this.data.intent,
+          tokenSymbol: 'NFT',
+          tokenAddress: nftAddress,
+          amount: '',
+          tokenId,
+          accountLabel: label,
+        }),
+      );
+      this.showConfirmModal.set(true);
+      return;
+    }
 
     const amount = this.amount().trim();
     if (!amount) return;
@@ -332,7 +407,11 @@ export class DepositWithdrawModalComponent implements OnInit {
     if (!d) return;
 
     try {
-      if (d.kind === 'deposit') {
+      if (d.isNFT) {
+        if (!d.nftAddress || !d.tokenId) throw new Error('Missing NFT details.');
+        if (d.kind === 'deposit') await this.portfolio.depositNFT(d.nftAddress, d.tokenId);
+        else await this.portfolio.withdrawNFT(d.nftAddress, d.tokenId);
+      } else if (d.kind === 'deposit') {
         if (d.isETH) await this.portfolio.depositETH(d.amount);
         else await this.portfolio.depositToken(d.tokenAddress, d.amount, d.decimals);
       } else {

@@ -466,6 +466,10 @@ export class NftSpotOrderModalComponent implements OnInit {
   }
 
   closeReview(): void {
+    if (this.txReceipt.receipt()?.status === 'success') {
+      this.close();
+      return;
+    }
     if ((this.isPlace() || this.isQuote()) && !this.submitLoading()) {
       this.reviewOpen.set(false);
       return;

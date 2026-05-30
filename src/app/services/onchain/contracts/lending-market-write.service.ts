@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { Contract, ContractTransactionReceipt, ContractTransactionResponse, ethers } from 'ethers';
 
 import { getContractAddress } from '../../../contracts/contract-registry';
+import { TreasuryTradeModuleAbi } from '../../../contracts/generated';
+import { TreasuryModeService } from '../../shared/treasury-mode.service';
 import { ErrorService } from '../../shared/error.service';
 import { TransactionAccessService } from '../../shared/compliance/transaction-access.service';
 import { AccountsChainService } from '../accounts.service';
@@ -40,9 +42,11 @@ export class LendingMarketWriteService {
   private readonly settings = inject(TradeSettingsService);
   private readonly transactionAccess = inject(TransactionAccessService);
   private readonly trigger = inject(TriggerService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   private readonly lendingContractAddress = getContractAddress('LendingContract');
   private readonly orderBookAddress = getContractAddress('LendingOrderBook');
+  private readonly treasuryTradeModuleAddress = getContractAddress('TreasuryTradeModule');
 
   marketKeyFor(args: { borrowToken: string; marketExpiry: bigint | number; riskLevel: number }): string {
     const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
@@ -65,14 +69,37 @@ export class LendingMarketWriteService {
 
     if (args.principal <= 0n) throw new Error('Principal must be greater than zero.');
     if (args.rateBps <= 0n) throw new Error('APR must be greater than zero.');
-    if (args.marketExpiry <= BigInt(Math.floor(Date.now() / 1000))) {
-      throw new Error('Market maturity must be in the future.');
+    if (args.marketExpiry <= 0n) {
+      throw new Error('Market maturity is required.');
     }
-    if (args.orderExpiry <= BigInt(Math.floor(Date.now() / 1000))) {
-      throw new Error('Order expiry must be in the future.');
+    if (args.orderExpiry <= 0n) {
+      throw new Error('Order expiry is required.');
     }
     if (args.orderExpiry > args.marketExpiry) {
       throw new Error('Order expiry cannot be later than market maturity.');
+    }
+
+    const treasuryAccount = this.selectedTreasuryLendingAccount();
+    if (treasuryAccount) {
+      if (args.side === 1) {
+        throw new Error('Treasury lending mode supports lend offers only. Borrow orders require a lending account.');
+      }
+      const trade = await this.treasuryTradeModule();
+      const hash = await this.waitForTx(
+        await trade['placeLendOrder'](
+          treasuryAccount,
+          this.orderBookAddress,
+          args.borrowToken,
+          args.marketExpiry,
+          args.riskLevel,
+          args.rateBps,
+          args.principal,
+          args.orderExpiry,
+        ),
+        'Placing treasury lend order failed',
+      );
+      this.trigger.emitDomainEvent({ type: 'lendingOrderbookChanged' });
+      return hash;
     }
 
     const account = this.selectedAccountOrThrow();
@@ -132,7 +159,7 @@ export class LendingMarketWriteService {
     if (!ethers.isHexString(args.repayMarketKey, 32)) throw new Error('Select the existing debt market to roll over.');
     if (args.principal <= 0n) throw new Error('Rollover principal must be greater than zero.');
     if (args.rateBps <= 0n) throw new Error('APR must be greater than zero.');
-    if (args.orderExpiry <= BigInt(Math.floor(Date.now() / 1000))) throw new Error('Order expiry must be in the future.');
+    if (args.orderExpiry <= 0n) throw new Error('Order expiry is required.');
     if (args.orderExpiry > args.marketExpiry) throw new Error('Order expiry cannot be later than the new market maturity.');
 
     const account = this.selectedAccountOrThrow();
@@ -164,6 +191,17 @@ export class LendingMarketWriteService {
     this.transactionAccess.assertWriteAllowed('lending order cancellation');
 
     if (orderId <= 0n) throw new Error('Order ID must be greater than zero.');
+
+    const treasuryAccount = this.selectedTreasuryLendingAccount();
+    if (treasuryAccount) {
+      const trade = await this.treasuryTradeModule();
+      const hash = await this.waitForTx(
+        await trade['cancelLendOrder'](treasuryAccount, this.orderBookAddress, orderId),
+        'Cancelling treasury lending order failed',
+      );
+      this.trigger.emitDomainEvent({ type: 'lendingOrderbookChanged' });
+      return hash;
+    }
 
     const account = this.selectedAccountOrThrow();
     const type = this.accounts.accountType(account);
@@ -206,6 +244,20 @@ export class LendingMarketWriteService {
 
     if (args.bondIndex <= 0n) throw new Error('Bond index must be greater than zero.');
 
+    const treasuryAccount = this.selectedTreasuryLendingAccount();
+    if (treasuryAccount) {
+      const trade = await this.treasuryTradeModule();
+      const method = args.action === 'initial'
+        ? 'redeemInitialLendingBond'
+        : 'claimSupplementalLendingBond';
+      const hash = await this.waitForTx(
+        await trade[method](treasuryAccount, this.lendingContractAddress, args.bondIndex),
+        'Claiming treasury lending bond failed',
+      );
+      this.trigger.emitDomainEvent({ type: 'lendingOrderbookChanged' });
+      return hash;
+    }
+
     const account = this.selectedAccountOrThrow();
     const type = this.accounts.accountType(account);
     const contract = await this.accountContract(account, type);
@@ -237,6 +289,20 @@ export class LendingMarketWriteService {
     const account = norm(this.settings.selectedAccountId() ?? '');
     if (!account) throw new Error('No account selected.');
     return account;
+  }
+
+  private selectedTreasuryLendingAccount(): string | null {
+    if (!this.treasuryMode.canUse('lend')) return null;
+    const account = norm(this.treasuryMode.selectedTreasuryAccount() ?? '');
+    return account || null;
+  }
+
+  private async treasuryTradeModule(): Promise<Contract> {
+    const provider = await this.wallet.getEthersProvider();
+    if (!provider) throw new Error('Connect a wallet first.');
+    const signer = await provider.getSigner().catch(() => null);
+    if (!signer) throw new Error('No wallet signer available.');
+    return new Contract(this.treasuryTradeModuleAddress, TreasuryTradeModuleAbi, signer);
   }
 
   private async accountContract(account: string, type: 'normal' | 'lending'): Promise<Contract> {

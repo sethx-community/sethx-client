@@ -8,6 +8,7 @@ export const environment: SethxClientEnvironment = {
   chainName: 'Sepolia',
   nativeCurrencySymbol: 'ETH',
   rpcUrl: '',
+  websocketRpcUrl: '',
   blockExplorerUrl: 'https://sepolia.etherscan.io',
 
   siteUrl: 'https://sethx.com',
@@ -18,5 +19,4 @@ export const environment: SethxClientEnvironment = {
 
   reownProjectId: '',
 
-  contracts: {},
 };

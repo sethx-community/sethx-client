@@ -1,0 +1,27 @@
+
+.sethx-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--trade-border);
+  background: var(--panel);
+  color: var(--text-light);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.sethx-refresh-button:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.sethx-refresh-button.is-refreshing i {
+  animation: sethx-spin 0.8s linear infinite;
+}
+
+@keyframes sethx-spin {
+  to { transform: rotate(360deg); }
+}

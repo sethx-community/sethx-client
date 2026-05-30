@@ -8,10 +8,14 @@ import { getContractAddress } from '../../../contracts/contract-registry';
 
 function parseFuturesSize(value: string): bigint {
   const v = String(value ?? '').trim().replace(',', '.');
-  if (!/^\d+$/.test(v)) {
-    throw new Error('Futures amount must be a whole contract size.');
+  if (!/^(?:\d+|\d*\.\d+)$/.test(v)) {
+    throw new Error('Futures amount must be a valid contract amount.');
   }
-  return BigInt(v);
+  const parsed = ethers.parseUnits(v, 18);
+  if (parsed <= 0n) {
+    throw new Error('Futures amount must be greater than zero.');
+  }
+  return parsed;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,7 +44,7 @@ export class FuturesOrderBookWriteService {
     const market = await this.futuresReads.getMarket(args.marketKey);
     if (!market) throw new Error('Unknown futures market');
 
-    const priceDecimals = Math.max(0, Number(market.quoteTokenDecimals ?? 18));
+    const priceDecimals = Math.max(0, Number(market.oraclePriceDecimals ?? market.quoteTokenDecimals ?? 18));
     const price = ethers.parseUnits(String(args.priceHuman ?? '0').replace(',', '.'), priceDecimals);
     const amount = parseFuturesSize(String(args.amountHuman ?? '0'));
 

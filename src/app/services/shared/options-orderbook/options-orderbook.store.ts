@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal, resource } from '@angular/core';
 import { ethers } from 'ethers';
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
+import { MarketTimeService } from '../market-time.service';
 import { norm } from '../../../core/tokens/token-normalize';
 import {
   OptionsOrderBookReadService,
@@ -71,6 +72,7 @@ export class OptionsOrderBookStore {
   private readonly optionReads = inject(OptionContractReadService);
   private readonly trigger = inject(TriggerService);
   private readonly settings = inject(TradeSettingsService);
+  private readonly marketTime = inject(MarketTimeService);
   private readonly fmt = inject(OptionsOrderBookFormatService);
 
   // formatting helpers
@@ -189,7 +191,14 @@ export class OptionsOrderBookStore {
     const q = this.marketSearch().trim().toLowerCase();
     const onlyMine = this.marketsWithMyOrdersOnly();
     const myMarkets = new Set(this.myOrders().map((o) => String(o.order?.marketKey ?? '').toLowerCase()));
-    let list = this.activeMarkets();
+    const positionMarkets = new Set(this.myPositions().map((p) => String(p.marketKey ?? '').toLowerCase()));
+    let list = this.activeMarkets().filter((m) => {
+      const info = m.market ?? m.derived;
+      const expiry = (info as any)?.expiry ?? (info as any)?.optionExpiry;
+      return this.marketTime.hasOpenOptionWindow({ active: true, settled: false, expiry })
+        || myMarkets.has(String(m.marketKey ?? '').toLowerCase())
+        || positionMarkets.has(String(m.marketKey ?? '').toLowerCase());
+    });
     if (q) {
       list = list.filter((m) => {
         const info = m.market ?? m.derived;

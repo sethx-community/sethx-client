@@ -57,6 +57,17 @@ export type ProtocolOracleInfo = {
   status: number | null;
   statusLabel: string;
   contexts: string[];
+  pair: string;
+  source: string;
+  notes: string;
+  price: bigint | null;
+  priceTimestamp: bigint | null;
+  lastFetchTimestamp: bigint | null;
+  decimals: number | null;
+  feed: string;
+  feedDecimals: number | null;
+  maxStaleness: bigint | null;
+  fetchFormula: string;
 };
 
 export type ProtocolLiveOverview = {
@@ -72,9 +83,11 @@ export type ProtocolLiveOverview = {
   feeReadStatus: string;
   vaultErc20Tokens: string[];
   vaultErc721Tokens: string[];
+  vaultErc1155Tokens: string[];
   vaultQuantities: ProtocolVaultQuantity[];
   vaultErc20Status: string;
   vaultErc721Status: string;
+  vaultErc1155Status: string;
   oracleInfo: ProtocolOracleInfo[];
   oracleReadStatus: string;
   governanceSettingsLoaded: boolean;
@@ -88,6 +101,17 @@ const ERC20_MIN_ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function symbol() view returns (string)',
   'function decimals() view returns (uint8)',
+] as const satisfies ethers.InterfaceAbi;
+
+const PRICE_ORACLE_DETAIL_ABI = [
+  'function getLastPrice() view returns (uint256 price, uint256 timestamp, uint256 lastFetchTimestamp, string status)',
+  'function decimals() view returns (uint8)',
+  'function metadata() view returns (string pair, string source, string notes)',
+  'function fetchFormula() view returns (string)',
+  'function feed() view returns (address)',
+  'function feedDecimals() view returns (uint8)',
+  'function maxStaleness() view returns (uint256)',
+  'function fetchPrice()',
 ] as const satisfies ethers.InterfaceAbi;
 
 @Injectable({ providedIn: 'root' })
@@ -147,9 +171,11 @@ export class ProtocolDataService {
       feeReadStatus: String(this.fees.acceptedPaymentTokensStatus()),
       vaultErc20Tokens: this.vault.erc20Tokens(),
       vaultErc721Tokens: this.vault.erc721Tokens(),
+      vaultErc1155Tokens: this.vault.erc1155Tokens(),
       vaultQuantities: this._vaultQuantities(),
       vaultErc20Status: String(this.vault.erc20Status()),
       vaultErc721Status: String(this.vault.erc721Status()),
+      vaultErc1155Status: String(this.vault.erc1155Status()),
       oracleInfo: this._oracleInfo(),
       oracleReadStatus: this._oracleReadStatus(),
       governanceSettingsLoaded: Boolean(this.governance.settings()),
@@ -246,14 +272,23 @@ export class ProtocolDataService {
     try {
       const oracles = await this.priceManager.getApprovedOracles();
       const contextNames = ['General', 'Trade value', 'Futures settlement', 'Collateral evaluation', 'Options settlement', 'Fee conversion'];
+      const runner = await this.governanceContracts.runner();
       const rows = await Promise.all(oracles.map(async (oracle) => {
-        const [metadata, status, contextChecks] = await Promise.all([
+        const detail = new Contract(oracle, PRICE_ORACLE_DETAIL_ABI, runner);
+        const [metadata, status, contextChecks, oracleMetadata, lastPrice, decimals, fetchFormula, feed, feedDecimals, maxStaleness] = await Promise.all([
           this.priceManager.getOracleMetadata(oracle).catch(() => ({ token: '', label: '', description: '' })),
           this.priceManager.getOracleStatus(oracle).catch(() => null),
           Promise.all(contextNames.map(async (label, context) => {
             const list = await this.priceManager.getApprovedOraclesForContext(context).catch(() => [] as string[]);
             return list.some((x) => x.toLowerCase() === oracle.toLowerCase()) ? label : '';
           })),
+          detail['metadata']().catch(() => null),
+          detail['getLastPrice']().catch(() => null),
+          detail['decimals']().catch(() => null),
+          detail['fetchFormula']().catch(() => ''),
+          detail['feed']().catch(() => ''),
+          detail['feedDecimals']().catch(() => null),
+          detail['maxStaleness']().catch(() => null),
         ]);
         return {
           oracle,
@@ -263,6 +298,17 @@ export class ProtocolDataService {
           status,
           statusLabel: this.oracleStatusLabel(status),
           contexts: contextChecks.filter(Boolean),
+          pair: String(oracleMetadata?.pair ?? oracleMetadata?.[0] ?? ''),
+          source: String(oracleMetadata?.source ?? oracleMetadata?.[1] ?? ''),
+          notes: String(oracleMetadata?.notes ?? oracleMetadata?.[2] ?? ''),
+          price: lastPrice == null ? null : BigInt(lastPrice?.price ?? lastPrice?.[0] ?? 0),
+          priceTimestamp: lastPrice == null ? null : BigInt(lastPrice?.timestamp ?? lastPrice?.[1] ?? 0),
+          lastFetchTimestamp: lastPrice == null ? null : BigInt(lastPrice?.lastFetchTimestamp ?? lastPrice?.[2] ?? 0),
+          decimals: decimals == null ? null : Number(decimals),
+          feed: String(feed || ''),
+          feedDecimals: feedDecimals == null ? null : Number(feedDecimals),
+          maxStaleness: maxStaleness == null ? null : BigInt(maxStaleness),
+          fetchFormula: String(fetchFormula || ''),
         } as ProtocolOracleInfo;
       }));
       this._oracleInfo.set(rows);
@@ -287,6 +333,6 @@ export class ProtocolDataService {
 
   private oracleStatusLabel(status: number | null): string {
     if (status == null) return 'Pending';
-    return ['Unset', 'Active', 'Stale', 'Invalid', 'Paused'][status] ?? `Status ${status}`;
+    return ['OK', 'DEGRADED', 'FROZEN', 'PENDING', 'STALE'][status] ?? `Status ${status}`;
   }
 }

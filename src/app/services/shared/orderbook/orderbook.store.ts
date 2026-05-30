@@ -8,7 +8,7 @@ import { TradeSettingsService } from '../trade-settings.service';
 import { TokenSpotOrderBookReadService } from '../../onchain/contracts/token-spot-orderbook-read.service';
 import { TriggerService } from '../../shared/trigger.service';
 
-type BookDir = { base: string; quote: string; count: bigint };
+type BookDir = { base: string; quote: string; count: bigint; volume: bigint };
 
 export type LadderRow = {
   orderId: bigint;
@@ -147,40 +147,35 @@ export class OrderBookStore {
         const key = makeBookKey(baseRaw, quoteRaw);
         const c = canon(baseRaw, quoteRaw);
 
-        const [cntA, cntB] = await Promise.all([
-          this.reads
-            .getActiveBookOrderCount(
-              contractAddressFromKey(baseKey),
-              contractAddressFromKey(quoteKey),
-            )
-            .then(bi),
-          this.reads
-            .getActiveBookOrderCount(
-              contractAddressFromKey(quoteKey),
-              contractAddressFromKey(baseKey),
-            )
-            .then(bi),
+        const [idsA, idsB] = await Promise.all([
+          this.reads.getOrderBookIds(
+            contractAddressFromKey(baseKey),
+            contractAddressFromKey(quoteKey),
+          ),
+          this.reads.getOrderBookIds(
+            contractAddressFromKey(quoteKey),
+            contractAddressFromKey(baseKey),
+          ),
         ]);
+
+        const [ordersA, ordersB] = await Promise.all([
+          this.reads.loadOrdersByIds(idsA, { max: 4, includeExpired: false }),
+          this.reads.loadOrdersByIds(idsB, { max: 4, includeExpired: false }),
+        ]);
+
+        const cntA = BigInt(ordersA.length);
+        const cntB = BigInt(ordersB.length);
+        const volumeA = ordersA.reduce((sum, order) => sum + (order.amount ?? 0n), 0n);
+        const volumeB = ordersB.reduce((sum, order) => sum + (order.amount ?? 0n), 0n);
 
         let myTotal = 0n;
         if (mySet.size) {
-          const [idsA, idsB] = await Promise.all([
-            this.reads.getOrderBookIds(
-              contractAddressFromKey(baseKey),
-              contractAddressFromKey(quoteKey),
-            ),
-            this.reads.getOrderBookIds(
-              contractAddressFromKey(quoteKey),
-              contractAddressFromKey(baseKey),
-            ),
-          ]);
-
           for (const id of idsA) if (mySet.has(id.toString())) myTotal++;
           for (const id of idsB) if (mySet.has(id.toString())) myTotal++;
         }
 
-        const a: BookDir = { base: baseKey, quote: quoteKey, count: cntA };
-        const b: BookDir = { base: quoteKey, quote: baseKey, count: cntB };
+        const a: BookDir = { base: baseKey, quote: quoteKey, count: cntA, volume: volumeA };
+        const b: BookDir = { base: quoteKey, quote: baseKey, count: cntB, volume: volumeB };
 
         map.set(key, {
           key,

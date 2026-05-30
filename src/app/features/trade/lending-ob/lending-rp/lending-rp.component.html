@@ -1,7 +1,5 @@
 <div class="sethx-panel">
-  <div class="h-2"></div>
-
-  <aside class="h-full flex flex-col min-h-0 space-y-6">
+  <aside class="sethx-right-panel-stack">
     <section class="sethx-panel-section sethx-panel-card">
       <div class="sethx-panel-heading">Account Actions</div>
       <div class="sethx-panel-section-title">Select Account / Fee Token</div>
@@ -50,20 +48,18 @@
         </button>
       } @else {
         <p class="sethx-panel-copy">
-          Select a lending market in the center view to unlock market-specific lending actions.
+          No market selected. You can still place an order and create a new lending market by choosing maturity and risk tier in the order modal.
         </p>
       }
     </section>
 
-    @if (selectedMarketKey()) {
-      <section class="sethx-panel-section sethx-panel-card">
-        <div class="sethx-panel-heading">Market Actions</div>
-        <div class="sethx-panel-section-title">Lending</div>
-        <p class="sethx-panel-copy">
-          Place lend or borrow orders, cancel open orders, repay debt, and redeem lender bond proceeds for the selected lending market.
-        </p>
-        <app-order-flow-launcher [actions]="actions" [ctx]="ctx()"></app-order-flow-launcher>
-      </section>
-    }
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Market Actions</div>
+      <div class="sethx-panel-section-title">Lending</div>
+      <p class="sethx-panel-copy">
+        Place lend or borrow orders. Select a market to prefill fields, or open the order modal without a selected market to choose maturity and risk tier for a new market.
+      </p>
+      <app-order-flow-launcher [actions]="actions" [ctx]="ctx()"></app-order-flow-launcher>
+    </section>
   </aside>
 </div>

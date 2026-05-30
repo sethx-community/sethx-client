@@ -6,6 +6,7 @@ import { WalletConnectService } from '../../../wallet/wallet-connect.service';
 import { ErrorService } from '../../shared/error.service';
 import { TradeSettingsService } from '../../shared/trade-settings.service'; // adjust path if needed
 import { norm } from '../../../core/tokens/token-normalize';
+import { getContractAddress } from '../../../contracts/contract-registry';
 
 @Injectable({ providedIn: 'root' })
 export class AccountContractService extends EthersContractService<EthersContract> {
@@ -26,6 +27,10 @@ export class AccountContractService extends EthersContractService<EthersContract
     const acct = norm(this.settings.selectedAccountId() ?? '');
     if (!acct) throw new Error('No account selected');
     return acct;
+  }
+
+  private getVaultOrThrow(): string {
+    return getContractAddress('SethxVault');
   }
 
   async getAccountName(account: string): Promise<string> {
@@ -214,6 +219,11 @@ export class AccountContractService extends EthersContractService<EthersContract
     const account = this.getAccountOrThrow();
     return this.call('placeOrderMarginOption' as any, [params.orderBook, params.marketKey, params.intent, params.size, params.askPrice, params.expiry, params.feeToken] as any, 'Margin option order placement failed', account);
   }
+  async placeOrderMarginOptionForMarket(params: { orderBook: string; ticker: string; optionType: number; oracle: string; strikePrice: bigint; marketExpiry: bigint; collateralBps: bigint; intent: number; size: bigint; askPrice: bigint; expiry: bigint; feeToken: string }) {
+    const account = this.getAccountOrThrow();
+    return this.call('placeOrderMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.collateralBps, params.intent, params.size, params.askPrice, params.expiry, params.feeToken] as any, 'Margin option order placement failed', account);
+  }
+
   async acceptMarginOptionOrder(args: { orderBook: string; makerOrderId: bigint; amount: bigint; feeToken: string }) {
     const account = this.getAccountOrThrow();
     return this.call('acceptOrderMarginOption' as any, [args.orderBook, args.makerOrderId, args.amount, args.feeToken] as any, 'Accepting margin option order failed', account);
@@ -259,6 +269,11 @@ export class AccountContractService extends EthersContractService<EthersContract
       'Binary option order placement failed',
       account,
     );
+  }
+
+  async placeOrderBinaryMarginOptionForMarket(params: { orderBook: string; ticker: string; optionType: number; oracle: string; strikePrice: bigint; marketExpiry: bigint; intent: number; payoutAmount: bigint; askPrice: bigint; expiry: bigint; feeToken: string }) {
+    const account = this.getAccountOrThrow();
+    return this.call('placeOrderBinaryMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.intent, params.payoutAmount, params.askPrice, params.expiry, params.feeToken] as any, 'Binary option order placement failed', account);
   }
 
   async acceptBinaryMarginOptionOrder(args: {
@@ -369,15 +384,52 @@ export class AccountContractService extends EthersContractService<EthersContract
     );
   }
 
+
+  private async ensureERC721Approval(nft: string, tokenId: bigint, spender: string): Promise<void> {
+    const provider = await this.walletService.getEthersProvider();
+    if (!provider) throw new Error('No provider');
+
+    const signer = await provider.getSigner?.();
+    if (!signer) throw new Error('No signer available');
+
+    const owner = await signer.getAddress();
+    const erc721 = new ethers.Contract(
+      nft,
+      [
+        'function ownerOf(uint256 tokenId) view returns (address)',
+        'function getApproved(uint256 tokenId) view returns (address)',
+        'function isApprovedForAll(address owner,address operator) view returns (bool)',
+        'function approve(address to,uint256 tokenId)',
+      ],
+      signer,
+    );
+
+    const currentOwner = String(await erc721['ownerOf'](tokenId));
+    if (currentOwner.toLowerCase() !== owner.toLowerCase()) {
+      throw new Error('Connected wallet does not own this NFT.');
+    }
+
+    const [approved, approvedForAll] = await Promise.all([
+      erc721['getApproved'](tokenId).catch(() => ethers.ZeroAddress),
+      erc721['isApprovedForAll'](owner, spender).catch(() => false),
+    ]);
+
+    if (String(approved).toLowerCase() === spender.toLowerCase() || approvedForAll) return;
+
+    const tx = await erc721['approve'](spender, tokenId);
+    await tx.wait();
+  }
+
   // -----------------------------
   // Vault actions
   // -----------------------------
 
   async depositETH(amountHuman: string) {
     const account = this.getAccountOrThrow();
+    const vault = this.getVaultOrThrow();
     return this.call(
       'depositETH',
-      [{ value: ethers.parseEther(amountHuman) }] as any,
+      [account, vault, { value: ethers.parseEther(amountHuman) }] as any,
       'ETH deposit failed',
       account,
     );
@@ -404,13 +456,19 @@ export class AccountContractService extends EthersContractService<EthersContract
     decimals?: number;
   }) {
     const account = this.getAccountOrThrow();
+    const vault = this.getVaultOrThrow();
     const decimals = args.decimals ?? 18;
+    const normalizedAmount = args.amountHuman.replace(',', '.');
+
+    await this.ensureAllowance(args.token, account, normalizedAmount, decimals);
 
     return this.call(
       'depositToken' as any,
       [
         args.token,
-        ethers.parseUnits(args.amountHuman.replace(',', '.'), decimals),
+        ethers.parseUnits(normalizedAmount, decimals),
+        account,
+        vault,
       ] as any,
       'Token deposit failed',
       account,
@@ -432,6 +490,33 @@ export class AccountContractService extends EthersContractService<EthersContract
         ethers.parseUnits(args.amountHuman.replace(',', '.'), decimals),
       ] as any,
       'Token withdrawal failed',
+      account,
+    );
+  }
+
+  async depositNFT(args: { nft: string; tokenId: string | bigint }) {
+    const account = this.getAccountOrThrow();
+    const vault = this.getVaultOrThrow();
+    const tokenId = BigInt(args.tokenId);
+
+    await this.ensureERC721Approval(args.nft, tokenId, account);
+
+    return this.call(
+      'depositNFT721' as any,
+      [args.nft, tokenId, account, vault] as any,
+      'NFT deposit failed',
+      account,
+    );
+  }
+
+  async withdrawNFT(args: { nft: string; tokenId: string | bigint }) {
+    const account = this.getAccountOrThrow();
+    const tokenId = BigInt(args.tokenId);
+
+    return this.call(
+      'withdrawNFT721' as any,
+      [args.nft, tokenId] as any,
+      'NFT withdrawal failed',
       account,
     );
   }

@@ -4,6 +4,7 @@ import { PriceManagerContractService } from '../onchain/contracts/pricemanager-c
 import { VaultContractService } from '../onchain/contracts/vault-contract.service';
 import { ERC20ContractService } from '../onchain/contracts/erc20-contract.service';
 import { ETH_ADDRESS, TokenRegistryService } from './main.tokens';
+import { WHITELISTED_TOKENS } from '../../constants/token-whitelist';
 import { ProtocolConfigService } from './config/protocol-config.service';
 import { TriggerService } from '../shared/trigger.service';
 import { toStatus, type Status } from '../../core/tokens/resource-status';
@@ -204,6 +205,10 @@ export class TokenService {
       all.add(normalizeAddressOrNative(t.address));
     }
 
+    for (const t of this._configuredWhitelistTokens()) {
+      all.add(normalizeAddressOrNative(t.address));
+    }
+
     return Array.from(all);
   }
 
@@ -271,6 +276,10 @@ export class TokenService {
       .map((t) => normalizeAddressOrNative(t.address))
       .filter(Boolean);
 
+    const configuredWhitelistRaw = this._configuredWhitelistTokens()
+      .map((t) => normalizeAddressOrNative(t.address))
+      .filter(Boolean);
+
     const valid = (a: string) => a === n(ETH_ADDRESS) || isAddress(a);
 
     const main = this.uniq(mainRaw).filter(valid);
@@ -281,7 +290,10 @@ export class TokenService {
     ]).filter(valid);
 
     try {
-      trustedRaw = await this._loadTrustedTokens(candidates);
+      trustedRaw = this.uniq([
+        ...configuredWhitelistRaw,
+        ...(await this._loadTrustedTokens(candidates)),
+      ]);
     } catch {
       trustedRaw = [];
     }
@@ -305,6 +317,10 @@ export class TokenService {
 
   private _configuredTokens() {
     return this.protocolConfig.assets().filter((asset) => asset.enabled);
+  }
+
+  private _configuredWhitelistTokens() {
+    return WHITELISTED_TOKENS;
   }
 
   private async _loadTrustedTokens(candidates: string[]): Promise<string[]> {

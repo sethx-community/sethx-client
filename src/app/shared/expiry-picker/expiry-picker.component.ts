@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -44,7 +44,7 @@ function parsePositiveUnix(value: string): bigint | null {
   imports: [CommonModule, FormsModule],
   templateUrl: './expiry-picker.component.html',
 })
-export class ExpiryPickerComponent {
+export class ExpiryPickerComponent implements OnChanges {
   @Input() label = 'Expiry';
   @Input() value = '0';
   @Input() helper = 'Default sends 0 and lets the contract apply its default expiry.';
@@ -54,6 +54,27 @@ export class ExpiryPickerComponent {
   mode: ExpiryMode = 'default';
   customLocal = '';
   manualUnix = '';
+
+
+  ngOnChanges(): void {
+    if (!this.allowDefault && this.mode === 'default') {
+      const parsed = parseExpirySelection(this.value);
+      if (parsed.kind === 'relative') {
+        const seconds = parsed.seconds;
+        if (seconds === EXPIRY_PRESET_SECONDS['1h']) this.mode = '1h';
+        else if (seconds === EXPIRY_PRESET_SECONDS['1d']) this.mode = '1d';
+        else if (seconds === EXPIRY_PRESET_SECONDS['7d']) this.mode = '7d';
+        else if (seconds === EXPIRY_PRESET_SECONDS['30d']) this.mode = '30d';
+        else this.mode = 'manual';
+      } else if (parsed.kind === 'absolute') {
+        this.mode = 'manual';
+        this.manualUnix = parsed.unix.toString();
+      } else {
+        this.mode = '1h';
+        this.emitValue(encodeRelativeExpiry(EXPIRY_PRESET_SECONDS['1h']));
+      }
+    }
+  }
 
   readonly modes: Array<{ value: ExpiryMode; label: string }> = [
     { value: 'default', label: 'Default' },

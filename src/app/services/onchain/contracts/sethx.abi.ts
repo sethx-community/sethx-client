@@ -1055,7 +1055,8 @@ export const ACCOUNT_ABI = [
     type: 'function',
   },
 
-  { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'bytes32', name: 'marketKey', type: 'bytes32' }, { internalType: 'uint8', name: 'intent', type: 'uint8' }, { internalType: 'uint256', name: 'size', type: 'uint256' }, { internalType: 'uint256', name: 'askPrice', type: 'uint256' }, { internalType: 'uint256', name: 'expiry', type: 'uint256' }, { internalType: 'address', name: 'feeToken', type: 'address' } ], name: 'placeOrderMarginOption', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'bytes32', name: 'marketKey', type: 'bytes32' }, { internalType: 'uint8', name: 'intent', type: 'uint8' }, { internalType: 'uint256', name: 'size', type: 'uint256' }, { internalType: 'uint256', name: 'askPrice', type: 'uint256' }, { internalType: 'uint256', name: 'expiry', type: 'uint256' }, { internalType: 'address', name: 'feeToken', type: 'address' } ], name: 'placeOrderMarginOption', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'string', name: 'ticker', type: 'string' }, { internalType: 'uint8', name: 'optionType', type: 'uint8' }, { internalType: 'address', name: 'oracle', type: 'address' }, { internalType: 'uint256', name: 'strikePrice', type: 'uint256' }, { internalType: 'uint256', name: 'marketExpiry', type: 'uint256' }, { internalType: 'uint256', name: 'collateralBps', type: 'uint256' }, { internalType: 'uint8', name: 'intent', type: 'uint8' }, { internalType: 'uint256', name: 'size', type: 'uint256' }, { internalType: 'uint256', name: 'askPrice', type: 'uint256' }, { internalType: 'uint256', name: 'expiry', type: 'uint256' }, { internalType: 'address', name: 'feeToken', type: 'address' } ], name: 'placeOrderMarginOptionForMarket', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'uint256', name: 'makerOrderId', type: 'uint256' }, { internalType: 'uint256', name: 'amount', type: 'uint256' }, { internalType: 'address', name: 'feeToken', type: 'address' } ], name: 'acceptOrderMarginOption', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'uint256', name: 'orderId', type: 'uint256' } ], name: 'cancelOrderMarginOption', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [ { internalType: 'address', name: 'marginOptionContract', type: 'address' }, { internalType: 'bytes32', name: 'marketKey', type: 'bytes32' }, { internalType: 'uint256', name: 'size', type: 'uint256' } ], name: 'claimMarginOption', outputs: [], stateMutability: 'nonpayable', type: 'function' },
@@ -1076,6 +1077,7 @@ export const ACCOUNT_ABI = [
     stateMutability: 'nonpayable',
     type: 'function',
   },
+  { inputs: [ { internalType: 'address', name: 'orderbook', type: 'address' }, { internalType: 'string', name: 'ticker', type: 'string' }, { internalType: 'uint8', name: 'optionType', type: 'uint8' }, { internalType: 'address', name: 'oracle', type: 'address' }, { internalType: 'uint256', name: 'strikePrice', type: 'uint256' }, { internalType: 'uint256', name: 'marketExpiry', type: 'uint256' }, { internalType: 'uint8', name: 'intent', type: 'uint8' }, { internalType: 'uint256', name: 'payoutAmount', type: 'uint256' }, { internalType: 'uint256', name: 'askPrice', type: 'uint256' }, { internalType: 'uint256', name: 'expiry', type: 'uint256' }, { internalType: 'address', name: 'feeToken', type: 'address' } ], name: 'placeOrderBinaryMarginOptionForMarket', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
   {
     inputs: [
       { internalType: 'address', name: 'orderbook', type: 'address' },
@@ -1120,7 +1122,10 @@ export const ACCOUNT_ABI = [
     type: 'function',
   },
   {
-    inputs: [],
+    inputs: [
+      { internalType: 'address', name: 'expectedAccount', type: 'address' },
+      { internalType: 'address', name: 'expectedVault', type: 'address' },
+    ],
     name: 'depositETH',
     outputs: [],
     stateMutability: 'payable',
@@ -1161,6 +1166,16 @@ export const ACCOUNT_ABI = [
         name: 'tokenId',
         type: 'uint256',
       },
+      {
+        internalType: 'address',
+        name: 'expectedAccount',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'expectedVault',
+        type: 'address',
+      },
     ],
     name: 'depositNFT721',
     outputs: [],
@@ -1178,6 +1193,16 @@ export const ACCOUNT_ABI = [
         internalType: 'uint256',
         name: 'amount',
         type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: 'expectedAccount',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'expectedVault',
+        type: 'address',
       },
     ],
     name: 'depositToken',
@@ -1878,7 +1903,13 @@ export const VAULT_ABI = [
     inputs: [],
     outputs: [{ type: 'address[]' }],
   },
-
+  {
+    type: 'function',
+    name: 'getERC1155Tokens',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address[]' }],
+  },
 
   // === View: Balances ===
   {

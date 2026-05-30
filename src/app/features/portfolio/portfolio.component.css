@@ -1,0 +1,49 @@
+
+:host {
+  display: block;
+}
+
+
+.asset-card-description {
+  margin-top: 0.25rem;
+  min-height: 2.5rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.asset-summary-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-border, #d6d3d1) 70%, transparent);
+  background: color-mix(in srgb, var(--color-background, #08192e) 82%, transparent);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.asset-summary-line span {
+  color: var(--color-text-muted, #64748b);
+}
+
+.asset-summary-line strong {
+  color: var(--color-text, #0f172a);
+  font-weight: 650;
+  text-align: right;
+}
+
+:host-context(.theme-dark) .asset-summary-line {
+  border-color: color-mix(in srgb, var(--color-frame, #bfa76b) 34%, var(--color-trade-border, #10294c));
+  background: color-mix(in srgb, var(--color-background, #08192e) 92%, transparent);
+}
+
+
+:host-context(.theme-dark) .asset-summary-line strong {
+  color: #ffffff;
+}
+
+:host-context(.theme-light) .asset-summary-line {
+  background: color-mix(in srgb, #ffffff 72%, var(--color-background, #f7f3ea));
+}

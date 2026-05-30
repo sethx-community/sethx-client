@@ -1,4 +1,3 @@
-import { CONTRACT_ADDRESSES } from '../app/contracts/generated/addresses';
 import type { SethxClientEnvironment } from './environment.model';
 
 export const environment: SethxClientEnvironment = {
@@ -9,6 +8,7 @@ export const environment: SethxClientEnvironment = {
   chainName: 'Hardhat Local',
   nativeCurrencySymbol: 'ETH',
   rpcUrl: 'http://127.0.0.1:8545',
+  websocketRpcUrl: 'ws://127.0.0.1:8545',
   blockExplorerUrl: '',
 
   siteUrl: 'http://localhost:4200',
@@ -18,6 +18,4 @@ export const environment: SethxClientEnvironment = {
   releaseUrl: 'https://github.com/sethx-community/sethx-client/releases',
 
   reownProjectId: 'a06102eecc532a455cd608c2934914c2',
-
-  contracts: CONTRACT_ADDRESSES.localhost,
 };

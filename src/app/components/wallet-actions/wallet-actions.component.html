@@ -1,6 +1,6 @@
 <div class="sethx-panel-section-title">Deposit / withdraw</div>
 <p class="sethx-panel-copy">
-  Move ETH or supported ERC20 tokens between the selected account and the protocol vault.
+  Move ETH, supported ERC20 tokens, or ERC721 NFTs between the selected account and the protocol vault.
 </p>
 
 @if (selectedAccountId()) {
@@ -59,6 +59,22 @@
     (click)="openVaultAction('withdraw', 'TOKEN')"
   >
     Withdraw Token
+  </button>
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('deposit', 'NFT')"
+  >
+    Deposit NFT
+  </button>
+  <button
+    type="button"
+    class="sethx-button-primary"
+    [disabled]="!selectedAccountId() || portfolioWriting() || !canWrite()"
+    (click)="openVaultAction('withdraw', 'NFT')"
+  >
+    Withdraw NFT
   </button>
 </div>
 

@@ -116,7 +116,14 @@ export class FuturesTradeComponent {
 
   formatFuturesPrice(v: bigint | null): string {
     if (v === null) return '—';
-    return this.ob.store.formatQuotePrice(v, this.ob.store.selectedMarketRow()?.market?.quoteTokenDecimals ?? 18);
+    return this.ob.store.formatOraclePrice(v, this.ob.store.selectedMarketRow()?.market?.oraclePriceDecimals ?? 18);
+  }
+
+  formatFuturesOrderPrice(row: any): string {
+    const market = row?.marketKey
+      ? this.ob.store.activeMarkets().find((m) => m.marketKey === row.marketKey)?.market
+      : this.ob.store.selectedMarketRow()?.market;
+    return this.ob.store.formatOraclePrice(BigInt(row?.price ?? 0n), market?.oraclePriceDecimals ?? 18);
   }
 
   marketsMetrics(): SpotSummaryMetric[] {
@@ -142,12 +149,12 @@ export class FuturesTradeComponent {
 
   positionsMetrics(): SpotSummaryMetric[] {
     const positions = this.ob.store.myPositions();
-    const long = positions.reduce((acc, p) => acc + Number(p.longSize ?? 0n), 0);
-    const short = positions.reduce((acc, p) => acc + Number(p.shortSize ?? 0n), 0);
+    const long = positions.reduce((acc, p) => acc + BigInt(p.longSize ?? 0n), 0n);
+    const short = positions.reduce((acc, p) => acc + BigInt(p.shortSize ?? 0n), 0n);
     return [
       { label: 'Positions', value: positions.length },
-      { label: 'Long size', value: long.toString(), tone: long > 0 ? 'up' : 'muted' },
-      { label: 'Short size', value: short.toString(), tone: short > 0 ? 'down' : 'muted' },
+      { label: 'Long contracts', value: this.ob.store.formatContracts(long), tone: long > 0n ? 'up' : 'muted' },
+      { label: 'Short contracts', value: this.ob.store.formatContracts(short), tone: short > 0n ? 'down' : 'muted' },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
   }
@@ -159,7 +166,6 @@ export class FuturesTradeComponent {
       { label: 'Best Ask', value: this.formatFuturesPrice(this.bestFuturesAsk()), tone: 'down' },
       { label: 'Spread', value: this.formatFuturesPrice(this.futuresSpread()) },
       { label: 'Settlement', value: this.formatSettlementPriceFull(row) },
-      { label: 'Passive MM', value: this.passiveStatus(row), tone: row?.passiveSnapshot?.active ? 'up' : 'muted' },
       { label: 'Initial margin', value: this.formatPercentBps(row?.market?.initialMarginBps) },
     ];
   }
@@ -231,6 +237,34 @@ export class FuturesTradeComponent {
   previousMarketsPage(): void { const limit = Math.max(1, Number(this.ob.store.marketLimit() || 25)); this.ob.store.marketOffset.set(Math.max(0, Number(this.ob.store.marketOffset() || 0) - limit)); }
   nextMarketsPage(): void { const limit = Math.max(1, Number(this.ob.store.marketLimit() || 25)); this.ob.store.marketOffset.set(Number(this.ob.store.marketOffset() || 0) + limit); }
 
+
+  futuresLadderRows(): Array<{ bid: any | null; ask: any | null }> {
+    const bids = this.ob.store.buyOrders();
+    const asks = this.ob.store.sellOrders();
+    const length = Math.max(bids.length, asks.length);
+    return Array.from({ length }, (_, index) => ({
+      bid: bids[index] ?? null,
+      ask: asks[index] ?? null,
+    }));
+  }
+
+  trackFuturesLadderRow(index: number, row: { bid: any | null; ask: any | null }): string {
+    return `${row.bid?.orderId?.toString?.() ?? 'b'}-${row.ask?.orderId?.toString?.() ?? 'a'}-${index}`;
+  }
+
+  selectLadderOrder(row: any | null, side: 'buy' | 'sell', ev?: MouseEvent): void {
+    if (!row) return;
+    ev?.stopPropagation();
+    this.orderSelection.selectOrToggle({
+      product: 'futures',
+      marketKey: this.ob.store.selectedMarketKey(),
+      orderId: row.orderId?.toString?.() ?? String(row.orderId ?? ''),
+      side,
+      isMine: this.isOwnOrder(row),
+      order: row,
+    });
+  }
+
   trackMarket = (_: number, m: { marketKey: string }) => m.marketKey;
   trackOrder = (_: number, r: any) => r.orderId?.toString?.() ?? _;
 
@@ -251,7 +285,6 @@ export class FuturesTradeComponent {
   }
 
   readonly ZERO_BI = 0n;
-  readonly ZERO_ADDRESS = ethers.ZeroAddress;
 
   settlementPriceFor(m: any): bigint {
     return (m?.market?.lastSettlementPrice ?? this.ZERO_BI) as bigint;
@@ -261,10 +294,14 @@ export class FuturesTradeComponent {
     return (m?.market?.quoteTokenDecimals ?? 18) as number;
   }
 
+  oracleDecimalsFor(m: any): number {
+    return (m?.market?.oraclePriceDecimals ?? 18) as number;
+  }
+
   formatSettlementPriceFull(m: any): string {
-    return this.ob.store.formatQuotePrice(
+    return this.ob.store.formatOraclePrice(
       this.settlementPriceFor(m),
-      this.quoteDecimalsFor(m),
+      this.oracleDecimalsFor(m),
     );
   }
 
@@ -278,38 +315,22 @@ export class FuturesTradeComponent {
   }
 
 
-
-  passiveStatus(row: any): string {
-    const s = row?.passiveSnapshot;
-    if (!s || !s.pool || s.pool === this.ZERO_ADDRESS.toLowerCase()) return 'No pool';
-    return s.active ? 'Active quote' : 'Pool only';
-  }
-
-  passiveQuote(row: any): string {
-    const s = row?.passiveSnapshot;
-    if (!s || !s.active) return '—';
-    const decimals = row?.market?.quoteTokenDecimals ?? 18;
-    const bid = s.bidSize > 0n ? `${this.ob.store.formatQuotePrice(s.bidPrice, decimals)} x ${this.ob.store.formatContracts(s.bidSize)}` : '—';
-    const ask = s.askSize > 0n ? `${this.ob.store.formatQuotePrice(s.askPrice, decimals)} x ${this.ob.store.formatContracts(s.askSize)}` : '—';
-    return `${bid} / ${ask}`;
-  }
-
-  passivePool(row: any): string {
-    const pool = row?.passiveSnapshot?.pool;
-    if (!pool || pool === this.ZERO_ADDRESS.toLowerCase()) return '—';
-    return this.shortAddress(pool);
-  }
-
   formatMultiplier(m: any): string {
     const raw = BigInt(m?.market?.multiplier ?? 0n);
     if (raw <= 0n) return '—';
 
-    const formatted = ethers.formatUnits(raw, 18);
-    const trimmed = formatted.includes('.')
-      ? formatted.replace(/0+$/, '').replace(/\.$/, '')
-      : formatted;
+    // Most protocol deployments use WAD-scaled multipliers. Some local/test
+    // seeds use plain unit values. Keep the display adaptive so a multiplier
+    // of 1 is shown as 1x, while 1e18 is also shown as 1x.
+    if (raw >= 10n ** 12n) {
+      const formatted = ethers.formatUnits(raw, 18);
+      const trimmed = formatted.includes('.')
+        ? formatted.replace(/0+$/, '').replace(/\.$/, '')
+        : formatted;
+      return `${trimmed || '0'}x`;
+    }
 
-    return `${trimmed || '0'}x`;
+    return `${raw.toString()}x`;
   }
 
   formatPercentBps(raw: bigint | null | undefined): string {
@@ -341,25 +362,59 @@ export class FuturesTradeComponent {
     );
   }
 
+  private readonly wad = 10n ** 18n;
+
+  normalizedMultiplier(m: any): bigint {
+    const raw = BigInt(m?.market?.multiplier ?? 0n);
+    if (raw <= 0n) return 0n;
+
+    // Protocol multipliers can be WAD-scaled; local seeds sometimes use
+    // plain unit values. Normalize both to 1e18 for notional math.
+    return raw >= 10n ** 12n ? raw : raw * this.wad;
+  }
+
+  normalizedOraclePrice18(m: any): bigint {
+    const market = m?.market;
+    if (!market) return 0n;
+    return this.ob.store.normalizeOraclePrice(
+      market.lastSettlementPrice,
+      market.oraclePriceDecimals,
+      18,
+    );
+  }
+
+  notionalPerContract(m: any): bigint {
+    const price = this.normalizedOraclePrice18(m);
+    const multiplier = this.normalizedMultiplier(m);
+    if (!price || !multiplier) return 0n;
+    return (price * multiplier) / this.wad;
+  }
+
   currentRequiredMarginPerUnit(m: any): bigint {
     const market = m?.market;
     if (!market) return 0n;
 
-    const quoteDecimals = market.quoteTokenDecimals ?? 18;
-    const denom = 10_000n * 10n ** BigInt(quoteDecimals);
-
     return (
-      BigInt(
-        market.multiplier *
-          market.lastSettlementPrice *
-          market.initialMarginBps,
-      ) / denom
-    );
+      this.notionalPerContract(m) *
+      BigInt(market.initialMarginBps ?? 0n)
+    ) / 10_000n;
   }
 
-  
+  notionalExposure(m: any, rawContracts: bigint | number | string | null | undefined): bigint {
+    const contracts = BigInt(rawContracts?.toString?.() ?? '0');
+    if (!contracts) return 0n;
+    return (contracts * this.notionalPerContract(m)) / this.wad;
+  }
+
+  openInterestContracts(row: any): bigint {
+    const long = BigInt(row?.totalLongUnits?.toString?.() ?? '0');
+    const short = BigInt(row?.totalShortUnits?.toString?.() ?? '0');
+    return long < short ? long : short;
+  }
+
   futuresMarketDetailItems(row: any): MarketDetailItem[] {
     const m = row?.market ?? {};
+    const openInterest = this.openInterestContracts(row);
     return [
       { label: 'Market key', value: row?.marketKey, mono: true, copyable: true, fullWidth: true },
       { label: 'Ticker', value: m.ticker || '—' },
@@ -367,20 +422,49 @@ export class FuturesTradeComponent {
       { label: 'Oracle address', value: m.oracle || '—', mono: true, copyable: true, fullWidth: true },
       { label: 'Latest oracle price', value: this.formatSettlementPriceFull(row) },
       { label: 'Latest oracle update', value: m.lastSettlementBlock ? `block ${m.lastSettlementBlock?.toString?.() ?? m.lastSettlementBlock}` : '—' },
-      { label: 'Multiplier', value: this.formatMultiplier(row) },
-      { label: 'Current required margin / unit', value: this.formatCurrentRequiredMarginPerUnit(row) },
+      { label: 'Contract multiplier', value: this.formatMultiplier(row) },
+      { label: 'Notional / contract', value: `${this.formatEthValue(this.notionalPerContract(row))} ETH` },
+      { label: 'Required margin / contract', value: `${this.formatEthValue(this.currentRequiredMarginPerUnit(row))} ETH` },
+      { label: 'Long holders', value: row?.longHolders ?? 0, fullWidth: true },
+      { label: 'Long contracts', value: this.formatMarketUnits(row?.totalLongUnits ?? 0n), fullWidth: true },
+      { label: 'Long notional exposure', value: `${this.formatEthValue(this.notionalExposure(row, row?.totalLongUnits ?? 0n))} ETH`, fullWidth: true },
+      { label: 'Long margin', value: `${this.formatMarketMargin(row?.totalLongMargin ?? 0n, row)} ETH`, fullWidth: true },
+      { label: 'Short holders', value: row?.shortHolders ?? 0, fullWidth: true },
+      { label: 'Short contracts', value: this.formatMarketUnits(row?.totalShortUnits ?? 0n), fullWidth: true },
+      { label: 'Short notional exposure', value: `${this.formatEthValue(this.notionalExposure(row, row?.totalShortUnits ?? 0n))} ETH`, fullWidth: true },
+      { label: 'Short margin', value: `${this.formatMarketMargin(row?.totalShortMargin ?? 0n, row)} ETH`, fullWidth: true },
+      { label: 'Open interest', value: this.formatMarketUnits(openInterest), fullWidth: true },
+      { label: 'Open interest notional', value: `${this.formatEthValue(this.notionalExposure(row, openInterest))} ETH`, fullWidth: true },
       { label: 'Initial margin', value: this.formatPercentBps(m.initialMarginBps) },
       { label: 'Maintenance margin', value: this.formatPercentBps(m.maintenanceMarginBps) },
-      { label: 'Passive pool', value: row?.passiveSnapshot?.pool || '—', mono: true, copyable: !!row?.passiveSnapshot?.pool, fullWidth: true },
-      { label: 'Passive bid / ask', value: this.passiveQuote(row), fullWidth: true },
-      { label: 'Passive valid until', value: row?.passiveSnapshot?.validUntil ? this.formatTs(row.passiveSnapshot.validUntil) : '—' },
     ];
   }
 
   formatCurrentRequiredMarginPerUnit(m: any): string {
-    return this.ob.store.formatSize(
-      this.currentRequiredMarginPerUnit(m),
-      m?.market?.quoteTokenDecimals ?? 18,
-    );
+    return this.formatEthValue(this.currentRequiredMarginPerUnit(m));
   }
+
+  formatEthValue(raw: bigint | number | string | null | undefined): string {
+    try {
+      const formatted = this.ob.store.formatSize(BigInt(raw?.toString?.() ?? '0'), 18);
+      return formatted.includes('.')
+        ? formatted.replace(/0+$/u, '').replace(/\.$/u, '') || '0'
+        : formatted;
+    } catch {
+      return '0';
+    }
+  }
+
+  formatMarketMargin(raw: bigint | number | string | null | undefined, _m: any): string {
+    return this.formatEthValue(raw);
+  }
+
+  formatMarketUnits(raw: bigint | number | string | null | undefined): string {
+    return this.ob.store.formatContracts(raw);
+  }
+
+  formatMarketNotional(row: any): string {
+    return `${this.formatEthValue(this.notionalExposure(row, this.openInterestContracts(row)))} ETH`;
+  }
+
 }

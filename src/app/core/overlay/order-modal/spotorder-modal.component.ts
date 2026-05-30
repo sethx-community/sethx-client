@@ -84,4 +84,20 @@ export class SpotOrderModalComponent implements OnInit {
 
     // Keep the modal open after submit so the shared receipt/explorer link is visible.
   }
+
+  handleDraftReviewClose() {
+    if (this.txReceipt.receipt()?.status === 'success') {
+      this.close({ success: true });
+      return;
+    }
+    this.vm.closeConfirm();
+  }
+
+  handleActionsReviewClose() {
+    if (this.actions.receipt()?.status === 'success') {
+      this.close({ success: true });
+      return;
+    }
+    this.actions.closeConfirmModal();
+  }
 }

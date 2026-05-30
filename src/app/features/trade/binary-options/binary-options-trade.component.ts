@@ -25,6 +25,7 @@ export class BinaryOptionsTradeComponent {
   readonly Math = Math;
   readonly view = signal<'markets' | 'orders' | 'positions' | 'my-orders'>('markets');
   readonly expandedMarketInfo = signal<Record<string, boolean>>({});
+  readonly hoveredMarketKey = signal<string | null>(null);
   readonly copiedValue = signal<string | null>(null);
 
   openMarket(m: { marketKey: string }): void {
@@ -60,6 +61,10 @@ export class BinaryOptionsTradeComponent {
 
   trackMarket = (_: number, m: { marketKey: string }) => m.marketKey;
   trackOrder = (_: number, r: BinaryLadderRow) => r.orderId.toString();
+
+  binaryLadderRows(): Array<{ key: string; bid: BinaryLadderRow | null; ask: BinaryLadderRow | null }> { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); }
+  trackBinaryLadderRow = (_: number, row: { key: string }) => row.key;
+
   isPositive(v: bigint | null | undefined): boolean { return (v ?? 0n) > 0n; }
 
   formatExpiry(x: bigint | number | string | null | undefined): string {
@@ -101,9 +106,11 @@ export class BinaryOptionsTradeComponent {
   isSelectedPosition(row: any): boolean { return !!row?.marketKey && this.ob.store.selectedPosition()?.marketKey === row.marketKey; }
 
   toggleMarketInfo(marketKey: string, ev?: Event): void { ev?.stopPropagation?.(); this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: !curr[marketKey] })); }
-  isMarketInfoOpen(marketKey: string): boolean { return !!this.expandedMarketInfo()[marketKey]; }
+  closeMarketInfo(marketKey: string): void { this.expandedMarketInfo.update((curr) => ({ ...curr, [marketKey]: false })); }
+  isMarketInfoOpen(marketKey: string): boolean { return !!this.expandedMarketInfo()[marketKey] || this.hoveredMarketKey() === marketKey; }
   shortAddress(x: string | null | undefined): string { const s = String(x ?? ''); return !s ? '—' : s.length <= 12 ? s : `${s.slice(0, 6)}...${s.slice(-4)}`; }
-  marketCondition(row: any): string { const m = row?.market; return m ? this.ob.store.condition(m.optionType, this.ob.store.tokenLabel(m.baseToken), m.strikePrice) : '—'; }
+  marketCondition(row: any): string { const m = row?.market; return m ? this.ob.store.condition(m.optionType, this.binaryPairLabel(m), m.strikePrice) : '—'; }
+  binaryPairLabel(m: any): string { const ticker = String(m?.ticker ?? '').trim(); if (ticker) { const parts = ticker.split('-'); if (parts.length >= 2) return `${parts[0]}/${parts[1]}`; } const base = this.ob.store.tokenLabel(m?.baseToken); const payment = this.ob.store.tokenLabel(m?.paymentToken); return payment && payment !== '—' ? `${base}/${payment}` : base; }
   marketSubtitle(row: any): string { return row?.market?.ticker || row?.marketKey || '—'; }
   latestOraclePriceLabel(row: any): string { const m = row?.market; if (!m) return '—'; if (m.settled && m.settlementPrice && m.settlementPrice > 0n) return `${this.ob.store.formatStrike(m.settlementPrice)} (settlement)`; if (m.latestOraclePrice !== undefined && m.latestOraclePrice !== null) return this.ob.store.formatStrike(m.latestOraclePrice); return '—'; }
   latestOracleTimeLabel(row: any): string { const ts = row?.market?.latestOracleTimestamp; if (!ts || ts === 0n) return '—'; return this.formatExpiry(ts); }
@@ -125,6 +132,12 @@ export class BinaryOptionsTradeComponent {
     { label: 'Best Ask', value: this.ob.store.bestAsk() !== null ? this.ob.store.formatPricePerEth(this.ob.store.bestAsk()!) : '—', tone: 'down' },
     { label: 'Spread', value: this.ob.store.spread() !== null ? this.ob.store.formatPricePerEth(this.ob.store.spread()!) : '—' },
   ]; }
+
+  selectedMarketPositions(): any[] {
+    const key = this.ob.store.selectedMarketKey();
+    if (!key) return [];
+    return this.ob.store.myPositions().filter((p: any) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
+  }
 
   myOrdersMetrics(): SpotSummaryMetric[] { const orders = this.ob.store.myOrders(); return [
     { label: 'Orders', value: orders.length },

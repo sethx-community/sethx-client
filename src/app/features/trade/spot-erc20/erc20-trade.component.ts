@@ -114,9 +114,21 @@ export class Erc20TradeComponent {
     }).length;
   });
 
+  readonly ownedMainTokens = computed(() =>
+    this.mainTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
+  );
+
+  readonly ownedWhitelistTokens = computed(() =>
+    this.whitelistTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
+  );
+
+  readonly ownedOtherTokens = computed(() =>
+    this.otherTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
+  );
+
   readonly tokenHoldingsMetrics = computed<SpotSummaryMetric[]>(() => [
-    { label: 'Tracked tokens', value: this.trackedTokenCount() },
-    { label: 'Balance rows', value: this.balanceEntryCount() },
+    { label: 'Owned tokens', value: this.myTokenCount() },
+    { label: 'Trusted tokens', value: this.ownedWhitelistTokens().length },
     { label: 'Account', value: this.selectedAccountLabel(), tone: 'muted' },
     { label: 'Last refresh', value: this.lastRefreshedText(), tone: 'muted' },
   ]);
@@ -206,6 +218,7 @@ export class Erc20TradeComponent {
   bookDetailItemsFor(b: Book): MarketDetailItem[] {
     return [
       { label: 'Pair', value: this.ob.pairLabel(b) },
+      { label: 'Order totals', value: this.bookTokenTotals(b) },
       { label: 'Orders', value: b.total?.toString?.() ?? b.total },
       { label: 'My orders', value: b.myTotal?.toString?.() ?? b.myTotal },
       {
@@ -230,6 +243,36 @@ export class Erc20TradeComponent {
         fullWidth: true,
       },
     ];
+  }
+
+  bookTokenTotals(b: Book): string {
+    const baseToken = b.a?.base ?? b.base;
+    const quoteToken = b.b?.base ?? b.quote;
+    const base = `${this.formatBookVolume(b.a?.volume ?? 0n, baseToken)} ${this.ob.tokenLabel(baseToken)}`;
+    const quote = `${this.formatBookVolume(b.b?.volume ?? 0n, quoteToken)} ${this.ob.tokenLabel(quoteToken)}`;
+    return `${base} / ${quote}`;
+  }
+
+  private formatBookVolume(value: bigint, tokenAddress: string): string {
+    const decimals = this.tokenDecimals(tokenAddress);
+    const formatted = ethers.formatUnits(value ?? 0n, decimals);
+    const numeric = Number(formatted);
+    if (!Number.isFinite(numeric)) return formatted;
+    return numeric === 0 ? '0' : numeric.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  }
+
+  private tokenDecimals(tokenAddress: string): number {
+    const key = this.normKey(tokenAddress);
+    return this.tokens.getToken(key)()?.decimals ?? 18;
+  }
+
+  isWhitelistedToken(address: string | null | undefined): boolean {
+    const key = this.normKey(String(address ?? ''));
+    if (!key) return false;
+    return (
+      this.mainTokens().some((token) => this.normKey(token.address) === key) ||
+      this.whitelistTokens().some((token) => this.normKey(token.address) === key)
+    );
   }
 
   openBook(b: { key: string }) {
@@ -403,8 +446,28 @@ export class Erc20TradeComponent {
 
   private normKey(addr: string): string {
     const a = (addr ?? '').trim().toLowerCase();
-    if (a === 'eth' || a === NATIVE_SENTINEL) return ETH_ADDRESS.toLowerCase();
+    if (
+      a === 'eth' ||
+      a === 'native' ||
+      a === 'ether' ||
+      a === NATIVE_SENTINEL ||
+      a === ethers.ZeroAddress.toLowerCase()
+    ) {
+      return ETH_ADDRESS.toLowerCase();
+    }
     return a;
+  }
+
+  private tokenBalanceEntry(tokenAddress: string): any | null {
+    const balances = this.accountBalances() ?? {};
+    return balances[this.normKey(tokenAddress)] ?? null;
+  }
+
+  private hasOwnedTokenBalance(tokenAddress: string): boolean {
+    const entry = this.tokenBalanceEntry(tokenAddress);
+    const balance = BigInt(entry?.balance ?? 0);
+    const locked = BigInt(entry?.locked ?? 0);
+    return balance > 0n || locked > 0n;
   }
 
   openTokenAction(token: TokenInfo, intent: 'deposit' | 'withdraw'): void {
@@ -448,36 +511,49 @@ export class Erc20TradeComponent {
     return amt.toFixed(4);
   }
 
+  getFormattedTokenAmount(tokenAddress: string, decimals = 18): string {
+    const raw = this.tokenBalanceEntry(tokenAddress)?.balance ?? 0n;
+    return ethers.formatUnits(raw, decimals);
+  }
+
   getFormattedTokenValue(tokenAddress: string, decimals = 18): string {
-    const balances = this.accountBalances();
-    const key = this.normKey(tokenAddress);
-    const entry = balances?.[key];
-    const raw = entry?.balance ?? 0n;
+    const raw = this.tokenBalanceEntry(tokenAddress)?.balance ?? 0n;
     const price = this.getOraclePrice(tokenAddress);
     const human = ethers.formatUnits(raw, decimals);
     return this.formatValue(human, price);
+  }
+
+  getFormattedLockedAmount(tokenAddress: string, decimals = 18): string {
+    const raw = this.tokenBalanceEntry(tokenAddress)?.locked ?? 0n;
+    return ethers.formatUnits(raw, decimals);
   }
 
   getFormattedLockedValue(tokenAddress: string, decimals = 18): string {
-    const balances = this.accountBalances();
-    const key = this.normKey(tokenAddress);
-    const entry = balances?.[key];
-    const raw = entry?.locked ?? 0n;
+    const raw = this.tokenBalanceEntry(tokenAddress)?.locked ?? 0n;
     const price = this.getOraclePrice(tokenAddress);
     const human = ethers.formatUnits(raw, decimals);
     return this.formatValue(human, price);
   }
 
+  getFormattedAvailableAmount(tokenAddress: string, decimals = 18): string {
+    const entry = this.tokenBalanceEntry(tokenAddress);
+    const balance = entry?.balance ?? 0n;
+    const locked = entry?.locked ?? 0n;
+    return ethers.formatUnits(balance - locked, decimals);
+  }
+
   getFormattedAvailableValue(tokenAddress: string, decimals = 18): string {
-    const balances = this.accountBalances();
-    const key = this.normKey(tokenAddress);
-    const entry = balances?.[key];
+    const entry = this.tokenBalanceEntry(tokenAddress);
     const balance = entry?.balance ?? 0n;
     const locked = entry?.locked ?? 0n;
     const available = balance - locked;
     const price = this.getOraclePrice(tokenAddress);
     const human = ethers.formatUnits(available, decimals);
     return this.formatValue(human, price);
+  }
+
+  getEstimatedEthValue(_tokenAddress: string): string {
+    return '—';
   }
 
   getOraclePriceText(address: string): string {

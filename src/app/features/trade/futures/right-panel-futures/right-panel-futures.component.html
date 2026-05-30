@@ -1,15 +1,20 @@
 <div class="sethx-panel">
-  <aside class="h-full flex flex-col min-h-0 space-y-6">
+  <aside class="sethx-right-panel-stack">
     <section class="sethx-panel-section sethx-panel-card">
       <div class="sethx-panel-heading">Account Actions</div>
       <div class="sethx-panel-section-title">Select Account / Fee Token</div>
       <app-trade-settings class="block" [boxed]="false" [showContext]="false"></app-trade-settings>
     </section>
 
-    <section class="sethx-panel-section sethx-panel-card" *ngIf="isMarketOrderView()">
-      <div class="sethx-panel-heading">Market Actions</div>
-      <ng-container *ngIf="ob.store.selectedMarketRow() as market; else noFuturesMarketSelected">
-        <div class="space-y-2 text-[11px]">
+    <section class="sethx-panel-section sethx-panel-card">
+      <div class="sethx-panel-heading">Trade Actions</div>
+      <div class="sethx-panel-section-title">Futures</div>
+      <p class="sethx-panel-copy">
+        Place a futures order or review the current fee estimate. Select an order in the ladder to fill or cancel it here.
+      </p>
+
+      <ng-container *ngIf="ob.store.selectedMarketRow() as market">
+        <div class="mb-4 space-y-2 text-[11px]">
           <div class="flex justify-between gap-3">
             <span class="sethx-field-label !mb-0">Market</span>
             <span class="sethx-readonly-value-strong text-right">{{ market.market?.ticker || market.marketKey }}</span>
@@ -30,24 +35,13 @@
               </button>
             </span>
           </div>
-          <div class="flex justify-between gap-3">
-            <span class="sethx-field-label !mb-0">Orders</span>
-            <span class="sethx-readonly-value-strong text-right">{{ market.buyCount }} / {{ market.sellCount }}</span>
-          </div>
-          <div class="flex justify-between gap-3">
-            <span class="sethx-field-label !mb-0">Status</span>
-            <span class="sethx-status-pill" [ngClass]="market.isActive ? 'is-ok' : 'is-warning'">{{ market.isActive ? 'Open' : 'Closed' }}</span>
-          </div>
-        </div>
-
-        <div class="mt-4 space-y-2">
-          <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuoteForSelectedMarket()">Fee Quote</button>
-          <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrderForSelectedMarket()">Place Order</button>
         </div>
       </ng-container>
-      <ng-template #noFuturesMarketSelected>
-        <p class="sethx-panel-copy">Select a futures market in the center view to quote fees or place an order.</p>
-      </ng-template>
+
+      <div class="grid gap-2">
+        <button type="button" class="sethx-button-primary" (click)="openPlaceOrderForSelectedMarket()">Place Order</button>
+        <button type="button" class="sethx-button-secondary" (click)="openFeeQuoteForSelectedMarket()">Fee Quote</button>
+      </div>
     </section>
 
     <ng-container *ngIf="isOrderManagementView()">
@@ -105,7 +99,7 @@
           </div>
           <div class="flex justify-between gap-3">
             <span class="sethx-field-label !mb-0">Margin</span>
-            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatSize(position.margin, position.market?.quoteTokenDecimals ?? 18) }}</span>
+            <span class="sethx-readonly-value-strong text-right">{{ ob.store.formatSize(position.margin, 18) }}</span>
           </div>
           <div class="flex justify-between gap-3">
             <span class="sethx-field-label !mb-0">Required margin</span>

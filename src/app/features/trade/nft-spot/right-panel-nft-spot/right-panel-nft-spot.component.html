@@ -1,7 +1,5 @@
-<div class="sethx-panel block h-full">
-  <div class="h-2"></div>
-
-  <aside class="h-full flex flex-col min-h-0 space-y-6">
+<div class="sethx-panel">
+  <aside class="sethx-right-panel-stack">
     <section class="sethx-panel-section sethx-panel-card">
       <div class="sethx-panel-heading">Account Actions</div>
       <div class="sethx-panel-section-title">Select Account / Fee Token</div>
@@ -28,8 +26,12 @@
       <div class="sethx-panel-heading">Trade Actions</div>
       <div class="sethx-panel-section-title">NFT Spot</div>
       <p class="sethx-panel-copy">
-        Use the market header buttons to open a fee quote or place a new NFT bid or ask. Select an order in the ladder to accept or cancel it here.
+        Place an NFT bid or ask, or review the current fee estimate. Select an order in the ladder to accept or cancel it here.
       </p>
+      <div class="grid gap-2">
+        <button type="button" class="sethx-button-primary" (click)="openPlaceOrder()">Place Order</button>
+        <button type="button" class="sethx-button-secondary" (click)="openFeeQuote()">Fee Quote</button>
+      </div>
     </section>
   </aside>
 </div>

@@ -1,0 +1,77 @@
+<div class="sethx-page space-y-5">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">Warnings</div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="sethx-page-title">Position warnings</h1>
+        <p class="sethx-page-copy mt-2">
+          Account-specific warnings for expiries, maturity windows, settlement actions, and lending risk. Orange warnings appear {{ orangeWindowDays }} days before expiry or maturity. Red warnings need immediate review.
+        </p>
+      </div>
+      <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh warnings' }}
+      </button>
+    </div>
+  </header>
+
+  <section class="grid gap-4 lg:grid-cols-3">
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Red warnings</div>
+      <h2 class="sethx-section-title mt-2">{{ redCount() }}</h2>
+      <p class="sethx-page-copy mt-2">Exercise, claim, repayment, maturity, or high-risk items that need attention.</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Orange warnings</div>
+      <h2 class="sethx-section-title mt-2">{{ orangeCount() }}</h2>
+      <p class="sethx-page-copy mt-2">Upcoming expiries or maturities inside the {{ orangeWindowDays }} day warning window.</p>
+    </article>
+
+    <article class="sethx-table-card">
+      <div class="sethx-kicker">Last refresh</div>
+      <h2 class="sethx-section-title mt-2">{{ lastUpdatedLabel() }}</h2>
+      <p class="sethx-page-copy mt-2">Warnings update from the selected account, positions, lending snapshot, and price risk reads.</p>
+    </article>
+  </section>
+
+  <section class="sethx-table-card space-y-4">
+    <div>
+      <h2 class="sethx-section-title">Warning overview</h2>
+      <p class="sethx-page-copy mt-1">Sorted by due date, with immediate red warnings shown as protocol action items.</p>
+    </div>
+
+    <div class="sethx-scroll-stable overflow-x-auto">
+      <div class="min-w-[980px] text-xs">
+        <div class="grid grid-cols-[0.8fr_1fr_1.35fr_1.2fr_1.6fr_1.5fr] gap-4 border-b border-trade-border bg-background/60 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-subtle">
+          <span>Level</span>
+          <span>Area</span>
+          <span>Warning</span>
+          <span>Due / window</span>
+          <span>Recommended action</span>
+          <span>Reference</span>
+        </div>
+
+        <div
+          *ngFor="let row of warnings(); trackBy: trackWarning"
+          class="grid grid-cols-[0.8fr_1fr_1.35fr_1.2fr_1.6fr_1.5fr] gap-4 border-b border-trade-border px-3 py-3 last:border-b-0"
+        >
+          <div>
+            <span class="sethx-status-pill" [ngClass]="levelClass(row)">{{ levelLabel(row) }}</span>
+          </div>
+          <div class="font-semibold text-white">{{ row.type }}</div>
+          <div>
+            <div class="font-semibold text-white">{{ row.title }}</div>
+            <p class="mt-1 text-text-muted md:hidden">{{ row.action }}</p>
+          </div>
+          <div class="sethx-readonly-value">{{ dueLabel(row.due) }}</div>
+          <div class="text-text-muted">{{ row.action }}</div>
+          <code class="break-all text-accent">{{ row.detail }}</code>
+        </div>
+
+        <div *ngIf="warnings().length === 0" class="sethx-table-empty">
+          No warnings for the selected account.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -28,15 +28,12 @@
       <app-spot-summary-header
         eyebrow="Token spot"
         title="Active Token Spot Markets"
-        subtitle="Select a token pair to view bids and asks. Market actions stay in the header; selected-order actions stay in the right panel."
+        subtitle="Select a token pair to view bids, asks, and open order totals."
         [metrics]="booksMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="sethx-toolbar">
+      <div class="sethx-toolbar sethx-market-filter-toolbar">
         <div class="sethx-section-title text-base">Markets</div>
 
         <div class="sethx-toolbar-actions">
@@ -51,26 +48,36 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <div class="min-w-[760px] text-xs">
-          <div class="sethx-table-header grid gap-x-4" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 120px 120px 70px' : '1fr 120px 70px'">
+      <div class="sethx-scroll-stable overflow-x-auto">
+        <div class="min-w-[900px] text-xs">
+          <div class="sethx-table-header grid gap-x-4" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 160px 120px 120px 70px' : '1fr 160px 120px 70px'">
             <button type="button" class="text-left uppercase cursor-pointer" (click)="ob.toggleBookSort('pair')">Pair</button>
+            <div class="text-right uppercase">Order totals</div>
             <button type="button" class="text-right uppercase cursor-pointer" (click)="ob.toggleBookSort('orders')">Orders</button>
             <button *ngIf="ob.supportsMyTotals()" type="button" class="text-right uppercase cursor-pointer" (click)="ob.toggleBookSort('myOrders')">My orders</button>
-            <div class="text-right">Info</div>
+            <div class="text-right">Details</div>
           </div>
 
           <ng-container *ngFor="let b of ob.visibleBooks(); trackBy: trackBook">
             <div class="sethx-market-row-shell" (mouseenter)="hoveredBook.set(b)" (mouseleave)="hoveredBook.set(null)">
-              <div class="sethx-table-row sethx-table-row-action grid gap-x-4 items-center" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 120px 120px 70px' : '1fr 120px 70px'" (click)="openBook(b)">
+              <div class="sethx-table-row sethx-table-row-action grid gap-x-4 items-center" [style.grid-template-columns]="ob.supportsMyTotals() ? '1fr 160px 120px 120px 70px' : '1fr 160px 120px 70px'" (click)="openBook(b)">
                 <div class="truncate">
-                  <div class="sethx-readonly-value-strong truncate">{{ ob.pairLabel(b) }}</div>
-                  <div class="mt-1 sethx-address-value truncate text-[11px]">{{ ob.shortAddr(b.base) }} / {{ ob.shortAddr(b.quote) }}</div>
+                  <div class="sethx-readonly-value-strong truncate">
+                    <span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(b.base)">{{ ob.tokenLabel(b.base) }}</span>
+                    <span class="sethx-pair-separator">/</span>
+                    <span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(b.quote)">{{ ob.tokenLabel(b.quote) }}</span>
+                  </div>
+                  <div class="mt-1 truncate text-[11px]">
+                    <span class="sethx-token-address-inline" [class.is-whitelisted]="isWhitelistedToken(b.base)">{{ ob.shortAddr(b.base) }}</span>
+                    <span class="sethx-pair-separator">/</span>
+                    <span class="sethx-token-address-inline" [class.is-whitelisted]="isWhitelistedToken(b.quote)">{{ ob.shortAddr(b.quote) }}</span>
+                  </div>
                 </div>
+                <div class="text-right sethx-readonly-value">{{ bookTokenTotals(b) }}</div>
                 <div class="text-right sethx-readonly-value">{{ b.total }}</div>
                 <div class="text-right sethx-readonly-value" *ngIf="ob.supportsMyTotals()">{{ b.myTotal ?? 0 }}</div>
                 <div class="text-right">
-                  <button type="button" class="sethx-action-link" title="Show market information" (click)="showBookInfo(b, $event)">Info</button>
+                  <button type="button" class="sethx-action-link" title="Show market details" (click)="showBookInfo(b, $event)">Details</button>
                 </div>
               </div>
 
@@ -104,12 +111,9 @@
       <app-spot-summary-header
         eyebrow="Token spot assets"
         title="My Tokens"
-        subtitle="Review selected-account token balances, available amounts, locked balances, oracle values, and deposit or withdraw directly from Token Spot."
+        subtitle=""
         [metrics]="tokenHoldingsMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
       <div class="sethx-toolbar border-y border-trade-border py-3">
@@ -121,7 +125,6 @@
         <div class="sethx-toolbar-actions">
           <div class="sethx-meta-text md:text-right">Last refreshed: <span class="sethx-readonly-value-strong">{{ lastRefreshedText() }}</span></div>
           <button type="button" (click)="refreshBalances()" class="sethx-button-secondary w-full md:w-28">Refresh</button>
-          <button type="button" (click)="toggleTokenValueView()" class="sethx-button-secondary w-full md:w-36">{{ showTokenUSD() ? 'Show Amounts' : 'Show USD Value' }}</button>
         </div>
       </div>
 
@@ -129,82 +132,68 @@
         <div class="sethx-meta-text">Loading tokens…</div>
       }
 
-      <div class="overflow-x-auto">
-        <div class="min-w-[980px] text-xs">
-          <div class="sethx-table-header grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] gap-x-4">
+      <div class="sethx-scroll-stable overflow-x-auto">
+        <div class="min-w-[740px] text-xs">
+          <div class="sethx-table-header grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-x-4">
             <div class="truncate">Token</div>
             <div class="text-right">Total</div>
             <div class="text-right">Locked</div>
             <div class="text-right">Available</div>
-            <div class="text-right">Price</div>
-            <div class="text-right">24h</div>
-            <div class="text-right">Actions</div>
+            <div class="text-right">Value (ETH)</div>
           </div>
 
           <div class="sethx-table-section">Main tokens</div>
-          <ng-container *ngFor="let token of mainTokens()">
-            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
-              <div class="text-right">{{ getFormattedTokenValue(token.address) }}</div>
-              <div class="text-right">{{ getFormattedLockedValue(token.address) }}</div>
-              <div class="text-right">{{ getFormattedAvailableValue(token.address) }}</div>
-              <div class="text-right">{{ getOraclePriceText(token.address) }}</div>
-              <div class="text-right" [ngClass]="getOracleChangeClass(token.address)">{{ getOracleChangePercent(token.address) }}</div>
-              <div class="flex justify-end gap-2">
-                <button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button>
-                <button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button>
-              </div>
+          <ng-container *ngFor="let token of ownedMainTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(token.address)">{{ token.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
             </div>
           </ng-container>
+          @if (ownedMainTokens().length === 0) { <div class="sethx-table-empty">No main tokens owned by the selected account.</div> }
 
           <div class="my-3 border-t border-frame"></div>
           <div class="sethx-table-section">Whitelisted / trusted tokens</div>
-          @if (whitelistTokens().length === 0) { <div class="sethx-table-empty">No trusted non-main tokens detected for trade valuation yet.</div> }
-          <ng-container *ngFor="let token of whitelistTokens()">
-            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
-              <div class="text-right">{{ getFormattedTokenValue(token.address, token.decimals) }}</div>
-              <div class="text-right">{{ getFormattedLockedValue(token.address, token.decimals) }}</div>
-              <div class="text-right">{{ getFormattedAvailableValue(token.address, token.decimals) }}</div>
-              <div class="text-right">{{ getOraclePriceText(token.address) }}</div>
-              <div class="text-right" [ngClass]="getOracleChangeClass(token.address)">{{ getOracleChangePercent(token.address) }}</div>
-              <div class="flex justify-end gap-2"><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button></div>
+          <ng-container *ngFor="let token of ownedWhitelistTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline is-whitelisted">{{ token.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
             </div>
           </ng-container>
+          @if (ownedWhitelistTokens().length === 0) { <div class="sethx-table-empty">No trusted non-main tokens owned by the selected account.</div> }
 
           <div class="my-3 border-t border-frame"></div>
           <div class="sethx-table-section">Other tokens</div>
-          @if (otherTokens().length === 0) { <div class="sethx-table-empty">No other ERC20 tokens detected.</div> }
-          <ng-container *ngFor="let token of otherTokens()">
-            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_0.8fr_0.8fr_1.4fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol">{{ token.symbol }}</span></div>
-              <div class="text-right">{{ getFormattedTokenValue(token.address, token.decimals) }}</div>
-              <div class="text-right">{{ getFormattedLockedValue(token.address, token.decimals) }}</div>
-              <div class="text-right">{{ getFormattedAvailableValue(token.address, token.decimals) }}</div>
-              <div class="text-right">—</div>
-              <div class="text-right">—</div>
-              <div class="flex justify-end gap-2"><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('deposit', token)" (click)="openTokenAction(token, 'deposit')">Deposit</button><button type="button" class="sethx-button-secondary px-3 py-1 text-[11px]" [attr.aria-label]="actionLabel('withdraw', token)" (click)="openTokenAction(token, 'withdraw')">Withdraw</button></div>
+          <ng-container *ngFor="let token of ownedOtherTokens()">
+            <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
+              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline">{{ token.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
             </div>
           </ng-container>
+          @if (ownedOtherTokens().length === 0) { <div class="sethx-table-empty">No other tokens owned by the selected account.</div> }
         </div>
       </div>
 
-      @if (portfolioError()) { <div class="sethx-error-note mt-3">Failed to load tokens.</div> }
     </ng-container>
 
     <ng-container *ngIf="view() === 'my-orders'">
       <app-spot-summary-header
         eyebrow="Token spot orders"
         title="My Orders"
-        subtitle="Selected-account token spot orders. Select a row to open the same cancel/fill assessment flow in the right panel."
+        subtitle=""
         [metrics]="myOrdersMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[920px] text-xs">
           <div class="sethx-table-header grid grid-cols-[0.9fr_1.1fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4">
             <div>Order ID</div>
@@ -219,7 +208,18 @@
           <ng-container *ngFor="let order of ob.myOrders()">
             <div class="sethx-table-row sethx-table-row-action grid grid-cols-[0.9fr_1.1fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4 items-center" [class.is-selected]="isMyOrderSelected(order)" (click)="selectMyOrder(order, $event)">
               <div class="sethx-address-value-muted truncate">{{ order.orderId }}</div>
-              <div class="truncate"><div class="sethx-readonly-value-strong truncate">{{ orderPairLabel(order) }}</div><div class="mt-1 sethx-address-value truncate text-[11px]">{{ ob.shortAddr(order.baseToken) }} / {{ ob.shortAddr(order.quoteToken) }}</div></div>
+              <div class="truncate">
+                <div class="sethx-readonly-value-strong truncate">
+                  <span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(order.baseToken)">{{ ob.tokenLabel(order.baseToken) }}</span>
+                  <span class="sethx-pair-separator">/</span>
+                  <span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(order.quoteToken)">{{ ob.tokenLabel(order.quoteToken) }}</span>
+                </div>
+                <div class="mt-1 truncate text-[11px]">
+                  <span class="sethx-token-address-inline" [class.is-whitelisted]="isWhitelistedToken(order.baseToken)">{{ ob.shortAddr(order.baseToken) }}</span>
+                  <span class="sethx-pair-separator">/</span>
+                  <span class="sethx-token-address-inline" [class.is-whitelisted]="isWhitelistedToken(order.quoteToken)">{{ ob.shortAddr(order.quoteToken) }}</span>
+                </div>
+              </div>
               <div class="uppercase" [ngClass]="order.side === 0 ? 'text-up' : 'text-down'">{{ orderSideLabel(order) }}</div>
               <div class="text-right sethx-readonly-value-strong">{{ ob.formatAmount(order) }}</div>
               <div class="text-right sethx-readonly-value-strong">{{ ob.formatPrice(order) }}</div>
@@ -248,13 +248,10 @@
         [subtitle]="ob.selectedBook()?.key ?? ''"
         [subtitleMono]="true"
         [metrics]="selectedBookMetrics()"
-        primaryLabel="Place Order"
-        secondaryLabel="Fee Quote"
-        (primary)="openPlaceOrder()"
-        (secondary)="openFeeQuote()"
+        [showActions]="false"
       ></app-spot-summary-header>
 
-      <div class="sethx-toolbar">
+      <div class="sethx-toolbar sethx-market-filter-toolbar">
         <div class="sethx-toolbar-actions">
           <label class="sethx-inline-control">
             <input type="checkbox" [checked]="ob.myOrdersOnly()" (change)="ob.setMyOrdersOnly($any($event.target).checked)" />

@@ -3,12 +3,12 @@ import { ethers } from 'ethers';
 
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
+import { MarketTimeService } from '../market-time.service';
 import { norm } from '../../../core/tokens/token-normalize';
 
 import {
   FuturesOrderBookReadService,
   FuturesOrder,
-  PassiveFuturesSnapshot,
 } from '../../onchain/contracts/futures-orderbook-read.service';
 import {
   FuturesContractReadService,
@@ -23,7 +23,10 @@ export type ActiveFuturesMarketRow = {
   sellCount: number;
   longHolders: number;
   shortHolders: number;
-  passiveSnapshot: PassiveFuturesSnapshot | null;
+  totalLongUnits: bigint;
+  totalShortUnits: bigint;
+  totalLongMargin: bigint;
+  totalShortMargin: bigint;
 };
 
 export type FuturesMyOrderRow = FuturesOrder & {
@@ -61,6 +64,7 @@ export class FuturesOrderBookStore {
   private readonly futuresReads = inject(FuturesContractReadService);
   private readonly trigger = inject(TriggerService);
   private readonly settings = inject(TradeSettingsService);
+  private readonly marketTime = inject(MarketTimeService);
 
   readonly marketOffset = signal(0);
   readonly marketLimit = signal(25);
@@ -83,6 +87,26 @@ export class FuturesOrderBookStore {
     }
   }
 
+  formatOraclePrice(raw: bigint, oracleDecimals: number): string {
+    return this.formatQuotePrice(raw, Math.max(0, Number(oracleDecimals ?? 18)));
+  }
+
+  normalizeOraclePrice(
+    raw: bigint | number | string | null | undefined,
+    oracleDecimals: number | null | undefined,
+    marginDecimals = 18,
+  ): bigint {
+    const value = bi(raw ?? 0n);
+    if (value === 0n) return 0n;
+
+    const oracleDec = Math.max(0, Number(oracleDecimals ?? marginDecimals));
+    const marginDec = Math.max(0, Number(marginDecimals ?? 18));
+
+    if (oracleDec === marginDec) return value;
+    if (oracleDec < marginDec) return value * 10n ** BigInt(marginDec - oracleDec);
+    return value / 10n ** BigInt(oracleDec - marginDec);
+  }
+
   formatSize(raw: bigint, decimals: number): string {
     try {
       return ethers.formatUnits(raw, Math.max(0, Number(decimals ?? 18)));
@@ -93,7 +117,10 @@ export class FuturesOrderBookStore {
 
   formatContracts(raw: bigint | number | string | null | undefined): string {
     try {
-      return BigInt(raw?.toString?.() ?? '0').toString();
+      const formatted = ethers.formatUnits(BigInt(raw?.toString?.() ?? '0'), 18);
+      return formatted.includes('.')
+        ? formatted.replace(/0+$/u, '').replace(/\.$/u, '') || '0'
+        : formatted;
     } catch {
       return String(raw ?? '0');
     }
@@ -132,13 +159,12 @@ export class FuturesOrderBookStore {
 
       const rows = await Promise.all(
         keys.map(async (k) => {
-          const [m, isActive, buyIds, sellIds, stats, passiveSnapshot] = await Promise.all([
+          const [m, isActive, buyIds, sellIds, stats] = await Promise.all([
             this.futuresReads.getMarket(k),
             this.futuresReads.isMarketActive(k),
             this.reads.getBook(k, true),
             this.reads.getBook(k, false),
             this.futuresReads.getMarketStats(k),
-            this.reads.getPassiveSnapshot(k),
           ]);
 
           return {
@@ -149,7 +175,10 @@ export class FuturesOrderBookStore {
             sellCount: sellIds.length,
             longHolders: stats.longHolders,
             shortHolders: stats.shortHolders,
-            passiveSnapshot,
+            totalLongUnits: stats.totalLongUnits,
+            totalShortUnits: stats.totalShortUnits,
+            totalLongMargin: stats.totalLongMargin,
+            totalShortMargin: stats.totalShortMargin,
           } as ActiveFuturesMarketRow;
         }),
       );
@@ -173,7 +202,12 @@ export class FuturesOrderBookStore {
     const q = this.marketSearch().trim().toLowerCase();
     const onlyMine = this.marketsWithMyOrdersOnly();
     const myMarkets = new Set(this.myOrders().map((o) => String(o.marketKey ?? '').toLowerCase()));
-    let list = this.activeMarkets();
+    const positionMarkets = new Set(this.myPositions().map((p) => String(p.marketKey ?? '').toLowerCase()));
+    let list = this.activeMarkets().filter((m) =>
+      m.isActive ||
+      myMarkets.has(String(m.marketKey ?? '').toLowerCase()) ||
+      positionMarkets.has(String(m.marketKey ?? '').toLowerCase()),
+    );
     if (q) {
       list = list.filter((m) => [m.market?.ticker, m.marketKey].some((v) => String(v ?? '').toLowerCase().includes(q)));
     }
@@ -424,21 +458,30 @@ export class FuturesOrderBookStore {
     return this.myPositions().find((p) => p.marketKey === mk) ?? null;
   });
 
+  private normalizedMultiplier(multiplier: bigint | number | string | null | undefined): bigint {
+    const raw = bi(multiplier ?? 0n);
+    if (raw <= 0n) return 0n;
+    return raw >= 10n ** 12n ? raw : raw * 10n ** 18n;
+  }
+
   private computeRequiredMarginRaw(
     size: bigint,
     market: FuturesMarket | null,
   ): bigint {
     if (!market || size <= 0n) return 0n;
 
-    const quoteDecimals = market.quoteTokenDecimals ?? 18;
-    const denom = 10_000n * 10n ** BigInt(quoteDecimals);
+    const settlementPrice18 = this.normalizeOraclePrice(
+      market.lastSettlementPrice,
+      market.oraclePriceDecimals,
+      18,
+    );
+    const multiplier18 = this.normalizedMultiplier(market.multiplier);
 
     return (
-      (size *
-        market.multiplier *
-        market.lastSettlementPrice *
-        market.initialMarginBps) /
-      denom
-    );
+      size *
+      multiplier18 *
+      settlementPrice18 *
+      bi(market.initialMarginBps ?? 0n)
+    ) / (10_000n * 10n ** 18n * 10n ** 18n);
   }
 }

@@ -15,10 +15,7 @@ export const futuresPageActions: Array<
     id: 'futures.buy',
     group: 'Trading',
     label: 'Buy / Open Long',
-    description: 'Place a long-side futures order',
-    enabled: (ctx) => !!ctx.selectedMarketKey,
-    disabledReason: (ctx) =>
-      ctx.selectedMarketKey ? undefined : 'Select a futures market first',
+    description: 'Place a long-side futures order. Select an existing market or paste a market key in the modal.',
     buildData: (ctx) => ({
       intent: 'buy',
       defaultMarketKey: ctx.selectedMarketKey ?? undefined,
@@ -29,10 +26,7 @@ export const futuresPageActions: Array<
     id: 'futures.sell',
     group: 'Trading',
     label: 'Sell / Open Short',
-    description: 'Place a short-side futures order',
-    enabled: (ctx) => !!ctx.selectedMarketKey,
-    disabledReason: (ctx) =>
-      ctx.selectedMarketKey ? undefined : 'Select a futures market first',
+    description: 'Place a short-side futures order. Select an existing market or paste a market key in the modal.',
     buildData: (ctx) => ({
       intent: 'sell',
       defaultMarketKey: ctx.selectedMarketKey ?? undefined,
@@ -43,10 +37,7 @@ export const futuresPageActions: Array<
     id: 'futures.quote',
     group: 'Quotes',
     label: 'Preview Margin & Fees',
-    description: 'Preview required margin and fee locks before signing',
-    enabled: (ctx) => !!ctx.selectedMarketKey,
-    disabledReason: (ctx) =>
-      ctx.selectedMarketKey ? undefined : 'Select a futures market first',
+    description: 'Preview required margin and fee locks before signing. Select an existing market or paste a market key in the modal.',
     buildData: (ctx) => ({
       intent: 'quote',
       defaultMarketKey: ctx.selectedMarketKey ?? undefined,

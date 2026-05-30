@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
 import { NftSpotOrderModalComponent } from '../../../core/overlay/order-modal/nftspotorder-modal.component';
+import { TokenService } from '../../../services/shared/token.service';
+import { norm } from '../../../core/tokens/token-normalize';
 import {
   MarketDetailPanelComponent,
   OrderbookSelectionService,
@@ -28,10 +30,15 @@ export class NftSpotTradeComponent {
   readonly store = inject(NftSpotOrderbookStore);
   readonly orderSelection = inject(OrderbookSelectionService);
   private readonly flow = inject(OrderFlowService);
+  private readonly tokens = inject(TokenService);
+
+  readonly mainTokens = this.tokens.main;
+  readonly whitelistTokens = this.tokens.whitelist;
 
   readonly view = signal<'markets' | 'orders' | 'my-nfts' | 'my-orders'>('markets');
   readonly hoveredMarket = signal<NftSpotMarket | null>(null);
   readonly hoveredOrder = signal<NftSpotOrder | null>(null);
+  readonly copiedValue = signal<string | null>(null);
 
   readonly search = this.store.search;
   readonly myMarketsOnly = this.store.myMarketsOnly;
@@ -40,6 +47,7 @@ export class NftSpotTradeComponent {
   readonly myNfts = this.store.myNfts;
   readonly myNftsStatus = this.store.myNftsStatus;
   readonly showAllRows = this.store.showAllRows;
+  readonly ladderFocus = this.store.ladderFocus;
   readonly pinnedMarket = this.store.pinnedMarket;
   readonly selectedMarketKey = this.store.selectedMarketKey;
   readonly markets = this.store.markets;
@@ -62,6 +70,16 @@ export class NftSpotTradeComponent {
     { label: 'My orders', value: this.myOrders().length },
     { label: 'Filtered', value: this.myMarketsOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
   ]);
+
+
+  setLadderFocus(value: number): void {
+    const n = Math.max(3, Math.min(20, Number(value) || 5));
+    this.store.ladderFocus.set(n);
+  }
+
+  toggleShowAllRows(): void {
+    this.store.showAllRows.update((value) => !value);
+  }
 
   readonly selectedMarketMetrics = computed<SpotSummaryMetric[]>(() => {
     const market = this.selectedMarket();
@@ -218,12 +236,38 @@ export class NftSpotTradeComponent {
     this.store.refresh();
   }
 
+
+  isWhitelistedToken(address: string | null | undefined): boolean {
+    const key = norm(String(address ?? ''));
+    if (!key) return false;
+    return (
+      this.mainTokens().some((token) => norm(token.address) === key) ||
+      this.whitelistTokens().some((token) => norm(token.address) === key)
+    );
+  }
+
   clearPinnedMarket(): void {
     this.store.pinnedMarketKey.set(null);
   }
 
   shortAddress(address: string): string {
     return this.store.shortAddress(address);
+  }
+
+  async copyValue(value: string | number | bigint | null | undefined, event?: Event): Promise<void> {
+    event?.stopPropagation();
+    const text = value === null || value === undefined || value === '' ? '' : String(value);
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copiedValue.set(text);
+      window.setTimeout(() => {
+        if (this.copiedValue() === text) this.copiedValue.set(null);
+      }, 1400);
+    } catch {
+      this.copiedValue.set(null);
+    }
   }
 
 

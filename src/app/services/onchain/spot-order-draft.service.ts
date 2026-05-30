@@ -834,7 +834,7 @@ export class SpotOrderDraftService {
 
   private async latestChainTimestamp(): Promise<bigint | null> {
     try {
-      let provider: any = await this.wallet.getEthersProvider();
+      let provider: any = this.wallet.provider?.() ?? null;
       if (!provider) {
         const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
         provider = new JsonRpcProvider(rpcUrl);

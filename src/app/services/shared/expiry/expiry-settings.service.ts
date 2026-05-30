@@ -147,7 +147,7 @@ export class ExpirySettingsService {
   }
 
   private async getChainTimestamp(): Promise<bigint> {
-    const walletProvider = await this.wallet.getEthersProvider();
+    const walletProvider = this.wallet.provider?.() ?? null;
     const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
     const provider = walletProvider ?? new JsonRpcProvider(rpcUrl);
     const block = await provider.getBlock('latest');

@@ -170,6 +170,9 @@ export interface LendingOrderModalData {
   defaultSide?: 0 | 1;
   defaultPrincipalHuman?: string;
   defaultAprHuman?: string;
+  maxLtvBps?: number | null;
+  liquidationLtvBps?: number | null;
+  riskTierConfigs?: Array<{ riskLevel: number; maxLtvBps: number | null; liquidationLtvBps: number | null }>;
 
   // Forward-compatible aliases used by the lending draft service and inline launchers
   defaultMarketKey?: string;

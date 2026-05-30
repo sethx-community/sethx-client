@@ -1,217 +1,500 @@
 <ng-container *ngIf="walletAddress(); else connectLanding">
-<div class="flex h-screen overflow-hidden bg-background text-textlight font-sans">
-  <aside class="hidden lg:flex w-64 shrink-0 flex-col border-r border-trade-border bg-background z-10">
-    <div class="h-16 flex items-center justify-center px-4 border-b border-trade-border">
-      <img src="assets/sethx-logo-combined.svg" alt="SETHX Client" class="h-14 w-auto" />
-    </div>
-
-    <div class="flex-1 flex flex-col justify-between text-sm">
-      <nav class="flex flex-col px-4 pt-4 gap-5" aria-label="SETHX Client navigation">
-        <section class="space-y-1">
-          <div class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle">Account</div>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['home'], 'right-panel': null } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Home
-          </a>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['accounts'], 'right-panel': ['accountsRightPanel'] } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Accounts
-          </a>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['assets'], 'right-panel': ['assetsRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.opacity-50]="!walletAddress()"
-            [class.pointer-events-none]="!walletAddress()"
-            class="sethx-nav-link"
-          >
-            Assets
-          </a>
-        </section>
-
-        <section class="space-y-1">
-          <div class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle">Markets</div>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['erc20trade'], 'right-panel': ['erc20tradeRightPanel'] } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Token Spot
-          </a>
-          <a
-            [routerLink]="treasuryNavDisabled('nftspottrade') ? null : ['/', { outlets: { primary: ['nftspottrade'], 'right-panel': ['nftspottradeRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.sethx-nav-link-disabled]="treasuryNavDisabled('nftspottrade')"
-            [attr.aria-disabled]="treasuryNavDisabled('nftspottrade')"
-            [attr.title]="treasuryDisabledTitle('nftspottrade')"
-            (click)="onUnsupportedTreasuryNav($event, 'nftspottrade')"
-            class="sethx-nav-link"
-          >
-            NFT Spot
-          </a>
-          <a
-            [routerLink]="treasuryNavDisabled('futurestrade') ? null : ['/', { outlets: { primary: ['futurestrade'], 'right-panel': ['futurestradeRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.sethx-nav-link-disabled]="treasuryNavDisabled('futurestrade')"
-            [attr.aria-disabled]="treasuryNavDisabled('futurestrade')"
-            [attr.title]="treasuryDisabledTitle('futurestrade')"
-            (click)="onUnsupportedTreasuryNav($event, 'futurestrade')"
-            class="sethx-nav-link"
-          >
-            Futures
-          </a>
-          <a
-            [routerLink]="treasuryNavDisabled('optionstrade') ? null : ['/', { outlets: { primary: ['optionstrade'], 'right-panel': ['optionstradeRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.sethx-nav-link-disabled]="treasuryNavDisabled('optionstrade')"
-            [attr.aria-disabled]="treasuryNavDisabled('optionstrade')"
-            [attr.title]="treasuryDisabledTitle('optionstrade')"
-            (click)="onUnsupportedTreasuryNav($event, 'optionstrade')"
-            class="sethx-nav-link"
-          >
-            Options
-          </a>
-          <a
-            [routerLink]="treasuryNavDisabled('binaryoptionstrade') ? null : ['/', { outlets: { primary: ['binaryoptionstrade'], 'right-panel': ['binaryoptionstradeRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.sethx-nav-link-disabled]="treasuryNavDisabled('binaryoptionstrade')"
-            [attr.aria-disabled]="treasuryNavDisabled('binaryoptionstrade')"
-            [attr.title]="treasuryDisabledTitle('binaryoptionstrade')"
-            (click)="onUnsupportedTreasuryNav($event, 'binaryoptionstrade')"
-            class="sethx-nav-link"
-          >
-            Binary Options
-          </a>
-          <a
-            [routerLink]="treasuryNavDisabled('marginoptionstrade') ? null : ['/', { outlets: { primary: ['marginoptionstrade'], 'right-panel': ['marginoptionstradeRightPanel'] } }]"
-            routerLinkActive="active"
-            [class.sethx-nav-link-disabled]="treasuryNavDisabled('marginoptionstrade')"
-            [attr.aria-disabled]="treasuryNavDisabled('marginoptionstrade')"
-            [attr.title]="treasuryDisabledTitle('marginoptionstrade')"
-            (click)="onUnsupportedTreasuryNav($event, 'marginoptionstrade')"
-            class="sethx-nav-link"
-          >
-            Margin Options
-          </a>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['lending-ob'], 'right-panel': ['lendingObRightPanel'] } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Lending
-          </a>
-        </section>
-
-        <section class="space-y-1">
-          <div class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle">Info</div>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['protocol'], 'right-panel': null } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Protocol
-          </a>
-          <a
-            [routerLink]="['/', { outlets: { primary: ['fees'], 'right-panel': null } }]"
-            routerLinkActive="active"
-            class="sethx-nav-link"
-          >
-            Fees
-          </a>
-        </section>
-      </nav>
-
-      <div class="px-4 pb-4">
-        <div class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle">Admin</div>
+  <div
+    class="flex h-screen overflow-hidden bg-background text-textlight font-sans"
+  >
+    <aside
+      class="hidden lg:flex w-64 shrink-0 flex-col border-r border-trade-border bg-background z-10"
+    >
+      <div class="h-16 flex items-center px-4 border-b border-trade-border">
         <a
-          *ngIf="hasTreasuryAccess()"
-          [routerLink]="['/', { outlets: { primary: ['treasury'], 'right-panel': ['treasuryRightPanel'] } }]"
-          routerLinkActive="active"
-          class="sethx-nav-link"
+          [routerLink]="[
+            '/',
+            { outlets: { primary: ['home'], 'right-panel': null } },
+          ]"
+          class="sethx-site-brand"
+          aria-label="SETHX Client home"
         >
-          Treasury
+          <span class="sethx-site-brand-mark" aria-hidden="true"></span>
+          <span>SETHX Client</span>
         </a>
       </div>
-    </div>
-  </aside>
 
-  <main class="flex-1 flex flex-col overflow-hidden">
-    <header class="h-16 flex items-center justify-between px-4 border-b border-trade-border bg-background sticky top-0 z-20">
-      <div class="flex items-center gap-4">
-        <app-wallet-state></app-wallet-state>
-        <div *ngIf="!network.available()" class="bg-red-600 text-white p-2 text-xs">
-          Network unavailable: {{ network.error() }}
+      <div class="flex-1 flex flex-col justify-between text-sm">
+        <nav
+          class="flex flex-col px-4 pt-4 gap-5"
+          aria-label="SETHX Client navigation"
+        >
+          <section class="space-y-1">
+            <div
+              class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle"
+            >
+              Account
+            </div>
+            <a
+              [routerLink]="[
+                '/',
+                { outlets: { primary: ['home'], 'right-panel': null } },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Home
+            </a>
+            <a
+              [routerLink]="[
+                '/',
+                {
+                  outlets: {
+                    primary: ['accounts'],
+                    'right-panel': ['accountsRightPanel'],
+                  },
+                },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Accounts
+            </a>
+            <a
+              [routerLink]="[
+                '/',
+                {
+                  outlets: {
+                    primary: ['assets'],
+                    'right-panel': ['assetsRightPanel'],
+                  },
+                },
+              ]"
+              routerLinkActive="active"
+              [class.opacity-50]="!walletAddress()"
+              [class.pointer-events-none]="!walletAddress()"
+              class="sethx-nav-link"
+            >
+              Assets
+            </a>
+          </section>
+
+          <section class="space-y-1">
+            <div
+              class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle"
+            >
+              Markets
+            </div>
+            <a
+              [routerLink]="[
+                '/',
+                {
+                  outlets: {
+                    primary: ['erc20trade'],
+                    'right-panel': ['erc20tradeRightPanel'],
+                  },
+                },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Token Spot
+            </a>
+            <a
+              [routerLink]="
+                treasuryNavDisabled('nftspottrade')
+                  ? null
+                  : [
+                      '/',
+                      {
+                        outlets: {
+                          primary: ['nftspottrade'],
+                          'right-panel': ['nftspottradeRightPanel'],
+                        },
+                      },
+                    ]
+              "
+              routerLinkActive="active"
+              [class.sethx-nav-link-disabled]="
+                treasuryNavDisabled('nftspottrade')
+              "
+              [attr.aria-disabled]="treasuryNavDisabled('nftspottrade')"
+              [attr.title]="treasuryDisabledTitle('nftspottrade')"
+              (click)="onUnsupportedTreasuryNav($event, 'nftspottrade')"
+              class="sethx-nav-link"
+            >
+              NFT Spot
+            </a>
+            <a
+              [routerLink]="
+                treasuryNavDisabled('futurestrade')
+                  ? null
+                  : [
+                      '/',
+                      {
+                        outlets: {
+                          primary: ['futurestrade'],
+                          'right-panel': ['futurestradeRightPanel'],
+                        },
+                      },
+                    ]
+              "
+              routerLinkActive="active"
+              [class.sethx-nav-link-disabled]="
+                treasuryNavDisabled('futurestrade')
+              "
+              [attr.aria-disabled]="treasuryNavDisabled('futurestrade')"
+              [attr.title]="treasuryDisabledTitle('futurestrade')"
+              (click)="onUnsupportedTreasuryNav($event, 'futurestrade')"
+              class="sethx-nav-link"
+            >
+              Futures
+            </a>
+            <a
+              [routerLink]="
+                treasuryNavDisabled('optionstrade')
+                  ? null
+                  : [
+                      '/',
+                      {
+                        outlets: {
+                          primary: ['optionstrade'],
+                          'right-panel': ['optionstradeRightPanel'],
+                        },
+                      },
+                    ]
+              "
+              routerLinkActive="active"
+              [class.sethx-nav-link-disabled]="
+                treasuryNavDisabled('optionstrade')
+              "
+              [attr.aria-disabled]="treasuryNavDisabled('optionstrade')"
+              [attr.title]="treasuryDisabledTitle('optionstrade')"
+              (click)="onUnsupportedTreasuryNav($event, 'optionstrade')"
+              class="sethx-nav-link"
+            >
+              Options
+            </a>
+            <a
+              [routerLink]="
+                treasuryNavDisabled('binaryoptionstrade')
+                  ? null
+                  : [
+                      '/',
+                      {
+                        outlets: {
+                          primary: ['binaryoptionstrade'],
+                          'right-panel': ['binaryoptionstradeRightPanel'],
+                        },
+                      },
+                    ]
+              "
+              routerLinkActive="active"
+              [class.sethx-nav-link-disabled]="
+                treasuryNavDisabled('binaryoptionstrade')
+              "
+              [attr.aria-disabled]="treasuryNavDisabled('binaryoptionstrade')"
+              [attr.title]="treasuryDisabledTitle('binaryoptionstrade')"
+              (click)="onUnsupportedTreasuryNav($event, 'binaryoptionstrade')"
+              class="sethx-nav-link"
+            >
+              Binary Options
+            </a>
+            <a
+              [routerLink]="
+                treasuryNavDisabled('marginoptionstrade')
+                  ? null
+                  : [
+                      '/',
+                      {
+                        outlets: {
+                          primary: ['marginoptionstrade'],
+                          'right-panel': ['marginoptionstradeRightPanel'],
+                        },
+                      },
+                    ]
+              "
+              routerLinkActive="active"
+              [class.sethx-nav-link-disabled]="
+                treasuryNavDisabled('marginoptionstrade')
+              "
+              [attr.aria-disabled]="treasuryNavDisabled('marginoptionstrade')"
+              [attr.title]="treasuryDisabledTitle('marginoptionstrade')"
+              (click)="onUnsupportedTreasuryNav($event, 'marginoptionstrade')"
+              class="sethx-nav-link"
+            >
+              Margin Options
+            </a>
+            <a
+              [routerLink]="[
+                '/',
+                {
+                  outlets: {
+                    primary: ['lending-ob'],
+                    'right-panel': ['lendingObRightPanel'],
+                  },
+                },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Lending
+            </a>
+          </section>
+
+          <section class="space-y-1">
+            <div
+              class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle"
+            >
+              Info
+            </div>
+            <a
+              [routerLink]="[
+                '/',
+                { outlets: { primary: ['protocol'], 'right-panel': null } },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Protocol
+            </a>
+            <a
+              [routerLink]="[
+                '/',
+                { outlets: { primary: ['fees'], 'right-panel': null } },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Fees
+            </a>
+            <a
+              [routerLink]="[
+                '/',
+                { outlets: { primary: ['oracles'], 'right-panel': null } },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link"
+            >
+              Oracles
+            </a>
+
+            <a
+              [routerLink]="[
+                '/',
+                { outlets: { primary: ['warnings'], 'right-panel': null } },
+              ]"
+              routerLinkActive="active"
+              class="sethx-nav-link flex items-center justify-between gap-2"
+            >
+              <span>Warnings</span>
+              <span
+                *ngIf="warnings.totalCount() > 0"
+                class="inline-flex min-w-[1.25rem] h-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
+              >
+                {{ warnings.totalCount() }}
+              </span>
+            </a>
+          </section>
+        </nav>
+
+        <div class="px-4 pb-4">
+          <div
+            class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle"
+          >
+            Admin
+          </div>
+          <a
+            *ngIf="hasTreasuryAccess()"
+            [routerLink]="[
+              '/',
+              {
+                outlets: {
+                  primary: ['treasury'],
+                  'right-panel': ['treasuryRightPanel'],
+                },
+              },
+            ]"
+            routerLinkActive="active"
+            class="sethx-nav-link"
+          >
+            Treasury
+          </a>
         </div>
       </div>
+    </aside>
 
-      <div *ngIf="hasTreasuryAccess()" class="hidden lg:flex items-center gap-3 rounded border border-trade-border bg-panel px-3 py-2 text-xs">
-        <label class="flex items-center gap-2 text-frame">
-          <input
-            type="checkbox"
-            class="accent-gold"
-            [checked]="treasuryMode.actingAsTreasurer()"
-            [disabled]="!treasuryMode.canActAsTreasurer()"
-            (change)="onTreasuryModeChange($event)"
-          />
-          <span class="font-semibold text-white">Act as treasurer</span>
-        </label>
-        <select
-          class="sethx-select max-w-44 py-1 text-xs"
-          [value]="treasuryMode.selectedTreasuryAccount() || ''"
-          (change)="onTreasuryAccountChange($event)"
-        >
-          <option value="">Select treasury account</option>
-          <option *ngFor="let row of treasuryMode.accounts()" [value]="row.account" [disabled]="!row.allowed">
-            {{ treasuryMode.short(row.account) }}{{ row.allowed ? '' : ' · no access' }}
-          </option>
-        </select>
-        <span *ngIf="treasuryMode.actingAsTreasurer()" class="text-up">Treasurer mode active</span>
-      </div>
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <header
+        class="h-16 flex items-center justify-between px-4 border-b border-trade-border bg-background sticky top-0 z-20"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            *ngIf="!network.available()"
+            class="bg-red-600 text-white p-2 text-xs"
+          >
+            Network unavailable: {{ network.error() }}
+          </div>
+        </div>
 
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="sethx-theme-toggle"
-          [class.is-light]="theme.isLight()"
-          (click)="onThemeToggle()"
-          [attr.aria-pressed]="theme.isLight()"
-          [attr.title]="theme.isLight() ? 'Switch to dark mode' : 'Switch to light mode'"
+        <div
+          *ngIf="hasTreasuryAccess()"
+          class="hidden lg:flex items-center gap-3 rounded border border-trade-border bg-panel px-3 py-2 text-xs"
         >
-          <span class="sethx-theme-toggle-track">
-            <span class="sethx-theme-toggle-thumb">
-              <i class="fa-solid" [class.fa-sun]="theme.isLight()" [class.fa-moon]="!theme.isLight()"></i>
+          <label class="flex items-center gap-2 text-frame">
+            <input
+              type="checkbox"
+              class="accent-gold"
+              [checked]="treasuryMode.actingAsTreasurer()"
+              [disabled]="!treasuryMode.canActAsTreasurer()"
+              (change)="onTreasuryModeChange($event)"
+            />
+            <span class="font-semibold text-white">Act as treasurer</span>
+          </label>
+          <select
+            class="sethx-select max-w-44 py-1 text-xs"
+            [value]="treasuryMode.selectedTreasuryAccount() || ''"
+            (change)="onTreasuryAccountChange($event)"
+          >
+            <option value="">Select treasury account</option>
+            <option
+              *ngFor="let row of treasuryMode.accounts()"
+              [value]="row.account"
+              [disabled]="!row.allowed"
+            >
+              {{ treasuryMode.short(row.account)
+              }}{{ row.allowed ? "" : " · no access" }}
+            </option>
+          </select>
+          <span *ngIf="treasuryMode.actingAsTreasurer()" class="text-up"
+            >Treasurer mode active</span
+          >
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="sethx-refresh-button"
+            [class.is-refreshing]="triggers.refreshing()"
+            [attr.title]="'Refresh active page · ' + lastRefreshText()"
+            (click)="refreshCurrentPage()"
+          >
+            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+            <span class="hidden xl:inline">Refresh</span>
+          </button>
+          <button
+            type="button"
+            class="sethx-theme-toggle"
+            [class.is-light]="theme.isLight()"
+            (click)="onThemeToggle()"
+            [attr.aria-pressed]="theme.isLight()"
+            [attr.title]="
+              theme.isLight() ? 'Switch to dark mode' : 'Switch to light mode'
+            "
+          >
+            <span class="sethx-theme-toggle-track">
+              <span class="sethx-theme-toggle-thumb">
+                <i
+                  class="fa-solid"
+                  [class.fa-sun]="theme.isLight()"
+                  [class.fa-moon]="!theme.isLight()"
+                ></i>
+              </span>
             </span>
-          </span>
-          <span class="hidden xl:inline">{{ theme.isLight() ? 'Light' : 'Dark' }}</span>
-        </button>
-        <app-wallet-connect></app-wallet-connect>
-      </div>
-    </header>
+            <span class="hidden xl:inline">{{
+              theme.isLight() ? "Light" : "Dark"
+            }}</span>
+          </button>
+          <app-wallet-connect></app-wallet-connect>
+        </div>
+      </header>
 
-    <section class="flex-1 overflow-auto p-4">
-      <div *ngIf="unsupportedTreasuryRoute()" class="sethx-table-card mb-4 border-gold/40 bg-gold/5">
-        <div class="sethx-kicker">Treasurer mode</div>
-        <h2 class="sethx-section-title">This orderbook is disabled while acting as treasurer</h2>
-        <p class="sethx-page-copy">The current contracts only expose treasury wrappers for Token Spot, Lending, treasury account funding/withdrawals, vault pulls, payments, and passive liquidity operations. Switch back to personal mode to use this market.</p>
-      </div>
-      <div [class.pointer-events-none]="unsupportedTreasuryRoute()" [class.opacity-45]="unsupportedTreasuryRoute()">
-        <router-outlet></router-outlet>
-      </div>
-    </section>
-  </main>
+      <section
+        #mainScroll
+        class="sethx-main-scroll sethx-hidden-scrollbar relative flex-1 overflow-auto p-4"
+        (scroll)="updateScrollState('main', mainScroll)"
+      >
+        <div
+          *ngIf="unsupportedTreasuryRoute()"
+          class="sethx-table-card mb-4 border-gold/40 bg-gold/5"
+        >
+          <div class="sethx-kicker">Treasurer mode</div>
+          <h2 class="sethx-section-title">
+            This orderbook is disabled while acting as treasurer
+          </h2>
+          <p class="sethx-page-copy">
+            The current contracts only expose treasury wrappers for Token Spot,
+            Lending, treasury account funding/withdrawals, vault pulls,
+            payments, and passive liquidity operations. Switch back to personal
+            mode to use this market.
+          </p>
+        </div>
+        <div
+          [class.pointer-events-none]="unsupportedTreasuryRoute()"
+          [class.opacity-45]="unsupportedTreasuryRoute()"
+        >
+          <router-outlet></router-outlet>
+        </div>
+        <div
+          class="sethx-scroll-button-cluster"
+          *ngIf="mainCanScrollUp() || mainCanScrollDown()"
+        >
+          <button
+            *ngIf="mainCanScrollUp()"
+            type="button"
+            class="sethx-scroll-button"
+            title="Scroll up"
+            aria-label="Scroll up"
+            (click)="scrollPane(mainScroll, 'up')"
+          >
+            ^^^
+          </button>
+          <button
+            *ngIf="mainCanScrollDown()"
+            type="button"
+            class="sethx-scroll-button"
+            title="Scroll down"
+            aria-label="Scroll down"
+            (click)="scrollPane(mainScroll, 'down')"
+          >
+            vvv
+          </button>
+        </div>
+      </section>
+    </main>
 
-  <aside class="hidden xl:flex w-72 shrink-0 flex-col min-h-0 border-l border-trade-border bg-background z-10">
-    <div class="flex-1 min-h-0 overflow-y-auto">
-      <router-outlet name="right-panel" />
-    </div>
-  </aside>
-</div>
-
+    <aside
+      class="hidden xl:flex w-72 shrink-0 flex-col min-h-0 border-l border-trade-border bg-background z-10"
+    >
+      <div
+        #rightPanelScroll
+        class="sethx-right-panel-scroll sethx-hidden-scrollbar relative flex-1 min-h-0 overflow-y-auto"
+        (scroll)="updateScrollState('right', rightPanelScroll)"
+      >
+        <router-outlet name="right-panel" />
+        <div
+          class="sethx-scroll-button-cluster is-panel"
+          *ngIf="rightCanScrollUp() || rightCanScrollDown()"
+        >
+          <button
+            *ngIf="rightCanScrollUp()"
+            type="button"
+            class="sethx-scroll-button"
+            title="Scroll panel up"
+            aria-label="Scroll panel up"
+            (click)="scrollPane(rightPanelScroll, 'up')"
+          >
+            ^^^
+          </button>
+          <button
+            *ngIf="rightCanScrollDown()"
+            type="button"
+            class="sethx-scroll-button"
+            title="Scroll panel down"
+            aria-label="Scroll panel down"
+            (click)="scrollPane(rightPanelScroll, 'down')"
+          >
+            vvv
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
 </ng-container>
 
 <ng-template #connectLanding>

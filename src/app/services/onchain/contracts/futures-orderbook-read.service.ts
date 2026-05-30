@@ -5,16 +5,6 @@ import { WalletConnectService } from '../../../wallet/wallet-connect.service';
 import { getContractAddress } from '../../../contracts/contract-registry';
 import { CONTRACT_ABIS } from '../../../contracts/generated';
 
-export type PassiveFuturesSnapshot = {
-  pool: string;
-  validUntil: bigint;
-  bidPrice: bigint;
-  bidSize: bigint;
-  askPrice: bigint;
-  askSize: bigint;
-  active: boolean;
-};
-
 export type FuturesOrder = {
   orderId: bigint;
   user: string;
@@ -75,48 +65,6 @@ export class FuturesOrderBookReadService {
     if (!c || !account) return [];
     const res = await c['getUserOrders'](account);
     return (res ?? []).map((x: any) => bi(x)).filter((id: bigint) => id !== 0n);
-  }
-
-
-
-  async getPassivePool(marketKey: string): Promise<string> {
-    const c = await this.contractOrNull();
-    if (!c) return ethers.ZeroAddress;
-    try {
-      return normAddr(await c['passivePoolForMarket'](marketKey));
-    } catch {
-      return ethers.ZeroAddress;
-    }
-  }
-
-  async getPassiveSnapshot(marketKey: string): Promise<PassiveFuturesSnapshot | null> {
-    const c = await this.contractOrNull();
-    if (!c) return null;
-    try {
-      const [pool, raw] = await Promise.all([
-        this.getPassivePool(marketKey),
-        c['passiveSnapshot'](marketKey),
-      ]);
-      const validUntil = bi(raw?.validUntil ?? raw?.[0]);
-      const bid = raw?.bestBid ?? raw?.[1] ?? {};
-      const ask = raw?.bestAsk ?? raw?.[2] ?? {};
-      const bidPrice = bi(bid?.price ?? bid?.[0]);
-      const bidSize = bi(bid?.remainingSize ?? bid?.[1]);
-      const askPrice = bi(ask?.price ?? ask?.[0]);
-      const askSize = bi(ask?.remainingSize ?? ask?.[1]);
-      const now = BigInt(Math.floor(Date.now() / 1000));
-      return {
-        pool,
-        validUntil,
-        bidPrice,
-        bidSize,
-        askPrice,
-        askSize,
-        active: pool !== ethers.ZeroAddress.toLowerCase() && validUntil > now && (bidSize > 0n || askSize > 0n),
-      };
-    } catch {
-      return null;
-    }
   }
 
   async getOrder(orderId: bigint): Promise<FuturesOrder | null> {

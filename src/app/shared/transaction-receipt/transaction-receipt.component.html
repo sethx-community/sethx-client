@@ -6,9 +6,23 @@
     </div>
     <div class="mt-1 leading-relaxed text-frame">{{ receipt.message }}</div>
     @if (receipt.txHash) {
-      <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <span class="text-text-muted">Tx hash</span>
-        <span class="select-text font-mono text-white">{{ shortHash(receipt.txHash) }}</span>
+      <div class="mt-2 space-y-1">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-text-muted">Tx hash</span>
+          <button
+            type="button"
+            class="sethx-copy-button"
+            [class.is-copied]="copied"
+            [title]="copied ? 'Copied' : 'Copy transaction hash'"
+            aria-label="Copy transaction hash"
+            (click)="copyTxHash(receipt.txHash)"
+          >
+            <i class="fa-regular" [class.fa-copy]="!copied" [class.fa-circle-check]="copied" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="select-text break-all rounded border border-frame/40 bg-black/20 px-2 py-1 font-mono text-[11px] text-white">
+          {{ receipt.txHash }}
+        </div>
       </div>
     }
     @if (explorerUrl) {

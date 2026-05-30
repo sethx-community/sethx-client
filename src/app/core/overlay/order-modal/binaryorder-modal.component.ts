@@ -25,10 +25,16 @@ export class BinaryOrderModalComponent implements OnInit {
 
   readonly intent = signal<'0' | '1' | '2'>('0');
   readonly marketKey = signal('');
+  readonly newMarketMode = signal(false);
+  readonly newOracle = signal('');
+  readonly newOptionType = signal<'0' | '1'>('0');
+  readonly newStrikeHuman = signal('0.00025');
   readonly payoutHuman = signal('1');
   readonly priceHuman = signal('0.5');
   readonly expiryPreset = signal<'default' | '1h' | '1d' | '7d' | 'max' | 'custom'>('default');
-  readonly customExpiryLocal = signal('');
+  readonly customExpiryYear = signal('');
+  readonly customExpiryMonth = signal('');
+  readonly customExpiryWeekUnix = signal('');
   readonly orderId = signal('');
   readonly fillPayoutHuman = signal('');
   readonly error = signal<string | null>(null);
@@ -39,8 +45,12 @@ export class BinaryOrderModalComponent implements OnInit {
       const key = String(this.data.defaultMarketKey);
       this.marketKey.set(key);
       this.store.selectMarket(key);
+      this.newMarketMode.set(false);
     } else if (this.store.selectedMarketKey()) {
       this.marketKey.set(this.store.selectedMarketKey()!);
+      this.newMarketMode.set(false);
+    } else {
+      this.newMarketMode.set(true);
     }
 
     if (this.data.defaultIntent !== undefined) {
@@ -50,6 +60,7 @@ export class BinaryOrderModalComponent implements OnInit {
     if (this.data.defaultPriceHuman) this.priceHuman.set(this.data.defaultPriceHuman);
 
     if ((intent === 'place' || intent === 'quote') && this.data.defaultIntent === undefined) this.intent.set('0');
+    this.syncCustomExpiryFromMarket();
   }
 
   title(): string {
@@ -75,12 +86,38 @@ export class BinaryOrderModalComponent implements OnInit {
   }
 
   marketSummary(): string {
+    if (this.newMarketMode()) return `${this.newTicker()} · new market`;
     const key = this.marketKey() || this.store.selectedMarketKey() || '';
     const row = this.store.activeMarkets().find((m) => m.marketKey.toLowerCase() === key.toLowerCase());
     if (!row) return 'No market selected';
     const condition = this.store.condition(row.market.optionType, this.store.tokenLabel(row.market.baseToken), row.market.strikePrice);
     const expiry = new Date(Number(row.market.expiry) * 1000).toISOString().slice(0, 16).replace('T', ' ');
     return `${condition} · Expiry ${expiry} UTC`;
+  }
+
+  newTicker(): string {
+    const pair = this.newOracle() ? 'ORACLE' : 'CUSTOM';
+    return `${pair}-${this.newOptionType() === '0' ? 'ABOVE' : 'BELOW'}-${this.customExpiryUnix() ?? 0n}-${this.newStrikeHuman()}`;
+  }
+
+  setNewMarketMode(value: unknown): void {
+    this.newMarketMode.set(value === true || value === 'true');
+  }
+
+  setNewOptionType(value: unknown): void {
+    const v = String(value);
+    if (v === '0' || v === '1') this.newOptionType.set(v);
+  }
+
+  marketOptions() {
+    return this.store.activeMarkets();
+  }
+
+  selectMarket(value: unknown): void {
+    const key = String(value ?? '').trim().toLowerCase();
+    this.marketKey.set(key);
+    if (key) this.store.selectMarket(key);
+    this.syncCustomExpiryFromMarket();
   }
 
   setIntent(value: string): void {
@@ -102,11 +139,106 @@ export class BinaryOrderModalComponent implements OnInit {
     return expiry > 0n ? this.formatExpiry(expiry) : 'No market expiry available';
   }
 
+
+  expiryYears(): string[] {
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const years: string[] = [];
+    for (let i = 0; i <= 30; i += 1) years.push(String(currentYear + i));
+    const selected = this.customExpiryYear();
+    if (selected && !years.includes(selected)) years.push(selected);
+    return years.sort();
+  }
+
+  expiryMonths(): Array<{ value: string; label: string }> {
+    const year = Number(this.customExpiryYear() || new Date().getUTCFullYear());
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const out: Array<{ value: string; label: string }> = [];
+    for (let month = 1; month <= 12; month += 1) {
+      if (this.fridaysNoonUtcInMonth(year, month).some((expiry) => expiry > now)) {
+        out.push({ value: String(month), label: this.monthName(month) });
+      }
+    }
+    return out;
+  }
+
+  expiryWeeks(): Array<{ value: string; label: string }> {
+    const year = Number(this.customExpiryYear());
+    const month = Number(this.customExpiryMonth());
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    if (!Number.isFinite(year) || !Number.isFinite(month) || year <= 0 || month <= 0) return [];
+    return this.fridaysNoonUtcInMonth(year, month)
+      .filter((expiry) => expiry > now)
+      .map((expiry, index) => ({ value: expiry.toString(), label: `Friday ${index + 1} · ${this.formatExpiry(expiry)}` }));
+  }
+
+  setCustomExpiryYear(value: string | number): void {
+    this.customExpiryYear.set(String(value ?? ''));
+    const months = this.expiryMonths();
+    if (!months.some((row) => row.value === this.customExpiryMonth())) {
+      this.customExpiryMonth.set(months[0]?.value ?? '');
+    }
+    this.selectFirstCustomFriday();
+  }
+
+  setCustomExpiryMonth(value: string | number): void {
+    this.customExpiryMonth.set(String(value ?? ''));
+    this.selectFirstCustomFriday();
+  }
+
+  setCustomExpiryWeek(value: string | number): void {
+    this.customExpiryWeekUnix.set(String(value ?? ''));
+  }
+
   customExpiryUnix(): bigint | null {
-    const raw = this.customExpiryLocal().trim();
-    if (!raw) return null;
-    const ms = Date.parse(raw);
-    return Number.isFinite(ms) ? BigInt(Math.floor(ms / 1000)) : null;
+    const selected = String(this.customExpiryWeekUnix() ?? '').trim();
+    if (/^\d+$/.test(selected)) return BigInt(selected);
+    return null;
+  }
+
+  customExpiryLabel(): string {
+    const expiry = this.customExpiryUnix();
+    return expiry ? this.formatExpiry(expiry) : '—';
+  }
+
+  private syncCustomExpiryFromMarket(): void {
+    const expiry = this.marketExpiry();
+    if (expiry > 0n) {
+      const d = new Date(Number(expiry) * 1000);
+      this.customExpiryYear.set(String(d.getUTCFullYear()));
+      this.customExpiryMonth.set(String(d.getUTCMonth() + 1));
+      this.customExpiryWeekUnix.set(expiry.toString());
+      return;
+    }
+    const now = new Date();
+    this.customExpiryYear.set(String(now.getUTCFullYear()));
+    this.customExpiryMonth.set(String(now.getUTCMonth() + 1));
+    const months = this.expiryMonths();
+    if (!months.some((row) => row.value === this.customExpiryMonth())) this.customExpiryMonth.set(months[0]?.value ?? '');
+    this.selectFirstCustomFriday();
+  }
+
+  private selectFirstCustomFriday(): void {
+    const weeks = this.expiryWeeks();
+    if (!weeks.some((row) => row.value === this.customExpiryWeekUnix())) {
+      this.customExpiryWeekUnix.set(weeks[0]?.value ?? '');
+    }
+  }
+
+  private fridaysNoonUtcInMonth(year: number, monthOneBased: number): bigint[] {
+    const out: bigint[] = [];
+    const d = new Date(Date.UTC(year, monthOneBased - 1, 1, 12, 0, 0, 0));
+    const daysUntilFriday = (5 - d.getUTCDay() + 7) % 7;
+    d.setUTCDate(1 + daysUntilFriday);
+    while (d.getUTCFullYear() === year && d.getUTCMonth() === monthOneBased - 1) {
+      out.push(BigInt(Math.floor(d.getTime() / 1000)));
+      d.setUTCDate(d.getUTCDate() + 7);
+    }
+    return out;
+  }
+
+  private monthName(monthOneBased: number): string {
+    return new Date(Date.UTC(2026, monthOneBased - 1, 1, 12, 0, 0, 0)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
   }
 
   formatExpiry(x: bigint | number | string | null | undefined): string {
@@ -120,12 +252,12 @@ export class BinaryOrderModalComponent implements OnInit {
 
   async previewPlace(quoteOnly = false): Promise<void> {
     this.error.set(null);
-    const marketKey = this.marketKey();
-    if (!marketKey) {
-      this.error.set('Choose a binary market in the market view first, then open this action.');
+    const marketKey = this.newMarketMode() ? '' : this.marketKey();
+    if (!marketKey && !this.newMarketMode()) {
+      this.error.set('Choose an existing binary market or enter new market parameters.');
       return;
     }
-    this.store.selectMarket(marketKey);
+    if (marketKey) this.store.selectMarket(marketKey);
     try {
       await this.actions.requestPlace({
         marketKey,
@@ -135,6 +267,13 @@ export class BinaryOrderModalComponent implements OnInit {
         expiryPreset: this.expiryPreset(),
         customExpiryUnix: this.customExpiryUnix(),
         quoteOnly,
+        newMarket: this.newMarketMode() && this.customExpiryUnix() ? {
+          ticker: this.newTicker(),
+          optionType: Number(this.newOptionType()),
+          oracle: this.newOracle(),
+          strikePriceHuman: this.newStrikeHuman(),
+          marketExpiry: this.customExpiryUnix()!,
+        } : null,
       });
     } catch (e: any) {
       this.error.set(e?.reason ?? e?.message ?? 'Could not build binary order preview');
@@ -225,5 +364,13 @@ export class BinaryOrderModalComponent implements OnInit {
   close(result?: any): void {
     this.actions.closeConfirmModal();
     this.onClose?.(result);
+  }
+
+  handleReviewClose(): void {
+    if (this.actions.receipt()?.status === 'success') {
+      this.close({ success: true });
+      return;
+    }
+    this.actions.closeConfirmModal();
   }
 }

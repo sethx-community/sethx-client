@@ -1,0 +1,104 @@
+<div class="sethx-page space-y-5">
+  <header class="sethx-page-header">
+    <div class="sethx-kicker">Oracles</div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="sethx-page-title">Oracle explorer</h1>
+        <p class="sethx-page-copy mt-2">
+          Search an approved oracle address and inspect the metadata, last price, last fetch, contexts, and the fetch formula used by the oracle to update prices.
+        </p>
+      </div>
+      <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()">Refresh oracle reads</button>
+    </div>
+  </header>
+
+  <section class="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+    <article class="sethx-table-card space-y-4">
+      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 class="sethx-section-title">Approved oracles</h2>
+          <p class="sethx-page-copy mt-1">Read status: {{ live().oracleReadStatus }} · {{ filteredOracles().length }} shown</p>
+        </div>
+        <label class="block min-w-[260px]">
+          <span class="sethx-field-label">Address / source filter</span>
+          <input
+            class="sethx-input"
+            type="search"
+            [value]="filter()"
+            placeholder="0x… / Chainlink / pair"
+            (input)="onFilter($any($event.target).value)"
+          />
+        </label>
+      </div>
+
+      <div class="space-y-2">
+        <button
+          *ngFor="let row of filteredOracles(); trackBy: trackOracle"
+          type="button"
+          class="w-full rounded border border-trade-border bg-background/60 p-3 text-left text-xs hover:border-frame"
+          [class.border-frame]="isSelected(row)"
+          (click)="select(row)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-semibold text-white">{{ row.label }}</div>
+              <code class="mt-1 block break-all text-accent">{{ row.oracle }}</code>
+            </div>
+            <span class="sethx-status-pill" [class.is-ok]="row.statusLabel === 'OK'" [class.is-attention]="row.statusLabel !== 'OK'">{{ row.statusLabel }}</span>
+          </div>
+          <p class="mt-2 text-text-muted">{{ row.description }}</p>
+        </button>
+
+        <p *ngIf="filteredOracles().length === 0" class="sethx-page-copy">No approved oracle matches this filter.</p>
+      </div>
+    </article>
+
+    <article class="sethx-table-card space-y-4" *ngIf="selected() as row; else noSelection">
+      <div>
+        <div class="sethx-kicker">Selected oracle</div>
+        <h2 class="sethx-section-title mt-2">{{ row.label }}</h2>
+        <code class="mt-2 block break-all text-accent">{{ row.oracle }}</code>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2">
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Token</div><code class="break-all text-accent">{{ row.token || '—' }}</code></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Pair</div><div class="sethx-readonly-value-strong">{{ row.pair || '—' }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Source</div><div class="sethx-readonly-value-strong">{{ row.source || '—' }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Feed</div><code class="break-all text-accent">{{ row.feed || '—' }}</code></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Decimals</div><div class="sethx-readonly-value-strong">{{ row.decimals ?? '—' }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Feed decimals</div><div class="sethx-readonly-value-strong">{{ row.feedDecimals ?? '—' }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Last price</div><div class="sethx-readonly-value-strong">{{ formatPrice(row) }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Max staleness</div><div class="sethx-readonly-value-strong">{{ formatStaleness(row.maxStaleness) }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Status</div><div class="sethx-readonly-value-strong">{{ row.statusLabel }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Price timestamp</div><div class="sethx-readonly-value-strong">{{ formatTimestamp(row.priceTimestamp) }}</div></div>
+        <div class="sethx-readonly-card"><div class="sethx-field-label">Last fetch</div><div class="sethx-readonly-value-strong">{{ formatTimestamp(row.lastFetchTimestamp) }}</div></div>
+      </div>
+
+      <div class="sethx-readonly-card">
+        <div class="sethx-field-label">Approved contexts</div>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <span *ngFor="let context of row.contexts" class="sethx-status-pill is-active">{{ context }}</span>
+          <span *ngIf="row.contexts.length === 0" class="sethx-muted-value">No contexts approved.</span>
+        </div>
+      </div>
+
+      <div class="sethx-readonly-card">
+        <div class="sethx-field-label">Price source / fetch function</div>
+        <code class="mt-2 block whitespace-pre-wrap rounded border border-trade-border bg-background/80 p-3 text-accent">{{ row.fetchFormula || 'No fetch function reported by this oracle.' }}</code>
+        <p class="sethx-page-copy mt-2">The oracle exposes this text through fetchFormula() so users can inspect the hardcoded source/feed address and how fetchPrice() updates the stored price.</p>
+      </div>
+
+      <div class="sethx-readonly-card" *ngIf="row.notes">
+        <div class="sethx-field-label">Oracle notes</div>
+        <p class="mt-2 text-xs leading-relaxed text-text-muted">{{ row.notes }}</p>
+      </div>
+    </article>
+
+    <ng-template #noSelection>
+      <article class="sethx-table-card">
+        <h2 class="sethx-section-title">No oracle selected</h2>
+        <p class="sethx-page-copy mt-2">No approved oracle data is currently available from the connected provider.</p>
+      </article>
+    </ng-template>
+  </section>
+</div>

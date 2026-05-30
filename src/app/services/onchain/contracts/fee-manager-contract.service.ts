@@ -23,6 +23,9 @@ export class FeeManagerContractService extends EthersContractService<Contract> {
     'function getAcceptedPaymentTokens() view returns (address[])',
     'function isAcceptedFeeToken(address token) view returns (bool)',
     'function priceManager() view returns (address)',
+    'function pendingRoleUpdates(string context) view returns (uint256 makerFixedFee,uint256 makerPercentageFee,uint256 takerFixedFee,uint256 takerPercentageFee,uint256 executeAfter)',
+    'function pendingSethxDiscountUpdate() view returns (uint256 discountBps,uint256 executeAfter)',
+    'function feeUpdateDelay() view returns (uint256)',
   ];
   protected readonly defaultAddress = getContractAddress('FeeManager');
 
@@ -80,4 +83,28 @@ export class FeeManagerContractService extends EthersContractService<Contract> {
   async getAcceptedPaymentTokens(): Promise<string[]> {
     return this.read('getAcceptedPaymentTokens' as any, [] as any);
   }
+
+  async getPendingRoleFeeUpdate(context: string): Promise<{ makerFixedFee: bigint; makerPercentageFee: bigint; takerFixedFee: bigint; takerPercentageFee: bigint; executeAfter: bigint }> {
+    const pending = await this.read('pendingRoleUpdates' as any, [context] as any);
+    return {
+      makerFixedFee: pending.makerFixedFee ?? pending[0],
+      makerPercentageFee: pending.makerPercentageFee ?? pending[1],
+      takerFixedFee: pending.takerFixedFee ?? pending[2],
+      takerPercentageFee: pending.takerPercentageFee ?? pending[3],
+      executeAfter: pending.executeAfter ?? pending[4],
+    };
+  }
+
+  async getPendingSethxDiscountUpdate(): Promise<{ discountBps: bigint; executeAfter: bigint }> {
+    const pending = await this.read('pendingSethxDiscountUpdate' as any, [] as any);
+    return {
+      discountBps: pending.discountBps ?? pending[0],
+      executeAfter: pending.executeAfter ?? pending[1],
+    };
+  }
+
+  async getFeeUpdateDelay(): Promise<bigint> {
+    return this.read('feeUpdateDelay' as any, [] as any);
+  }
+
 }

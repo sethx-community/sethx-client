@@ -47,7 +47,7 @@ export class FuturesOrderModalComponent implements OnInit {
   }
 
   marketOptions() {
-    return this.ob.store.activeMarkets();
+    return this.ob.store.filteredMarkets();
   }
 
   selectMarket(marketKey: string) {
@@ -63,7 +63,17 @@ export class FuturesOrderModalComponent implements OnInit {
     await this.vm.openConfirmation();
   }
 
+  handleReviewClose() {
+    if (this.txReceipt.receipt()?.status === 'success') {
+      this.close({ success: true });
+      return;
+    }
+
+    this.vm.closeConfirm();
+  }
+
   async confirmAndClose() {
     await this.vm.submit();
   }
 }
+

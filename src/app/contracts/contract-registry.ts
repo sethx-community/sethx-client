@@ -3,20 +3,9 @@ import { CONTRACT_ABIS } from './generated/abis';
 import { CONTRACT_ADDRESSES } from './generated/addresses';
 import { ContractName } from './contract-names';
 
-export type NetworkKey = keyof typeof CONTRACT_ADDRESSES;
+export type NetworkKey = 'current';
 
-const DEFAULT_NETWORK: NetworkKey =
-  environment.name === 'local'
-    ? 'localhost'
-    : environment.name === 'testnet'
-      ? 'sepolia'
-      : 'mainnet';
-
-const ADDRESS_BOOK = CONTRACT_ADDRESSES as Record<
-  NetworkKey,
-  Partial<Record<ContractName, string>>
->;
-
+const ADDRESS_BOOK = CONTRACT_ADDRESSES as Partial<Record<ContractName, string>>;
 const ABI_BOOK = CONTRACT_ABIS as Partial<Record<ContractName, unknown>>;
 
 export type ContractConfig = {
@@ -28,11 +17,9 @@ export type ContractConfig = {
 
 export function getContractAddress(
   name: ContractName,
-  network: NetworkKey = DEFAULT_NETWORK,
+  _network: NetworkKey = 'current',
 ): string {
-  const configuredAddress = environment.contracts[name];
-  const generatedAddress = environment.name === 'local' ? ADDRESS_BOOK[network]?.[name] : undefined;
-  const contractAddress = configuredAddress || generatedAddress;
+  const contractAddress = ADDRESS_BOOK[name];
 
   if (!contractAddress) {
     throw new Error(
@@ -55,7 +42,7 @@ export function getContractAbi(name: ContractName): unknown {
 
 export function getContractConfig(
   name: ContractName,
-  network: NetworkKey = DEFAULT_NETWORK,
+  network: NetworkKey = 'current',
 ): ContractConfig {
   return {
     name,

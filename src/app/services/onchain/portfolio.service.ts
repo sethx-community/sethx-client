@@ -242,6 +242,38 @@ export class PortfolioService {
     }
   }
 
+  async depositNFT(nft: string, tokenId: string | bigint): Promise<void> {
+    this.transactionAccess.assertWriteAllowed('NFT deposit');
+    if (!this.beginWrite()) return;
+    try {
+      const txHash = await this.accountContract.depositNFT({ nft, tokenId });
+      this.lastTransactionHash.set(txHash);
+
+      this.trigger.emitDomainEvent({ type: 'deposit' });
+      this.refreshPortfolio();
+
+      this.endWriteOk();
+    } catch (e: any) {
+      this.endWriteErr(e, 'NFT deposit failed');
+    }
+  }
+
+  async withdrawNFT(nft: string, tokenId: string | bigint): Promise<void> {
+    this.transactionAccess.assertWriteAllowed('NFT withdrawal');
+    if (!this.beginWrite()) return;
+    try {
+      const txHash = await this.accountContract.withdrawNFT({ nft, tokenId });
+      this.lastTransactionHash.set(txHash);
+
+      this.trigger.emitDomainEvent({ type: 'withdraw' });
+      this.refreshPortfolio();
+
+      this.endWriteOk();
+    } catch (e: any) {
+      this.endWriteErr(e, 'NFT withdrawal failed');
+    }
+  }
+
   // ======================= PRIVATE READS =======================
 
   private async _getERC20Balance(

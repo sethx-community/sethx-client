@@ -10,16 +10,16 @@ export interface LendingOrderbookPageCtx {
   selectedMarketLabel?: string | null;
   selectedRiskLevel?: number | null;
   selectedExpiry?: number | null;
+  selectedMaxLtvBps?: number | null;
+  selectedLiquidationLtvBps?: number | null;
   selectedAccountType?: 'normal' | 'lending' | null;
   selectedAccountLabel?: string | null;
 }
 
 const selectedMarketRequired = (ctx?: LendingOrderbookPageCtx): string | undefined =>
-  ctx?.selectedMarketKey ? undefined : 'Select a lending market first';
+  ctx?.selectedMarketKey ? undefined : 'No market is selected. The order modal can still create a new lending market if you enter maturity and risk tier.';
 
 const lendingAccountRequired = (ctx?: LendingOrderbookPageCtx): string | undefined => {
-  const marketMissing = selectedMarketRequired(ctx);
-  if (marketMissing) return marketMissing;
   return ctx?.selectedAccountType === 'lending'
     ? undefined
     : 'Borrowing and repayment require a lending account';
@@ -35,6 +35,8 @@ const marketData = (
   marketLabel: ctx?.selectedMarketLabel ?? null,
   riskLevel: ctx?.selectedRiskLevel ?? null,
   marketExpiry: ctx?.selectedExpiry ?? null,
+  maxLtvBps: ctx?.selectedMaxLtvBps ?? null,
+  liquidationLtvBps: ctx?.selectedLiquidationLtvBps ?? null,
   defaultSide,
   selectedAccountType: ctx?.selectedAccountType ?? null,
   selectedAccountLabel: ctx?.selectedAccountLabel ?? null,
@@ -74,8 +76,7 @@ export const lendingOrderbookPageActions: Array<
     group: 'Trading',
     label: 'Place Lend Offer',
     description: 'Post ETH principal into the selected lending market. The first valid order opens the market.',
-    enabled: (ctx) => !!ctx.selectedMarketKey,
-    disabledReason: selectedMarketRequired,
+
     buildData: (ctx) => marketData(ctx, 'lend', 0),
     modal: LendingOrderModalComponent,
   },
@@ -84,7 +85,7 @@ export const lendingOrderbookPageActions: Array<
     group: 'Trading',
     label: 'Place Borrow Bid',
     description: 'Borrow against the selected lending market using a lending account only.',
-    enabled: (ctx) => !!ctx.selectedMarketKey && ctx.selectedAccountType === 'lending',
+    enabled: (ctx) => ctx.selectedAccountType === 'lending',
     disabledReason: lendingAccountRequired,
     buildData: (ctx) => marketData(ctx, 'borrow', 1),
     modal: LendingOrderModalComponent,
@@ -94,8 +95,7 @@ export const lendingOrderbookPageActions: Array<
     group: 'Trading',
     label: 'Place Lend / Borrow Order',
     description: 'Advanced combined order form for the selected lending market.',
-    enabled: (ctx) => !!ctx.selectedMarketKey,
-    disabledReason: selectedMarketRequired,
+
     buildData: (ctx) => marketData(ctx, 'place', 0),
     modal: LendingOrderModalComponent,
   },
@@ -112,7 +112,7 @@ export const lendingOrderbookPageActions: Array<
     group: 'Account',
     label: 'Repay Debt',
     description: 'Repay borrower debt from the selected lending account vault balance.',
-    enabled: (ctx) => !!ctx.selectedMarketKey && ctx.selectedAccountType === 'lending',
+    enabled: (ctx) => ctx.selectedAccountType === 'lending',
     disabledReason: lendingAccountRequired,
     buildData: (ctx) => marketData(ctx, 'repay'),
     modal: LendingOrderModalComponent,

@@ -1,10 +1,6 @@
-<div
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
->
-  <div
-    class="sethx-modal-shell"
-  >
-    <div class="p-6 pb-3 flex justify-between items-start gap-4">
+<div class="sethx-modal-overlay">
+  <div class="sethx-modal-shell shadow-xl">
+    <div class="sethx-modal-header">
       <div>
         <div class="flex items-center gap-2">
           <h2 class="text-base font-bold text-white">{{ title }}</h2>
@@ -19,15 +15,17 @@
         }
       </div>
       <button
+        type="button"
         (click)="onCancel()"
         [disabled]="loading"
-        class="text-frame text-xs disabled:opacity-50"
+        class="sethx-modal-close disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label="Close"
       >
         ✕
       </button>
     </div>
 
-    <div class="flex-1 px-6 pb-4 overflow-y-auto space-y-4">
+    <div class="sethx-modal-body">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         @for (field of fields; track field.label + "::" + field.value) {
           <div>
@@ -130,9 +128,10 @@
       }
     </div>
 
-    <div class="mt-auto p-6 pt-3 border-t border-frame/40 flex justify-end gap-2">
+    <div class="sethx-modal-footer">
       <button
-        class="px-3 py-1 text-xs border border-muted rounded disabled:opacity-50"
+        type="button"
+        class="sethx-btn-secondary"
         [disabled]="loading"
         (click)="onCancel()"
       >
@@ -141,7 +140,7 @@
 
       @if (showConfirmButton) {
         <button
-          class="sethx-modal-confirm-button"
+            class="sethx-modal-confirm-button"
           [disabled]="confirmDisabled || loading || receipt?.status === 'success'"
           (click)="onConfirm()"
         >

@@ -112,7 +112,12 @@ function fridayNoonUtcInMonth(year: number, monthOneBased: number): bigint[] {
   return out;
 }
 
-function selectedExpiryDateParts(unixInput: string): { year: string; month: string } | null {
+function lastFridayNoonUtc(year: number, monthOneBased: number): bigint {
+  const expiries = fridayNoonUtcInMonth(year, monthOneBased);
+  return expiries[expiries.length - 1] ?? 0n;
+}
+
+function selectedExpiryDateParts(unixInput: string): { year: string; month: string; unix: string } | null {
   const s = String(unixInput ?? '').trim();
   if (!/^\d+$/.test(s)) return null;
   try {
@@ -120,6 +125,7 @@ function selectedExpiryDateParts(unixInput: string): { year: string; month: stri
     return {
       year: String(d.getUTCFullYear()),
       month: String(d.getUTCMonth() + 1),
+      unix: s,
     };
   } catch {
     return null;
@@ -371,21 +377,18 @@ export class OptionsOrderDraftService {
 
   readonly validExpiryOptions = computed(() => {
     const out: Array<{ unix: string; label: string }> = [];
-    const now = Date.now();
-    let d = new Date(now);
-    d.setUTCHours(12, 0, 0, 0);
-    const day = d.getUTCDay();
-    const daysUntilFriday = (5 - day + 7) % 7;
-    d.setUTCDate(d.getUTCDate() + daysUntilFriday);
-    if (d.getTime() <= now) d.setUTCDate(d.getUTCDate() + 7);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const d = new Date();
+    let year = d.getUTCFullYear();
+    let month = d.getUTCMonth() + 1;
 
-    // Convenience list: next 12 weekly expiries. Longer expiries use the
-    // year/month/week selector below, but these quick picks keep near-dated
-    // trading fast.
-    for (let i = 0; i < 12; i++) {
-      const unix = BigInt(Math.floor(d.getTime() / 1000));
-      out.push({ unix: unix.toString(), label: formatUtcDateLabel(unix) });
-      d.setUTCDate(d.getUTCDate() + 7);
+    for (let i = 0; i < 36 && out.length < 12; i += 1) {
+      for (const unix of fridayNoonUtcInMonth(year, month)) {
+        if (unix > now) out.push({ unix: unix.toString(), label: formatUtcDateLabel(unix) });
+        if (out.length >= 12) break;
+      }
+      month += 1;
+      if (month > 12) { month = 1; year += 1; }
     }
     return out;
   });
@@ -407,11 +410,9 @@ export class OptionsOrderDraftService {
 
     const months: Array<{ value: string; label: string }> = [];
     for (let m = 1; m <= 12; m++) {
-      const hasFutureFriday = fridayNoonUtcInMonth(selectedYear, m).some(
-        (unix) => unix > cutoff,
-      );
-      if (!hasFutureFriday) continue;
-      months.push({ value: String(m), label: monthNameUtc(m) });
+      if (fridayNoonUtcInMonth(selectedYear, m).some((expiry) => expiry > cutoff)) {
+        months.push({ value: String(m), label: monthNameUtc(m) });
+      }
     }
     return months;
   });
@@ -419,15 +420,11 @@ export class OptionsOrderDraftService {
   readonly optionExpiryWeeks = computed(() => {
     const y = Number(this.optionExpiryYear());
     const m = Number(this.optionExpiryMonth());
-    if (!Number.isFinite(y) || !Number.isFinite(m) || y <= 0 || m <= 0) return [];
-
     const cutoff = nowSec();
+    if (!Number.isFinite(y) || !Number.isFinite(m) || y <= 0 || m <= 0) return [];
     return fridayNoonUtcInMonth(y, m)
-      .filter((unix) => unix > cutoff)
-      .map((unix, idx) => ({
-        unix: unix.toString(),
-        label: `Week ${idx + 1} · ${formatUtcDateLabel(unix)}`,
-      }));
+      .filter((expiry) => expiry > cutoff)
+      .map((expiry, index) => ({ value: expiry.toString(), label: `Friday ${index + 1} · ${formatUtcDateLabel(expiry)}` }));
   });
 
   readonly optionExpiryHumanLabel = computed(() => {
@@ -445,7 +442,7 @@ export class OptionsOrderDraftService {
     const selected = String(value ?? '').trim();
     if (selected === 'custom') {
       this.optionExpirySelectionMode.set('custom');
-      if (!this.optionExpiryYear() || !this.optionExpiryMonth() || !this.optionExpiryWeekUnix()) {
+      if (!this.optionExpiryYear() || !this.optionExpiryMonth()) {
         this.syncOptionExpirySelectorsFromUnix(this.optionExpiryUnix());
       }
       return;
@@ -462,22 +459,23 @@ export class OptionsOrderDraftService {
     if (!this.optionExpiryMonth() || !this.optionExpiryMonths().some((m) => m.value === this.optionExpiryMonth())) {
       this.optionExpiryMonth.set(firstMonth);
     }
-    this.selectFirstOptionExpiryWeekForCurrentMonth();
+    this.selectFirstFridayOptionExpiryForCurrentMonth();
   }
 
   onOptionExpiryMonthChange(month: string | number) {
     this.optionExpirySelectionMode.set('custom');
     this.optionExpiryMonth.set(String(month ?? ''));
-    this.selectFirstOptionExpiryWeekForCurrentMonth();
+    this.selectFirstFridayOptionExpiryForCurrentMonth();
   }
 
-  onOptionExpiryWeekChange(unix: string) {
+  onOptionExpiryWeekChange(unix: string | number) {
     this.optionExpirySelectionMode.set('custom');
-    this.selectOptionExpiry(unix);
+    this.optionExpiryWeekUnix.set(String(unix ?? ''));
+    this.selectOptionExpiry(String(unix ?? ''));
   }
 
-  private selectFirstOptionExpiryWeekForCurrentMonth() {
-    const first = this.optionExpiryWeeks()[0]?.unix ?? '';
+  private selectFirstFridayOptionExpiryForCurrentMonth() {
+    const first = this.optionExpiryWeeks()[0]?.value ?? '';
     if (first) this.selectOptionExpiry(first);
   }
 
@@ -1324,7 +1322,7 @@ export class OptionsOrderDraftService {
     })();
 
     // Default expiry to the next valid slot if empty and keep the custom
-    // year/month/week selector aligned with whichever expiry is selected.
+    // year/month/Friday selector aligned with whichever expiry is selected.
     effect(() => {
       const opts = this.validExpiryOptions();
       if (!this.optionExpiryUnix() && opts.length > 0) {

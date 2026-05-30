@@ -104,6 +104,19 @@ export class WalletConnectService {
   readonly address = computed(() => this.account()?.address ?? null);
   readonly provider = computed(() => this.providerResource.value() ?? null);
 
+  readonly isConnected = computed(() => !!this.address() && !!this.provider());
+
+  async getProvider(): Promise<ethers.BrowserProvider | null> {
+    return this.getEthersProvider();
+  }
+
+  async getSigner(): Promise<ethers.JsonRpcSigner | null> {
+    const provider = await this.getEthersProvider();
+    if (!provider) return null;
+    return provider.getSigner().catch(() => null);
+  }
+
+
   constructor() {
     this.client.subscribeState(() => {
       this.clearCachedProvider();

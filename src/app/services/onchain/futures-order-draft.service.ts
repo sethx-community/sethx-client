@@ -52,10 +52,14 @@ function canonicalTokenKey(token: string): string {
 
 function parseFuturesSize(value: string): bigint {
   const v = String(value ?? '').trim().replace(',', '.');
-  if (!/^\d+$/.test(v)) {
-    throw new Error('Futures amount must be a whole contract size.');
+  if (!/^(?:\d+|\d*\.\d+)$/.test(v)) {
+    throw new Error('Futures amount must be a valid contract amount.');
   }
-  return BigInt(v);
+  const parsed = ethers.parseUnits(v, 18);
+  if (parsed <= 0n) {
+    throw new Error('Futures amount must be greater than zero.');
+  }
+  return parsed;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -220,33 +224,35 @@ export class FuturesOrderDraftService {
     return sharedFormatDuration(seconds);
   }
 
-  private normalizePrice(
+  private readonly wad = 10n ** 18n;
+
+  private normalizePriceTo18(
     rawPrice: bigint,
     oraclePriceDecimals: number,
-    quoteTokenDecimals: number,
   ): bigint {
-    const oracleDecimals = Math.max(0, Number(oraclePriceDecimals ?? quoteTokenDecimals ?? 18));
-    const quoteDecimals = Math.max(0, Number(quoteTokenDecimals ?? 18));
+    const oracleDecimals = Math.max(0, Number(oraclePriceDecimals ?? 18));
+    if (oracleDecimals === 18) return rawPrice;
+    if (oracleDecimals > 18) return rawPrice / 10n ** BigInt(oracleDecimals - 18);
+    return rawPrice * 10n ** BigInt(18 - oracleDecimals);
+  }
 
-    if (oracleDecimals === quoteDecimals) return rawPrice;
-    if (oracleDecimals > quoteDecimals) {
-      return rawPrice / 10n ** BigInt(oracleDecimals - quoteDecimals);
-    }
-    return rawPrice * 10n ** BigInt(quoteDecimals - oracleDecimals);
+  private normalizedMultiplier(multiplier: bigint): bigint {
+    const raw = BigInt(multiplier ?? 0n);
+    if (raw <= 0n) return 0n;
+    return raw >= 10n ** 12n ? raw : raw * this.wad;
   }
 
   private futuresNotionalRaw(
     amountRaw: bigint,
     priceRaw: bigint,
-    market: { multiplier: bigint; oraclePriceDecimals: number; quoteTokenDecimals: number },
+    market: { multiplier: bigint; oraclePriceDecimals: number },
   ): bigint {
-    const priceNorm = this.normalizePrice(
+    const price18 = this.normalizePriceTo18(
       priceRaw,
       market.oraclePriceDecimals,
-      market.quoteTokenDecimals,
     );
-    const denom = 10n ** BigInt(Math.max(0, Number(market.quoteTokenDecimals ?? 18)));
-    return (amountRaw * market.multiplier * priceNorm) / denom;
+    const multiplier18 = this.normalizedMultiplier(market.multiplier);
+    return (amountRaw * multiplier18 * price18) / (this.wad * this.wad);
   }
 
   private pnlBufferWorstCaseRaw(
@@ -260,15 +266,13 @@ export class FuturesOrderDraftService {
       lastSettlementPrice: bigint;
     },
   ): bigint {
-    const limitNorm = this.normalizePrice(
+    const limitNorm = this.normalizePriceTo18(
       limitPriceRaw,
       market.oraclePriceDecimals,
-      market.quoteTokenDecimals,
     );
-    const settleNorm = this.normalizePrice(
+    const settleNorm = this.normalizePriceTo18(
       market.lastSettlementPrice,
       market.oraclePriceDecimals,
-      market.quoteTokenDecimals,
     );
 
     let diff = 0n;
@@ -279,8 +283,8 @@ export class FuturesOrderDraftService {
     }
 
     if (diff === 0n) return 0n;
-    const denom = 10n ** BigInt(Math.max(0, Number(market.quoteTokenDecimals ?? 18)));
-    return (diff * amountRaw * market.multiplier) / denom;
+    const multiplier18 = this.normalizedMultiplier(market.multiplier);
+    return (diff * amountRaw * multiplier18) / (this.wad * this.wad);
   }
 
   private initialMarginRequiredRaw(
@@ -294,13 +298,12 @@ export class FuturesOrderDraftService {
     },
   ): bigint {
     if (sizeRaw <= 0n) return 0n;
-    const priceNorm = this.normalizePrice(
+    const price18 = this.normalizePriceTo18(
       settlementPriceRaw,
       market.oraclePriceDecimals,
-      market.quoteTokenDecimals,
     );
-    const denom = 10_000n * 10n ** BigInt(Math.max(0, Number(market.quoteTokenDecimals ?? 18)));
-    return (sizeRaw * market.multiplier * priceNorm * market.initialMarginBps) / denom;
+    const multiplier18 = this.normalizedMultiplier(market.multiplier);
+    return (sizeRaw * multiplier18 * price18 * market.initialMarginBps) / (10_000n * this.wad * this.wad);
   }
 
   async openConfirmation() {
@@ -362,6 +365,7 @@ export class FuturesOrderDraftService {
     const quoteInfo = this.tokens.getToken(quoteKey)();
     const quoteDecimals =
       market.quoteTokenDecimals ?? quoteInfo?.decimals ?? 18;
+    const oracleDecimals = Math.max(0, Number(market.oraclePriceDecimals ?? quoteDecimals ?? 18));
     const paymentSymbol =
       quoteInfo?.symbol ??
       (quoteKey === n(ETH_ADDRESS) ? 'ETH' : shortAddr(quoteKey));
@@ -370,10 +374,10 @@ export class FuturesOrderDraftService {
     let amountRaw: bigint;
 
     try {
-      priceRaw = ethers.parseUnits(priceStr.replace(',', '.'), quoteDecimals);
+      priceRaw = ethers.parseUnits(priceStr.replace(',', '.'), oracleDecimals);
       amountRaw = parseFuturesSize(amountStr);
     } catch {
-      this.confirmError.set('Invalid price or amount. Futures amount must be a whole contract size.');
+      this.confirmError.set('Invalid price or amount. Futures amount supports decimal contract units.');
       return;
     }
 
@@ -521,24 +525,24 @@ export class FuturesOrderDraftService {
       },
       {
         label: 'Price',
-        value: `${ethers.formatUnits(priceRaw, quoteDecimals)} ${paymentSymbol}`,
+        value: `${ethers.formatUnits(priceRaw, oracleDecimals)} ${paymentSymbol}`,
       },
       {
         label: 'Amount',
-        value: amountRaw.toString(),
+        value: ethers.formatUnits(amountRaw, 18),
       },
       {
         label: 'Payment notional / fee base',
-        value: `${ethers.formatUnits(notionalRaw, quoteDecimals)} ${paymentSymbol}`,
+        value: `${ethers.formatUnits(notionalRaw, 18)} ${paymentSymbol}`,
       },
       {
         label: 'Expected close amount',
-        value: expectedCloseAmount.toString(),
+        value: ethers.formatUnits(expectedCloseAmount, 18),
         tone: expectedCloseAmount > 0n ? 'good' : 'muted',
       },
       {
         label: 'Expected open amount',
-        value: expectedOpenAmount.toString(),
+        value: ethers.formatUnits(expectedOpenAmount, 18),
       },
       {
         label: 'Initial margin lock',

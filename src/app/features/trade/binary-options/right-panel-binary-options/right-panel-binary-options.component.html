@@ -1,5 +1,5 @@
 <div class="sethx-panel">
-  <aside class="h-full flex flex-col min-h-0 space-y-6">
+  <aside class="sethx-right-panel-stack">
     <section class="sethx-panel-section sethx-panel-card">
       <div class="sethx-panel-heading">Account Actions</div>
       <div class="sethx-panel-section-title">Select Account / Fee Token</div>
@@ -14,9 +14,15 @@
           <div class="flex justify-between gap-3"><span class="sethx-field-label !mb-0">Market key</span><span class="sethx-address-value flex items-center justify-end gap-2 min-w-0 text-right"><span class="truncate" [title]="market.marketKey">{{ market.marketKey }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === market.marketKey" [title]="copiedValue() === market.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(market.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== market.marketKey" [class.fa-circle-check]="copiedValue() === market.marketKey"></i></button></span></div>
           <div class="flex justify-between gap-3"><span class="sethx-field-label !mb-0">Oracle</span><span class="sethx-address-value flex items-center justify-end gap-2 min-w-0 text-right"><span class="truncate" [title]="market.market.oracle">{{ market.market.oracle }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === market.market.oracle" [title]="copiedValue() === market.market.oracle ? 'Copied' : 'Copy oracle address'" (click)="copyValue(market.market.oracle, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== market.market.oracle" [class.fa-circle-check]="copiedValue() === market.market.oracle"></i></button></span></div>
         </div>
-        <div class="mt-4 space-y-2 text-xs"><button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button><button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button></div>
+        <div class="mt-4 space-y-2 text-xs"><button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button><button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button></div>
       </ng-container>
-      <ng-template #noBinaryMarketSelected><p class="sethx-panel-copy">Select a binary market to show market actions.</p></ng-template>
+      <ng-template #noBinaryMarketSelected>
+        <p class="sethx-panel-copy">No market selected. Open the order modal to choose or create a binary option market by oracle, condition, strike, and expiry.</p>
+        <div class="mt-4 space-y-2 text-xs">
+          <button type="button" class="sethx-button-primary w-full" (click)="openPlaceOrder()">Place Order</button>
+          <button type="button" class="sethx-button-secondary w-full" (click)="openFeeQuote()">Fee Quote</button>
+        </div>
+      </ng-template>
     </section>
 
     <ng-container *ngIf="isOrdersView()">

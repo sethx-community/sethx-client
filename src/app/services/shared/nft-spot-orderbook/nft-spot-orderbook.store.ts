@@ -17,6 +17,7 @@ export interface NftSpotMarket {
   tokenId: string;
   quoteToken: string;
   quoteSymbol: string;
+  quoteVolume: string;
   metadataName: string;
   metadataDescription: string;
   imageUrl: string | null;
@@ -108,6 +109,7 @@ export class NftSpotOrderbookStore {
   readonly myOrdersOnly = signal(false);
   readonly myNftsOnlyAvailable = signal(false);
   readonly showAllRows = signal(false);
+  readonly ladderFocus = signal(5);
   readonly pinnedMarketKey = signal<string | null>(null);
   readonly selectedMarketKey = signal<string | null>(null);
 
@@ -198,8 +200,8 @@ export class NftSpotOrderbookStore {
     return Array.from({ length: size }, (_, index) => ({ bid: bids[index] ?? null, ask: asks[index] ?? null }));
   });
 
-  readonly focusRows = computed(() => this.pairedRows().slice(0, 5));
-  readonly restRows = computed(() => this.showAllRows() ? this.pairedRows().slice(5) : []);
+  readonly focusRows = computed(() => this.pairedRows().slice(0, this.ladderFocus()));
+  readonly restRows = computed(() => this.showAllRows() ? this.pairedRows().slice(this.ladderFocus()) : []);
 
   readonly marketDetailItems = computed<MarketDetailItem[]>(() => {
     const market = this.pinnedMarket() ?? this.selectedMarket();
@@ -215,6 +217,7 @@ export class NftSpotOrderbookStore {
       ...(market.metadataUri ? [{ label: 'Metadata URI', value: market.metadataUri, mono: true, fullWidth: true }] : []),
       ...(market.attributesSummary ? [{ label: 'Attributes', value: market.attributesSummary }] : []),
       { label: 'Quote', value: market.quoteSymbol },
+      { label: 'Open quote volume', value: market.quoteVolume },
       { label: 'Best bid', value: market.bestBid },
       { label: 'Best ask', value: market.bestAsk },
       { label: 'Orders', value: market.totalOrders },
@@ -304,6 +307,10 @@ export class NftSpotOrderbookStore {
     asks.sort((a, b) => (a.raw.price > b.raw.price ? 1 : a.raw.price < b.raw.price ? -1 : 0));
 
     const myOrders = [...bids, ...asks].filter((order) => order.isMine).length;
+    const quoteVolume = orders.bids
+      .concat(orders.asks)
+      .reduce((total, order) => total + order.price, 0n);
+    const quoteVolumeLabel = `${ethers.formatUnits(quoteVolume, quoteDecimals)} ${quoteSymbol}`;
 
     return {
       key,
@@ -312,6 +319,7 @@ export class NftSpotOrderbookStore {
       tokenId: chainMarket.tokenId.toString(),
       quoteToken: norm(chainMarket.quoteToken),
       quoteSymbol,
+      quoteVolume: quoteVolumeLabel,
       ...this.metadataFields(metadata),
       floorHint: '—',
       bestBid: bids[0]?.price ?? '—',

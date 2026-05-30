@@ -1,6 +1,6 @@
-import { environment } from '../../../../environments/environment';
 import { CURRENT_NETWORK_CONFIG } from '../../../constants/network.config';
 import { ETH_ADDRESS } from '../../../constants/main.tokens';
+import { CONTRACT_ADDRESSES } from '../../../contracts/generated/addresses';
 
 export type ProductKey =
   | 'accounts'
@@ -71,7 +71,7 @@ export type ProtocolConfig = {
   compliance: ProtocolComplianceConfig;
 };
 
-const configuredContracts = environment.contracts as Record<string, string>;
+const configuredContracts = CONTRACT_ADDRESSES as unknown as Record<string, string>;
 
 export const PROTOCOL_CONFIG: ProtocolConfig = {
   appName: 'SETHX',

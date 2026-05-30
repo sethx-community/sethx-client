@@ -30,6 +30,10 @@ export type FuturesPosition = {
 export type FuturesMarketStats = {
   longHolders: number;
   shortHolders: number;
+  totalLongUnits: bigint;
+  totalShortUnits: bigint;
+  totalLongMargin: bigint;
+  totalShortMargin: bigint;
 };
 
 function normAddr(x: unknown): string {
@@ -165,9 +169,38 @@ export class FuturesContractReadService {
       this.getShortHolders(marketKey),
     ]);
 
+    const [longPositions, shortPositions] = await Promise.all([
+      Promise.all(longHolders.map((account) => this.getPosition(account, marketKey, true))),
+      Promise.all(shortHolders.map((account) => this.getPosition(account, marketKey, false))),
+    ]);
+
+    const activeLongPositions = longPositions.filter((position) => position?.isActive);
+    const activeShortPositions = shortPositions.filter((position) => position?.isActive);
+
+    const totalLongUnits = activeLongPositions.reduce(
+      (sum, position) => sum + bi(position?.size ?? 0n),
+      0n,
+    );
+    const totalShortUnits = activeShortPositions.reduce(
+      (sum, position) => sum + bi(position?.size ?? 0n),
+      0n,
+    );
+    const totalLongMargin = activeLongPositions.reduce(
+      (sum, position) => sum + bi(position?.margin ?? 0n),
+      0n,
+    );
+    const totalShortMargin = activeShortPositions.reduce(
+      (sum, position) => sum + bi(position?.margin ?? 0n),
+      0n,
+    );
+
     return {
-      longHolders: longHolders.length,
-      shortHolders: shortHolders.length,
+      longHolders: activeLongPositions.length,
+      shortHolders: activeShortPositions.length,
+      totalLongUnits,
+      totalShortUnits,
+      totalLongMargin,
+      totalShortMargin,
     };
   }
 }

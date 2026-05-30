@@ -71,6 +71,28 @@ export class RightPanelNftSpotComponent {
     this.flow.open(NftSpotOrderModalComponent, { intent: 'cancel', order });
   }
 
+  openPlaceOrder(): void {
+    const order = this.selected()?.order as NftSpotOrder | undefined;
+    this.flow.open(NftSpotOrderModalComponent, {
+      intent: 'place',
+      defaultNft: order?.raw.nft,
+      defaultTokenId: order?.raw.tokenId,
+      defaultQuoteToken: order?.raw.quoteToken,
+      defaultMarketKey: this.selected()?.marketKey,
+    });
+  }
+
+  openFeeQuote(): void {
+    const order = this.selected()?.order as NftSpotOrder | undefined;
+    this.flow.open(NftSpotOrderModalComponent, {
+      intent: 'quote',
+      defaultNft: order?.raw.nft,
+      defaultTokenId: order?.raw.tokenId,
+      defaultQuoteToken: order?.raw.quoteToken,
+      defaultMarketKey: this.selected()?.marketKey,
+    });
+  }
+
   clearSelected(): void {
     this.orderSelection.clear('nft-spot');
   }

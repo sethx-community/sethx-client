@@ -35,8 +35,6 @@ export class TreasuryContractService {
     manageLiquidity: 1n << 1n,
     managePayments: 1n << 2n,
     tradeSethx: 1n << 3n,
-    publishPassiveQuotes: 1n << 4n,
-    manageOracleFunding: 1n << 5n,
   } as const;
 
   readonly actionFlags = {

@@ -24,6 +24,7 @@ export class MarginOptionsTradeComponent {
   readonly actions = marginOptionsPageActions;
   readonly view = signal<'markets' | 'orders' | 'positions' | 'my-orders'>('markets');
   readonly expandedMarketInfo = signal<Record<string, boolean>>({});
+  readonly hoveredMarketKey = signal<string | null>(null);
   readonly copiedValue = signal<string | null>(null);
 
   openMarket(m: { marketKey: string }): void { this.ob.store.selectMarket(m.marketKey); this.orderSelection.clear('margin-options'); this.view.set('orders'); this.ob.store.activeView.set('orders'); }
@@ -34,6 +35,10 @@ export class MarginOptionsTradeComponent {
   trackMarket = (_: number, m: { marketKey: string }) => m.marketKey;
   trackOrder = (_: number, r: MarginLadderRow) => r.orderId.toString();
 
+  marginLadderRows(): Array<{ key: string; bid: MarginLadderRow | null; ask: MarginLadderRow | null }> { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); }
+  trackMarginLadderRow = (_: number, row: { key: string }) => row.key;
+
+
   formatExpiry(x: any): string { try { const s = typeof x === 'bigint' ? Number(x) : Number(x ?? 0); if (!s || !Number.isFinite(s)) return '—'; const d = new Date(s * 1000); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`; } catch { return '—'; } }
   async copyValue(value: string | number | bigint | null | undefined, ev?: Event): Promise<void> { ev?.stopPropagation(); const text = value === null || value === undefined || value === '' ? '' : String(value); if (!text) return; try { await navigator.clipboard.writeText(text); this.copiedValue.set(text); window.setTimeout(() => { if (this.copiedValue() === text) this.copiedValue.set(null); }, 1400); } catch {} }
 
@@ -42,12 +47,23 @@ export class MarginOptionsTradeComponent {
   selectPosition(r: MarginPositionRow | null, ev?: MouseEvent): void { if (!r) return; const t = ev?.target as HTMLElement | null; if (t?.closest('button,input,select,textarea,label')) return; this.orderSelection.clear('margin-options'); this.ob.store.selectPosition(r.marketKey); }
   selectOrder(r: MarginLadderRow | null, ev?: MouseEvent): void { if (!r) return; const t = ev?.target as HTMLElement | null; if (t?.closest('button,input,select,textarea,label')) return; this.orderSelection.selectOrToggle({ product: 'margin-options', marketKey: r.order.marketKey || this.ob.store.selectedMarketKey(), orderId: r.orderId.toString(), side: r.side, isMine: !!r.isMine, order: r.order }); }
   toggleMarketInfo(k: string, ev?: Event): void { ev?.stopPropagation?.(); this.expandedMarketInfo.update((c) => ({ ...c, [k]: !c[k] })); }
-  isMarketInfoOpen(k: string): boolean { return !!this.expandedMarketInfo()[k]; }
+  closeMarketInfo(k: string): void { this.expandedMarketInfo.update((c) => ({ ...c, [k]: false })); }
+  isMarketInfoOpen(k: string): boolean { return !!this.expandedMarketInfo()[k] || this.hoveredMarketKey() === k; }
   shortAddress(x: string | null | undefined): string { const s = String(x ?? ''); return !s ? '—' : s.length <= 12 ? s : `${s.slice(0, 6)}...${s.slice(-4)}`; }
   marketSubtitle(row: any): string { return row?.market?.ticker || row?.marketKey || '—'; }
   paymentTokenLabel(): string { const m = this.ob.store.selectedMarket()?.market ?? this.ob.store.activeMarkets()[0]?.market; return this.ob.store.tokenLabel(m?.paymentToken); }
   latestOraclePriceLabel(row: any): string { const m = row?.market; if (!m) return '—'; if (m.settled && m.settlementPrice && m.settlementPrice > 0n) return `${this.ob.store.formatOraclePrice(m.settlementPrice, m.oraclePriceDecimals)} (settlement)`; if (m.latestOraclePrice !== undefined && m.latestOraclePrice !== null) return this.ob.store.formatOraclePrice(m.latestOraclePrice, m.latestOraclePriceDecimals ?? m.oraclePriceDecimals); return '—'; }
   latestOracleTimeLabel(row: any): string { const ts = row?.market?.latestOracleTimestamp; if (!ts || ts === 0n) return '—'; return this.formatExpiry(ts); }
+
+  marginPerOptionLabel(row: any): string {
+    const m = row?.market ?? {};
+    try {
+      const strike = BigInt(m.strikePrice ?? 0n);
+      const bps = BigInt(m.collateralBps ?? 0n);
+      if (strike <= 0n || bps <= 0n) return '—';
+      return this.ob.store.formatPrice((strike * bps) / 10000n, m.paymentToken);
+    } catch { return '—'; }
+  }
 
   marketsMetrics(): SpotSummaryMetric[] { return [
     { label: 'Markets', value: this.ob.store.visibleMarkets().length },
@@ -67,6 +83,12 @@ export class MarginOptionsTradeComponent {
     { label: 'Best Ask', value: this.ob.store.bestAsk() !== null ? this.ob.store.formatPrice(this.ob.store.bestAsk()!, selected?.market?.paymentToken) : '—', tone: 'down' },
   ]; }
 
+  selectedMarketPositions(): MarginPositionRow[] {
+    const key = this.ob.store.selectedMarketKey();
+    if (!key) return [];
+    return this.ob.store.myPositions().filter((p) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
+  }
+
   myOrdersMetrics(): SpotSummaryMetric[] { const orders = this.ob.store.myOrders(); return [
     { label: 'Orders', value: orders.length },
     { label: 'Bids', value: orders.filter((o) => o.side === 'bid').length, tone: 'up' },
@@ -80,7 +102,7 @@ export class MarginOptionsTradeComponent {
     { label: 'Writer available', value: this.ob.store.formatQuantity(this.ob.store.myPositions().reduce((s, p) => s + (p.writerAvailable ?? 0n), 0n)) },
   ]; }
 
-  marketDetailItems(row: any): MarketDetailItem[] { const m = row?.market ?? {}; return [{ label: 'Market key', value: row?.marketKey, mono: true }, { label: 'Ticker', value: m.ticker || '—' }, { label: 'Type', value: this.ob.store.optionTypeLabel(m.optionType) }, { label: 'Payment token', value: this.ob.store.tokenLabel(m.paymentToken) }, { label: 'Oracle address', value: m.oracle || '—', mono: true }, { label: 'Latest oracle price', value: this.latestOraclePriceLabel(row) }, { label: 'Latest oracle update', value: this.latestOracleTimeLabel(row) }, { label: 'Writer coverage', value: this.ob.store.formatBpsPercent(m.collateralBps) }, { label: 'Settlement', value: m.settled ? this.ob.store.formatStrike(m.settlementPrice) : 'Open' }]; }
+  marketDetailItems(row: any): MarketDetailItem[] { const m = row?.market ?? {}; return [{ label: 'Market key', value: row?.marketKey, mono: true, copyable: true, fullWidth: true }, { label: 'Ticker', value: m.ticker || '—' }, { label: 'Type', value: this.ob.store.optionTypeLabel(m.optionType) }, { label: 'Payment token', value: this.ob.store.tokenLabel(m.paymentToken) }, { label: 'Oracle address', value: m.oracle || '—', mono: true }, { label: 'Latest oracle price', value: this.latestOraclePriceLabel(row) }, { label: 'Latest oracle update', value: this.latestOracleTimeLabel(row) }, { label: 'Writer coverage', value: this.ob.store.formatBpsPercent(m.collateralBps) }, { label: 'Margin / option', value: this.marginPerOptionLabel(row) }, { label: 'Settlement', value: m.settled ? this.ob.store.formatStrike(m.settlementPrice) : 'Open' }]; }
   openPlaceOrder(): void { this.flow.open(MarginOptionsOrderModalComponent, { intent: 'place', defaultMarketKey: this.ob.store.selectedMarketKey() ?? undefined }); }
   openFeeQuote(): void { this.flow.open(MarginOptionsOrderModalComponent, { intent: 'quote', defaultMarketKey: this.ob.store.selectedMarketKey() ?? undefined }); }
 

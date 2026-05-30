@@ -187,7 +187,7 @@
       [loading]="vm.modalLoading()"
       [confirmDisabled]="vm.confirmDisabled()"
       riskNote="Token spot execution locks the offered token plus fee budgets. Verify balances, side, price, amount, and expiry before signing."
-      (cancel)="vm.closeConfirm()"
+      (cancel)="handleDraftReviewClose()"
       (confirm)="submitAndClose()"
     />
   }
@@ -205,7 +205,7 @@
       [loading]="actions.status() === 'pending'"
       [confirmDisabled]="actions.confirmDisabled()"
       riskNote="Token spot execution locks or releases order assets based on the selected action. Verify order ID, fill amount, fees, and balances before signing."
-      (cancel)="actions.closeConfirmModal()"
+      (cancel)="handleActionsReviewClose()"
       (confirm)="actions.onConfirmModalConfirm()"
     />
   }

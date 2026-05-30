@@ -51,7 +51,7 @@ export class WalletActionsComponent {
     }
   }
 
-  openVaultAction(intent: 'deposit' | 'withdraw', asset: 'ETH' | 'TOKEN'): void {
+  openVaultAction(intent: 'deposit' | 'withdraw', asset: 'ETH' | 'TOKEN' | 'NFT'): void {
     this.localError.set(null);
 
     if (!this.selectedAccountId()) {

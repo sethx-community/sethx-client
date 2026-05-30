@@ -1,7 +1,5 @@
 export type SethxClientEnvironmentName = 'local' | 'testnet' | 'production';
 
-export type SethxClientContractAddresses = Partial<Record<string, string>>;
-
 export interface SethxClientEnvironment {
   name: SethxClientEnvironmentName;
   production: boolean;
@@ -10,6 +8,7 @@ export interface SethxClientEnvironment {
   chainName: string;
   nativeCurrencySymbol: string;
   rpcUrl: string;
+  websocketRpcUrl?: string;
   blockExplorerUrl: string;
 
   siteUrl: string;
@@ -20,5 +19,4 @@ export interface SethxClientEnvironment {
 
   reownProjectId: string;
 
-  contracts: SethxClientContractAddresses;
 }

@@ -7,6 +7,8 @@ import { OrderBookFacade } from '../../../../services/shared/orderbook/orderbook
 import { OrderbookSelectionService, SelectedOrderActionsComponent } from '../../../../shared/orderbook';
 import { selectedOrderCancelSafety, selectedOrderFillSafety, toNumber } from '../../../../shared/safety';
 import { TradeSettingsService } from '../../../../services/shared/trade-settings.service';
+import { OrderFlowService } from '../../../../core/overlay/order-flow.service';
+import { SpotOrderModalComponent } from '../../../../core/overlay/order-modal/spotorder-modal.component';
 
 @Component({
   selector: 'app-right-panel-erc20-trade',
@@ -18,6 +20,7 @@ export class RightPanelErc20TradeComponent {
   readonly ob = inject(OrderBookFacade);
   readonly orderSelection = inject(OrderbookSelectionService);
   readonly settings = inject(TradeSettingsService);
+  private readonly flow = inject(OrderFlowService);
 
 
   readonly selected = computed(() => {
@@ -72,5 +75,23 @@ export class RightPanelErc20TradeComponent {
 
   clearSelected(): void {
     this.orderSelection.clear('spot');
+  }
+
+  openPlaceOrder(): void {
+    const book = this.ob.selectedBook();
+    this.flow.open(SpotOrderModalComponent, {
+      intent: 'place',
+      defaultBaseToken: book?.base,
+      defaultQuoteToken: book?.quote,
+    });
+  }
+
+  openFeeQuote(): void {
+    const book = this.ob.selectedBook();
+    this.flow.open(SpotOrderModalComponent, {
+      intent: 'quote',
+      defaultBaseToken: book?.base,
+      defaultQuoteToken: book?.quote,
+    });
   }
 }

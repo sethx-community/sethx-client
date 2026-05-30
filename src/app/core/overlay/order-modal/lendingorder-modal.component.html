@@ -7,7 +7,7 @@
 
     <div class="px-6 py-4 overflow-y-auto space-y-4 flex-1">
       <div class="text-[11px] leading-relaxed text-frame">
-        Lending orders route through the selected account contract. Lend orders can use normal or lending accounts; borrow and rollover orders require a lending account.
+        Lending orders route through the selected account contract. Lend orders can use normal, lending, or approved treasury accounts; borrow and rollover orders require a lending account.
       </div>
 
       <div class="rounded-lg border border-trade-border bg-background/70 p-4 text-xs space-y-2">
@@ -48,7 +48,7 @@
 
             @if ((side() === 1 || data.intent === 'rollover') && !isLendingAccount()) {
               <div class="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
-                Borrow and rollover orders can only be placed from a lending account. Select or create a lending account first.
+                Borrow and rollover orders can only be placed from a lending account. Approved treasury accounts can place lend offers only.
               </div>
             }
           </div>
@@ -58,7 +58,7 @@
               <div>
                 <div class="sethx-field-label">Market</div>
                 <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">
-                  {{ data.marketLabel ?? data.defaultMarketLabel ?? 'Select a market from the lending table' }}
+                  {{ displayMarketLabel() }}
                 </div>
               </div>
               <div>
@@ -74,22 +74,41 @@
                 <div class="sethx-field-label">Borrow asset</div>
                 <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">ETH</div>
               </div>
-              <div>
-                <div class="sethx-field-label">Risk tier</div>
-                <select class="sethx-select" [ngModel]="riskLevel()" (ngModelChange)="riskLevel.set(+($event || 1))">
-                  <option [ngValue]="1">R1</option>
-                  <option [ngValue]="2">R2</option>
-                  <option [ngValue]="3">R3</option>
+              <div class="relative">
+                <div class="flex items-center gap-2">
+                  <div class="sethx-field-label">Risk tier</div>
+                  <button type="button" class="sethx-copy-button mb-1" title="Show selected risk tier LTV values" (click)="toggleRiskTierInfo()">i</button>
+                </div>
+                <select class="sethx-select" [ngModel]="riskLevel()" (ngModelChange)="setRiskLevel($event)">
+                  @for (tier of configuredRiskTierOptions(); track tier.riskLevel) {
+                    <option [ngValue]="tier.riskLevel">{{ tier.label }}</option>
+                  }
                 </select>
+                @if (riskTierInfoOpen()) {
+                  <div class="absolute z-50 mt-1 max-w-xs rounded border border-frame/40 bg-background px-3 py-2 text-[11px] leading-relaxed text-frame shadow-lg">
+                    {{ selectedRiskTierLtvHelp() }}
+                  </div>
+                }
               </div>
             </div>
 
             <div>
               <div class="sethx-field-label">Market maturity</div>
-              <div class="rounded border border-trade-border bg-background px-3 py-2 text-xs text-white">
-                {{ formatExpiry(marketExpiry()) }}
+              <div class="grid grid-cols-2 gap-3">
+                <select class="sethx-select" [ngModel]="marketMaturityYear()" (ngModelChange)="setMarketMaturityYear($event)">
+                  @for (year of marketMaturityYears(); track year) {
+                    <option [value]="year">{{ year }}</option>
+                  }
+                </select>
+                <select class="sethx-select" [ngModel]="marketMaturityMonth()" (ngModelChange)="setMarketMaturityMonth($event)">
+                  @for (month of marketMaturityMonths(); track month.value) {
+                    <option [value]="month.value">{{ month.label }}</option>
+                  }
+                </select>
               </div>
-              <div class="mt-1 text-[11px] text-frame">Markets are valid only at last Friday of the month, 12:00 UTC.</div>
+              <div class="mt-1 text-[11px] text-frame">
+                Lending maturities are standardized to the last Friday of the selected month at 12:00 UTC. Current maturity: {{ formatExpiry(marketExpiry()) }}. First valid order creates the lending market if it does not exist yet.
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -107,7 +126,7 @@
                 <div class="sethx-field-label">APR (%)</div>
                 <input
                   class="sethx-input"
-                  placeholder="5.00"
+                  placeholder="Enter APR, for example 5.00"
                   inputmode="decimal"
                   [ngModel]="aprHuman()"
                   (ngModelChange)="aprHuman.set($event)"
@@ -125,7 +144,8 @@
 
             <app-expiry-picker
               label="Order expiry"
-              helper="Order expiry must be before or equal to market maturity."
+              helper="Choose a future order expiry before or equal to market maturity. Lending orders cannot use contract default expiry."
+              [allowDefault]="false"
               [value]="orderExpiry()"
               (valueChange)="orderExpiry.set($event)"
             />
@@ -258,7 +278,7 @@
     [explorerUrl]="txReceipt.explorerTxUrl()"
     kind="transaction"
     riskNote="Lending actions can lock vault balances, create debt, or redeem bond proceeds. Verify the selected account type, market maturity, and risk tier before signing."
-    (cancel)="closeConfirm()"
+    (cancel)="handleReviewClose()"
     (confirm)="confirm()"
   />
 }

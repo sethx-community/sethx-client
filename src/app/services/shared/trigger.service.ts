@@ -1,27 +1,43 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal } from "@angular/core";
 
 export type SettingsEvent =
-  | { type: 'accountChanged'; accountId: string | null }
-  | { type: 'preferredFeeTokenChanged'; feeToken: string };
+  | { type: "accountChanged"; accountId: string | null }
+  | { type: "preferredFeeTokenChanged"; feeToken: string };
 
 export type DomainEvent =
-  | { type: 'accountCreated' }
-  | { type: 'walletConnected' }
-  | { type: 'walletDisconnected' }
-  | { type: 'walletAddressChanged'; address: string | null }
-  | { type: 'deposit' }
-  | { type: 'withdraw' }
-  | { type: 'orderPlaced' }
-  | { type: 'orderAccepted' }
-  | { type: 'erc20TokensChanged'; tokens: string[] }
-  | { type: 'accountsChanged'; accounts: string[] }
-  | { type: 'Option Reclaimed' }
-  | { type: 'Option Exercised' }
-  | { type: 'optionOrderPlaced' }
-  | { type: 'futuresOrderPlaced' }
-  | { type: 'lendingOrderbookChanged' };
+  | { type: "accountCreated" }
+  | { type: "walletConnected" }
+  | { type: "walletDisconnected" }
+  | { type: "walletAddressChanged"; address: string | null }
+  | { type: "deposit" }
+  | { type: "withdraw" }
+  | { type: "orderPlaced" }
+  | { type: "orderAccepted" }
+  | { type: "erc20TokensChanged"; tokens: string[] }
+  | { type: "accountsChanged"; accounts: string[] }
+  | { type: "Option Reclaimed" }
+  | { type: "Option Exercised" }
+  | { type: "optionOrderPlaced" }
+  | { type: "futuresOrderPlaced" }
+  | { type: "lendingOrderbookChanged" };
 
-@Injectable({ providedIn: 'root' })
+export type RefreshDomain =
+  | "wallet"
+  | "accounts"
+  | "portfolio"
+  | "orderbook"
+  | "options"
+  | "futures"
+  | "lending"
+  | "fees"
+  | "vault"
+  | "prices"
+  | "tokens"
+  | "treasury"
+  | "protocol"
+  | "warnings";
+
+@Injectable({ providedIn: "root" })
 export class TriggerService {
   // ---- event streams (signals) ----
   private readonly _domainEvent = signal<DomainEvent | null>(null);
@@ -42,6 +58,13 @@ export class TriggerService {
   private readonly _vaultTick = signal(0);
   private readonly _pricesTick = signal(0);
   private readonly _tokensTick = signal(0);
+  private readonly _treasuryTick = signal(0);
+  private readonly _protocolTick = signal(0);
+  private readonly _warningsTick = signal(0);
+
+  private readonly _refreshing = signal(false);
+  private readonly _lastRefreshAt = signal<number | null>(null);
+  private backgroundRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly walletTick = this._walletTick.asReadonly();
   readonly accountsTick = this._accountsTick.asReadonly();
@@ -54,9 +77,133 @@ export class TriggerService {
   readonly vaultTick = this._vaultTick.asReadonly();
   readonly pricesTick = this._pricesTick.asReadonly();
   readonly tokensTick = this._tokensTick.asReadonly();
+  readonly treasuryTick = this._treasuryTick.asReadonly();
+  readonly protocolTick = this._protocolTick.asReadonly();
+  readonly warningsTick = this._warningsTick.asReadonly();
+  readonly refreshing = this._refreshing.asReadonly();
+  readonly lastRefreshAt = this._lastRefreshAt.asReadonly();
 
   private bump(sig: { update: (fn: (x: number) => number) => void }) {
     sig.update((x) => x + 1);
+  }
+
+  private markRefreshed(): void {
+    this._lastRefreshAt.set(Date.now());
+  }
+
+  // ---- manual and route-driven refresh policy ----
+  refreshDomains(domains: readonly RefreshDomain[]): void {
+    const unique = new Set(domains);
+    for (const domain of unique) {
+      switch (domain) {
+        case "wallet":
+          this.bump(this._walletTick);
+          break;
+        case "accounts":
+          this.bump(this._accountsTick);
+          break;
+        case "portfolio":
+          this.bump(this._portfolioTick);
+          break;
+        case "orderbook":
+          this.bump(this._orderbookTick);
+          break;
+        case "options":
+          this.bump(this._optionsOrderbookTick);
+          break;
+        case "futures":
+          this.bump(this._futuresOrderbookTick);
+          break;
+        case "lending":
+          this.bump(this._lendingOrderbookTick);
+          break;
+        case "fees":
+          this.bump(this._feesTick);
+          break;
+        case "vault":
+          this.bump(this._vaultTick);
+          break;
+        case "prices":
+          this.bump(this._pricesTick);
+          break;
+        case "tokens":
+          this.bump(this._tokensTick);
+          break;
+        case "treasury":
+          this.bump(this._treasuryTick);
+          break;
+        case "protocol":
+          this.bump(this._protocolTick);
+          break;
+        case "warnings":
+          this.bump(this._warningsTick);
+          break;
+      }
+    }
+    this.markRefreshed();
+  }
+
+  refreshActiveRoute(url: string, includeBackground = true): void {
+    const active = this.domainsForUrl(url);
+    this._refreshing.set(true);
+    this.refreshDomains(active);
+    queueMicrotask(() => this._refreshing.set(false));
+
+    if (!includeBackground) return;
+    if (this.backgroundRefreshTimer) clearTimeout(this.backgroundRefreshTimer);
+    this.backgroundRefreshTimer = setTimeout(() => {
+      const activeSet = new Set(active);
+      const background = this.allBackgroundDomains().filter(
+        (d) => !activeSet.has(d),
+      );
+      this.refreshDomains(background);
+    }, 750);
+  }
+
+  domainsForUrl(url: string): RefreshDomain[] {
+    const clean = String(url ?? "").toLowerCase();
+    if (clean.includes("accounts")) return ["wallet", "accounts"];
+    if (clean.includes("assets"))
+      return ["portfolio", "vault", "tokens", "prices"];
+    if (clean.includes("erc20trade"))
+      return ["orderbook", "portfolio", "tokens", "prices"];
+    if (clean.includes("nftspottrade"))
+      return ["orderbook", "portfolio", "tokens"];
+    if (clean.includes("futurestrade"))
+      return ["futures", "portfolio", "prices"];
+    if (
+      clean.includes("optionstrade") ||
+      clean.includes("binaryoptionstrade") ||
+      clean.includes("marginoptionstrade")
+    )
+      return ["options", "portfolio", "prices"];
+    if (clean.includes("lending-ob"))
+      return ["lending", "portfolio", "vault", "prices"];
+    if (clean.includes("treasury"))
+      return ["treasury", "accounts", "portfolio"];
+    if (clean.includes("protocol")) return ["protocol", "accounts", "tokens"];
+    if (clean.includes("fees")) return ["fees", "tokens", "prices"];
+    if (clean.includes("warnings"))
+      return ["warnings", "options", "lending", "portfolio", "prices"];
+    return ["wallet", "accounts", "portfolio"];
+  }
+
+  private allBackgroundDomains(): RefreshDomain[] {
+    return [
+      "accounts",
+      "portfolio",
+      "orderbook",
+      "options",
+      "futures",
+      "lending",
+      "fees",
+      "vault",
+      "prices",
+      "tokens",
+      "treasury",
+      "protocol",
+      "warnings",
+    ];
   }
 
   // ---- emitters funnel into policy ----
@@ -73,73 +220,64 @@ export class TriggerService {
   // ---- central policy ----
   private handleDomainEvent(ev: DomainEvent) {
     switch (ev.type) {
-      case 'walletConnected':
-      case 'walletDisconnected':
-      case 'walletAddressChanged': {
-        this.bump(this._walletTick);
-        this.bump(this._accountsTick);
-        this.bump(this._tokensTick);
-        this.bump(this._pricesTick);
-        this.bump(this._portfolioTick);
-        this.bump(this._orderbookTick);
-        this.bump(this._optionsOrderbookTick);
-        this.bump(this._futuresOrderbookTick);
-        this.bump(this._lendingOrderbookTick);
+      case "walletConnected":
+      case "walletDisconnected":
+      case "walletAddressChanged": {
+        this.refreshDomains([
+          "wallet",
+          "accounts",
+          "tokens",
+          "prices",
+          "portfolio",
+          "orderbook",
+          "options",
+          "futures",
+          "lending",
+          "warnings",
+        ]);
         return;
       }
 
-      case 'accountCreated': {
-        this.bump(this._accountsTick);
-        this.bump(this._portfolioTick);
+      case "accountCreated": {
+        this.refreshDomains(["accounts", "portfolio", "warnings"]);
         return;
       }
 
-      case 'accountsChanged': {
-        // accounts list actually changed -> portfolio depends on it
-        this.bump(this._portfolioTick);
+      case "accountsChanged": {
+        this.refreshDomains(["portfolio", "warnings"]);
         return;
       }
 
-      case 'deposit':
-      case 'withdraw': {
-        this.bump(this._portfolioTick);
-        this.bump(this._vaultTick);
+      case "deposit":
+      case "withdraw": {
+        this.refreshDomains(["portfolio", "vault", "warnings"]);
         return;
       }
 
-      case 'erc20TokensChanged': {
-        // token universe actually changed
-        this.bump(this._tokensTick);
-        this.bump(this._pricesTick);
-        this.bump(this._portfolioTick);
-        // don't bump vaultTick here (loop risk)
+      case "erc20TokensChanged": {
+        this.refreshDomains(["tokens", "prices", "portfolio", "warnings"]);
         return;
       }
 
-      case 'orderPlaced': {
-        this.bump(this._orderbookTick);
-        this.bump(this._portfolioTick);
+      case "orderPlaced": {
+        this.refreshDomains(["orderbook", "portfolio", "warnings"]);
         return;
       }
 
-      case 'Option Reclaimed':
-      case 'Option Exercised':
-      case 'optionOrderPlaced': {
-        this.bump(this._optionsOrderbookTick);
-        this.bump(this._portfolioTick);
+      case "Option Reclaimed":
+      case "Option Exercised":
+      case "optionOrderPlaced": {
+        this.refreshDomains(["options", "portfolio", "warnings"]);
         return;
       }
 
-      case 'futuresOrderPlaced': {
-        this.bump(this._futuresOrderbookTick);
-        this.bump(this._portfolioTick);
+      case "futuresOrderPlaced": {
+        this.refreshDomains(["futures", "portfolio", "warnings"]);
         return;
       }
 
-      case 'lendingOrderbookChanged': {
-        this.bump(this._lendingOrderbookTick);
-        this.bump(this._portfolioTick);
-        this.bump(this._vaultTick);
+      case "lendingOrderbookChanged": {
+        this.refreshDomains(["lending", "portfolio", "vault", "warnings"]);
         return;
       }
     }
@@ -147,17 +285,20 @@ export class TriggerService {
 
   private handleSettingsEvent(ev: SettingsEvent) {
     switch (ev.type) {
-      case 'accountChanged': {
-        this.bump(this._portfolioTick);
-        this.bump(this._orderbookTick);
-        this.bump(this._optionsOrderbookTick);
-        this.bump(this._futuresOrderbookTick);
-        this.bump(this._lendingOrderbookTick);
+      case "accountChanged": {
+        this.refreshDomains([
+          "portfolio",
+          "orderbook",
+          "options",
+          "futures",
+          "lending",
+          "warnings",
+        ]);
         return;
       }
 
-      case 'preferredFeeTokenChanged': {
-        this.bump(this._feesTick);
+      case "preferredFeeTokenChanged": {
+        this.refreshDomains(["fees"]);
         return;
       }
     }

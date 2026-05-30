@@ -54,7 +54,7 @@ export class ProtocolInfoComponent {
   private buildContractRows(): { name: string; address: string; description: string; priority: boolean }[] {
     const descriptions: Record<string, string> = {
       SethxToken: 'Protocol token used for voting power, delegation, and ecosystem alignment.',
-      SethxTimelock: 'Timelock layer for delayed execution of approved governance actions.',
+      TimelockControllerWrapper: 'Timelock layer for delayed execution of approved governance actions.',
       SethxGovernor: 'Governance contract for proposals, voting, queueing, and execution.',
       ProtocolTreasury: 'Protocol treasury balances, permissions, and treasury-controlled operations.',
       TreasuryAuthority: 'Treasury permission and policy authority.',
@@ -85,7 +85,7 @@ export class ProtocolInfoComponent {
     const priority = new Set([
       'SethxToken',
       'SethxGovernor',
-      'SethxTimelock',
+      'TimelockControllerWrapper',
       'TreasuryAuthority',
       'ProtocolTreasury',
       'SethxVault',

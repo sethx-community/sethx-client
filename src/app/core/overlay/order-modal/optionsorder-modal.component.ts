@@ -69,4 +69,12 @@ export class OptionsOrderModalComponent implements OnInit {
   async submitAndClose() {
     await this.vm.submit();
   }
+
+  handleReviewClose() {
+    if (this.txReceipt.receipt()?.status === 'success') {
+      this.close({ success: true });
+      return;
+    }
+    this.vm.closeConfirm();
+  }
 }

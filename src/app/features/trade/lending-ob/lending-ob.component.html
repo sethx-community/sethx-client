@@ -89,7 +89,7 @@
             <div class="text-right">Orders</div>
             <div class="text-right">My orders</div>
             <div class="text-right">Outstanding</div>
-            <div class="text-right">Info</div>
+            <div class="text-right">Details</div>
           </div>
 
           @for (row of visibleMarkets(); track trackMarket($index, row)) {
@@ -120,7 +120,7 @@
                 <div class="text-right sethx-readonly-value">{{ row.myLendOrders }} / {{ row.myBorrowOrders }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatEth(row.outstandingFaceValue) }}</div>
                 <div class="text-right">
-                  <button type="button" class="sethx-action-link" title="Show market information" (click)="toggleMarketInfo(row.marketKey, $event)">Info</button>
+                  <button type="button" class="sethx-action-link" title="Show market details" (click)="toggleMarketInfo(row.marketKey, $event)">Details</button>
                 </div>
               </div>
 
@@ -130,8 +130,8 @@
                 title="Lending market details"
                 [subtitle]="marketLabel(row)"
                 [items]="marketInfoItems(row)"
-                [showClose]="true"
-                (close)="toggleMarketInfo(row.marketKey)"
+                [showClose]="!!expandedMarketInfo()[row.marketKey]"
+                (close)="closeMarketInfo(row.marketKey)"
               ></app-market-detail-panel>
             </div>
           }
@@ -174,7 +174,15 @@
         ></app-spot-summary-header>
 
         <section class="sethx-edit-panel">
-          <div class="sethx-panel-section-title mb-3">Market Risk</div>
+          <div class="flex items-center gap-2 mb-2">
+            <div class="sethx-panel-section-title">Risk tier</div>
+            <button type="button" class="sethx-copy-button" title="Show selected risk tier LTV values" (click)="toggleRiskTierInfo($event)">i</button>
+          </div>
+          @if (riskTierInfoOpen()) {
+            <div class="mb-3 rounded border border-frame/40 bg-frame/10 px-3 py-2 text-[11px] leading-relaxed text-frame">
+              {{ riskTierLtvHelp(market) }}
+            </div>
+          }
           <div class="sethx-lending-risk-grid">
             <div>
               <div class="sethx-field-label !mb-0">Max LTV</div>
@@ -187,6 +195,7 @@
             <div>
               <div class="sethx-field-label !mb-0">Utilization</div>
               <div class="sethx-readonly-value">{{ utilizationText(market) }}</div>
+              <div class="mt-1 text-[10px] text-frame">Outstanding principal / total matched principal</div>
             </div>
             <div>
               <div class="sethx-field-label !mb-0">Recovery estimate</div>
@@ -203,77 +212,113 @@
           </div>
         </section>
 
-        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <section class="sethx-orderbook-panel">
-            <div class="sethx-toolbar mb-3 p-3 pb-0">
-              <div>
-                <div class="sethx-table-section">Lend Offers</div>
-                <div class="sethx-meta-text mt-2">Lowest APR has matching priority for borrowers.</div>
-              </div>
-              <label class="sethx-inline-control">
-                <input type="checkbox" [checked]="myOrdersOnly()" (change)="setMyOrdersOnly($any($event.target).checked)" />
-                <span>My orders only</span>
-              </label>
-            </div>
-            <div class="sethx-table-header sethx-lending-book-grid">
-              <div>Order</div>
-              <div class="text-right">APR</div>
-              <div class="text-right">Principal</div>
-              <div class="text-right">Expires</div>
-            </div>
-
-            @for (order of selectedLendOrders(); track trackOrder($index, order)) {
-              <div class="sethx-table-row sethx-lending-book-grid items-center">
-                <div>
-                  <div class="sethx-address-value-muted truncate">#{{ order.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isMyOrder(order)">mine</span></div>
-                  <div class="truncate text-[11px] text-frame">{{ shortKey(order.user) }}</div>
-                </div>
-                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ formatRate(order.rateBps) }}</div>
-                <div class="text-right sethx-readonly-value">{{ formatEth(order.principal) }}</div>
-                <div class="text-right sethx-muted-value">{{ timeLeftText(order.orderExpiry) }}</div>
-              </div>
-            }
-
-            @if (selectedLendOrders().length === 0) {
-              <div class="sethx-table-empty px-3">No open lend offers for this market.</div>
-            }
-          </section>
-
-          <section class="sethx-orderbook-panel">
-            <div class="sethx-toolbar mb-3 p-3 pb-0">
-              <div>
-                <div class="sethx-table-section">Borrow Bids</div>
-                <div class="sethx-meta-text mt-2">Highest APR has matching priority for lenders.</div>
-              </div>
-              <label class="sethx-inline-control">
-                <input type="checkbox" [checked]="myOrdersOnly()" (change)="setMyOrdersOnly($any($event.target).checked)" />
-                <span>My orders only</span>
-              </label>
-            </div>
-            <div class="sethx-table-header sethx-lending-book-grid">
-              <div>Order</div>
-              <div class="text-right">APR</div>
-              <div class="text-right">Principal</div>
-              <div class="text-right">Expires</div>
-            </div>
-
-            @for (order of selectedBorrowOrders(); track trackOrder($index, order)) {
-              <div class="sethx-table-row sethx-lending-book-grid items-center">
-                <div>
-                  <div class="sethx-address-value-muted truncate">#{{ order.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="isMyOrder(order)">mine</span></div>
-                  <div class="truncate text-[11px] text-frame">{{ shortKey(order.user) }}</div>
-                </div>
-                <div class="text-right sethx-orderbook-side-ask font-semibold">{{ formatRate(order.rateBps) }}</div>
-                <div class="text-right sethx-readonly-value">{{ formatEth(order.principal) }}</div>
-                <div class="text-right sethx-muted-value">{{ timeLeftText(order.orderExpiry) }}</div>
-              </div>
-            }
-
-            @if (selectedBorrowOrders().length === 0) {
-              <div class="sethx-table-empty px-3">No open borrow bids for this market.</div>
-            }
-          </section>
+        <div class="sethx-toolbar sethx-market-filter-toolbar">
+          <div class="sethx-section-title text-base">Lend / Borrow Ladder</div>
+          <div class="sethx-toolbar-actions">
+            <label class="sethx-inline-control">
+              <input type="checkbox" [checked]="myOrdersOnly()" (change)="setMyOrdersOnly($any($event.target).checked)" />
+              <span>My orders</span>
+            </label>
+            <select class="sethx-select !w-auto !py-1" [value]="ladderFocus()" (change)="setLadderFocus(+$any($event.target).value)">
+              <option [value]="3">Focus 3</option>
+              <option [value]="5">Focus 5</option>
+              <option [value]="10">Focus 10</option>
+            </select>
+            <button type="button" class="sethx-button-secondary !py-1" (click)="toggleShowAllRows()">{{ showAllRows() ? 'Show less' : 'Show all' }}</button>
+          </div>
         </div>
+
+        <div class="sethx-table-header grid grid-cols-[1.15fr_1fr_1fr_1.15fr]">
+          <div>Lend Principal</div>
+          <div class="text-center sethx-orderbook-side-bid">Lend APR</div>
+          <div class="text-center sethx-orderbook-side-ask">Borrow APR</div>
+          <div class="text-right">Borrow Principal</div>
+        </div>
+
+        <div class="text-xs font-mono sethx-tabular-nums max-h-[420px] overflow-y-auto sethx-scroll-stable">
+          @for (row of focusLendingBookRows(); track trackLendingBookRow($index, row)) {
+            <div class="sethx-table-row grid grid-cols-[1.15fr_1fr_1fr_1.15fr] items-center gap-x-3 relative overflow-visible">
+              <div class="sethx-orderbook-amount-bid !font-normal text-left">
+                @if (row.lend) {
+                  <span>{{ formatEth(row.lend.principal) }} <span class="ml-2 sethx-status-pill" *ngIf="isMyOrder(row.lend)">mine</span></span>
+                  <div class="text-[10px] text-frame">Expires {{ timeLeftText(row.lend.orderExpiry) }}</div>
+                } @else { <span>—</span> }
+              </div>
+              <div class="sethx-orderbook-price-bid">
+                @if (row.lend) { <span>{{ formatRate(row.lend.rateBps) }}</span> } @else { <span>—</span> }
+              </div>
+              <div class="sethx-orderbook-price-ask">
+                @if (row.borrow) { <span>{{ formatRate(row.borrow.rateBps) }}</span> } @else { <span>—</span> }
+              </div>
+              <div class="sethx-orderbook-amount-ask !font-normal text-right">
+                @if (row.borrow) {
+                  <span><span class="mr-2 sethx-status-pill" *ngIf="isMyOrder(row.borrow)">mine</span>{{ formatEth(row.borrow.principal) }}</span>
+                  <div class="text-[10px] text-frame">Expires {{ timeLeftText(row.borrow.orderExpiry) }}</div>
+                } @else { <span>—</span> }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (showAllRows() && restLendingBookRows().length > 0) {
+          <div class="text-xs font-mono sethx-tabular-nums max-h-[260px] overflow-y-auto sethx-scroll-stable opacity-80">
+            @for (row of restLendingBookRows(); track trackLendingBookRow($index, row)) {
+              <div class="sethx-table-row grid grid-cols-[1.15fr_1fr_1fr_1.15fr] items-center gap-x-3 relative overflow-visible !py-2">
+                <div class="sethx-orderbook-amount-bid !font-normal text-left">
+                  @if (row.lend) {
+                    <span>{{ formatEth(row.lend.principal) }} <span class="ml-2 sethx-status-pill" *ngIf="isMyOrder(row.lend)">mine</span></span>
+                    <div class="text-[10px] text-frame">Expires {{ timeLeftText(row.lend.orderExpiry) }}</div>
+                  } @else { <span>—</span> }
+                </div>
+                <div class="sethx-orderbook-price-bid !font-normal">
+                  @if (row.lend) { <span>{{ formatRate(row.lend.rateBps) }}</span> } @else { <span>—</span> }
+                </div>
+                <div class="sethx-orderbook-price-ask !font-normal">
+                  @if (row.borrow) { <span>{{ formatRate(row.borrow.rateBps) }}</span> } @else { <span>—</span> }
+                </div>
+                <div class="sethx-orderbook-amount-ask !font-normal text-right">
+                  @if (row.borrow) {
+                    <span><span class="mr-2 sethx-status-pill" *ngIf="isMyOrder(row.borrow)">mine</span>{{ formatEth(row.borrow.principal) }}</span>
+                    <div class="text-[10px] text-frame">Expires {{ timeLeftText(row.borrow.orderExpiry) }}</div>
+                  } @else { <span>—</span> }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <section class="sethx-table-card !p-4 mt-4">
+          <div class="sethx-toolbar mb-3">
+            <div class="sethx-table-section">My positions in this market</div>
+            <span class="sethx-meta-text">Selected account</span>
+          </div>
+          @if (!selectedMarketHasPosition()) {
+            <div class="sethx-table-empty">No active position for this market in the selected account.</div>
+          } @else {
+            @for (debt of selectedMarketDebts(); track trackDebt($index, debt)) {
+              <div class="sethx-table-row sethx-lending-loan-grid items-center">
+                <div><div class="sethx-readonly-value-strong truncate">Borrow debt</div><div class="sethx-address-value-muted text-[11px]">{{ shortKey(debt.marketKey) }}</div></div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(debt.principal) }}</div>
+                <div class="text-right sethx-orderbook-side-ask font-semibold">{{ formatEth(debt.faceValue) }}</div>
+                <div class="text-right sethx-readonly-value">{{ recoveryRateForDebt(debt) }}</div>
+                <div></div>
+              </div>
+            }
+            @for (bond of selectedMarketBonds(); track trackBond($index, bond)) {
+              <div class="sethx-table-row sethx-lending-loan-grid items-center">
+                <div><div class="sethx-readonly-value-strong truncate">Lend bond #{{ bond.bondIndex }}</div><div class="sethx-address-value-muted text-[11px]">{{ shortKey(bond.marketKey) }}</div></div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(bond.initialClaimable) }}</div>
+                <div class="text-right sethx-orderbook-side-bid font-semibold">{{ formatEth(bond.faceValue) }}</div>
+                <div class="text-right sethx-readonly-value">{{ formatEth(bond.supplementalClaimable) }}</div>
+                <div></div>
+              </div>
+            }
+          }
+        </section>
+
+        @if (selectedLendOrders().length === 0 && selectedBorrowOrders().length === 0) {
+          <div class="sethx-table-empty">No open lending orders for this market.</div>
+        }
       } @else {
         <div class="sethx-table-empty">Select a lending market to view the book.</div>
       }

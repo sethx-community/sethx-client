@@ -18,7 +18,7 @@
     </div>
 
     <ng-container *ngIf="view() === 'markets'">
-      <app-spot-summary-header eyebrow="Binary Options" title="Active Binary Markets" subtitle="Select a market to view bid/ask payout ladders. Market actions are available in the right panel after selecting a market." [metrics]="marketsMetrics()" [showActions]="false"></app-spot-summary-header>
+      <app-spot-summary-header eyebrow="Binary Options" title="Active Binary Markets" subtitle="Select a market to view bid/ask payout ladders and settlement state." [metrics]="marketsMetrics()" [showActions]="false"></app-spot-summary-header>
       <div class="sethx-toolbar">
         <div class="sethx-section-title text-base">Markets</div>
         <div class="sethx-toolbar-actions">
@@ -30,15 +30,15 @@
           <span class="sethx-meta-text">Showing {{ ob.store.visibleMarkets().length }} markets</span>
         </div>
       </div>
-      <div class="overflow-x-auto">
+      <div class="sethx-scroll-stable overflow-x-auto">
         <div class="min-w-[920px] text-xs">
-          <div class="sethx-table-header sethx-binary-market-grid"><div>Market</div><div class="text-right">Orders</div><div class="text-right">My orders</div><div class="text-right">Total payout</div><div class="text-right">Strike</div><div class="text-right">Expiry</div><div class="text-right">Info</div></div>
+          <div class="sethx-table-header sethx-binary-market-grid"><div>Market</div><div class="text-right">Orders</div><div class="text-right">My orders</div><div class="text-right">Total payout</div><div class="text-right">Strike</div><div class="text-right">Expiry</div><div class="text-right">Details</div></div>
           <ng-container *ngFor="let m of ob.store.visibleMarkets(); trackBy: trackMarket">
-            <div class="sethx-market-row-shell">
+            <div class="sethx-market-row-shell" (mouseenter)="hoveredMarketKey.set(m.marketKey)" (mouseleave)="hoveredMarketKey.set(null)">
               <div class="sethx-table-row sethx-table-row-action sethx-binary-market-grid items-center" (click)="openMarket(m)">
                 <div class="truncate min-w-0">
-                  <div class="sethx-readonly-value-strong truncate">{{ marketCondition(m) }}</div>
-                  <div class="mt-1 flex items-center gap-2 min-w-0">
+                  <div class="sethx-market-primary-line truncate">{{ marketCondition(m) }}</div>
+                  <div class="sethx-market-subline">
                     <span class="sethx-address-value truncate text-[11px]" [title]="m.marketKey">{{ m.marketKey }}</span>
                     <button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === m.marketKey" [title]="copiedValue() === m.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(m.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== m.marketKey" [class.fa-circle-check]="copiedValue() === m.marketKey"></i></button>
                   </div>
@@ -48,9 +48,9 @@
                 <div class="text-right sethx-readonly-value">{{ ob.store.formatEth(m.totalPayout) }}</div>
                 <div class="text-right sethx-readonly-value">{{ ob.store.formatStrike(m.market.strikePrice) }}</div>
                 <div class="text-right sethx-readonly-value">{{ formatExpiry(m.market.expiry) }}</div>
-                <div class="text-right"><button type="button" class="sethx-action-link" (click)="toggleMarketInfo(m.marketKey, $event)">Info</button></div>
+                <div class="text-right"><button type="button" class="sethx-action-link" (click)="toggleMarketInfo(m.marketKey, $event)">Details</button></div>
               </div>
-              <app-market-detail-panel *ngIf="isMarketInfoOpen(m.marketKey)" class="sethx-market-detail-popover" title="Market details" [subtitle]="marketCondition(m)" [items]="binaryMarketDetailItems(m)" [showClose]="true" (close)="toggleMarketInfo(m.marketKey)"></app-market-detail-panel>
+              <app-market-detail-panel *ngIf="isMarketInfoOpen(m.marketKey)" class="sethx-market-detail-popover" title="Market details" [subtitle]="marketCondition(m)" [items]="binaryMarketDetailItems(m)" [showClose]="!!expandedMarketInfo()[m.marketKey]" (close)="closeMarketInfo(m.marketKey)"></app-market-detail-panel>
             </div>
           </ng-container>
           <div class="sethx-table-empty" *ngIf="ob.store.visibleMarkets().length === 0">No active binary markets found.</div>
@@ -68,45 +68,34 @@
 
     <ng-container *ngIf="view() === 'orders'">
       @let selected = ob.store.selectedMarket(); @let info = selected?.market;
-      <app-spot-summary-header eyebrow="Binary market" [title]="info ? marketCondition(selected) : 'Market'" [subtitle]="selected?.marketKey || ''" [subtitleMono]="true" [metrics]="selectedMarketSummaryMetrics(selected, info)" [showActions]="false"></app-spot-summary-header>
-      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section class="sethx-orderbook-panel">
-          <div class="sethx-toolbar mb-3">
-            <div class="sethx-table-section">Bids</div>
-            <label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label>
-          </div>
-          <div class="sethx-table-header sethx-binary-order-grid"><div>ID</div><div class="text-right">Payout</div><div class="text-right">Price per 1 ETH payout</div></div>
-          <div *ngFor="let r of ob.store.bids(); trackBy: trackOrder" class="sethx-table-row sethx-table-row-action sethx-binary-order-grid items-center" [class.is-selected]="isSelectedOrder(r)" (click)="selectOrder(r, $event)">
-            <div class="sethx-address-value-muted truncate">#{{ r.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="r.isMine">mine</span></div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.order.payoutAmount) }}</div><div class="text-right sethx-orderbook-side-bid font-semibold">{{ ob.store.formatPricePerEth(r.order.askPrice) }}</div>
-          </div>
-          <div class="sethx-table-empty" *ngIf="ob.store.bids().length === 0">No bids.</div>
-        </section>
-        <section class="sethx-orderbook-panel">
-          <div class="sethx-toolbar mb-3">
-            <div class="sethx-table-section">Asks</div>
-            <label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders only</span></label>
-          </div>
-          <div class="sethx-table-header sethx-binary-order-grid"><div>ID</div><div class="text-right">Payout</div><div class="text-right">Price per 1 ETH payout</div></div>
-          <div *ngFor="let r of ob.store.asks(); trackBy: trackOrder" class="sethx-table-row sethx-table-row-action sethx-binary-order-grid items-center" [class.is-selected]="isSelectedOrder(r)" (click)="selectOrder(r, $event)">
-            <div class="sethx-address-value-muted truncate">#{{ r.orderId }} <span class="ml-2 text-[10px] text-frame" *ngIf="r.isMine">mine</span></div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.order.payoutAmount) }}</div><div class="text-right sethx-orderbook-side-ask font-semibold">{{ ob.store.formatPricePerEth(r.order.askPrice) }}</div>
-          </div>
-          <div class="sethx-table-empty" *ngIf="ob.store.asks().length === 0">No asks.</div>
-        </section>
+      <app-spot-summary-header eyebrow="Binary option orderbook" [title]="info ? marketCondition(selected) : 'Market'" [subtitle]="selected?.marketKey || ''" [subtitleMono]="true" [metrics]="selectedMarketSummaryMetrics(selected, info)" [showActions]="false"></app-spot-summary-header>
+      <div class="sethx-toolbar sethx-market-filter-toolbar"><div class="sethx-section-title text-base">Order Ladder</div><div class="sethx-toolbar-actions"><label class="sethx-inline-control"><input type="checkbox" [checked]="ob.store.myOrdersOnly()" (change)="ob.store.myOrdersOnly.set($any($event.target).checked)" /><span>My orders</span></label></div></div>
+      <div class="sethx-ladder-toolbar"><div class="sethx-section-title text-base">Bid / Ask Ladder</div></div>
+      <div class="sethx-table-header grid grid-cols-[1fr_1fr_1fr_1fr]"><div>Bid Payout</div><div class="text-center sethx-orderbook-side-bid">Bid Price</div><div class="text-center sethx-orderbook-side-ask">Ask Price</div><div class="text-right">Ask Payout</div></div>
+      <div class="text-xs font-mono sethx-tabular-nums max-h-[420px] overflow-y-auto sethx-scroll-stable">
+        <div *ngFor="let r of binaryLadderRows(); trackBy: trackBinaryLadderRow" class="sethx-table-row grid grid-cols-[1fr_1fr_1fr_1fr] items-center gap-x-3" [class.is-selected]="isSelectedOrder(r.bid) || isSelectedOrder(r.ask)">
+          <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-bid !font-normal text-left" [disabled]="!r.bid" [class.is-selected]="isSelectedOrder(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.store.formatEth(r.bid.order.payoutAmount) }} <span class="ml-2 sethx-status-pill" *ngIf="r.bid.isMine">mine</span></span><span *ngIf="!r.bid">—</span></button>
+          <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-bid" [disabled]="!r.bid" [class.is-selected]="isSelectedOrder(r.bid)" (click)="selectOrder(r.bid, $event)"><span *ngIf="r.bid">{{ ob.store.formatPricePerEth(r.bid.order.askPrice) }}</span><span *ngIf="!r.bid">—</span></button>
+          <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-price-ask" [disabled]="!r.ask" [class.is-selected]="isSelectedOrder(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask">{{ ob.store.formatPricePerEth(r.ask.order.askPrice) }}</span><span *ngIf="!r.ask">—</span></button>
+          <button type="button" class="sethx-orderbook-cell-button sethx-orderbook-amount-ask !font-normal text-right" [disabled]="!r.ask" [class.is-selected]="isSelectedOrder(r.ask)" (click)="selectOrder(r.ask, $event)"><span *ngIf="r.ask"><span class="mr-2 sethx-status-pill" *ngIf="r.ask.isMine">mine</span>{{ ob.store.formatEth(r.ask.order.payoutAmount) }}</span><span *ngIf="!r.ask">—</span></button>
+        </div>
       </div>
+      <div class="sethx-table-empty" *ngIf="ob.store.bids().length === 0 && ob.store.asks().length === 0">No orders for this market.</div>
+      <section class="sethx-table-card !p-4 mt-4" *ngIf="selectedMarketPositions().length > 0"><div class="sethx-toolbar mb-3"><div class="sethx-table-section">My positions in this market</div><span class="sethx-meta-text">{{ selectedMarketPositions().length }} position rows</span></div><div class="sethx-scroll-stable overflow-x-auto"><div class="min-w-[820px] text-xs"><div class="sethx-table-header sethx-binary-position-grid"><div>Market</div><div class="text-right">Holder payout</div><div class="text-right">Writer margin</div><div class="text-right">Settlement</div><div class="text-right">Lifecycle</div></div><div *ngFor="let r of selectedMarketPositions(); trackBy: trackMarket" class="sethx-table-row sethx-table-row-action sethx-binary-position-grid items-center" [class.is-selected]="isSelectedPosition(r)" (click)="selectPosition(r, $event)"><div class="truncate min-w-0"><div class="sethx-market-primary-line truncate">{{ marketCondition(r) }}</div></div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.holderClaimable) }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.writerMargin) }}</div><div class="text-right sethx-readonly-value">{{ r.settlementStatus }}</div><div class="text-right text-[11px] text-frame">{{ r.claimHint }}</div></div></div></div></section>
     </ng-container>
 
     <ng-container *ngIf="view() === 'my-orders'">
-      <app-spot-summary-header eyebrow="Binary Options" title="My Orders" subtitle="Open binary orders for the selected account across active markets." [metrics]="myOrdersMetrics()" [showActions]="false"></app-spot-summary-header>
-      <div class="overflow-x-auto"><div class="min-w-[980px] text-xs"><div class="sethx-table-header sethx-binary-my-order-grid"><div>ID</div><div>Market</div><div class="text-right">Side</div><div class="text-right">Payout</div><div class="text-right">Price per 1 ETH payout</div><div class="text-right">Expiry</div></div>
+      <app-spot-summary-header eyebrow="Binary Options" title="My Orders" subtitle="" [metrics]="myOrdersMetrics()" [showActions]="false"></app-spot-summary-header>
+      <div class="sethx-scroll-stable overflow-x-auto"><div class="min-w-[980px] text-xs"><div class="sethx-table-header sethx-binary-my-order-grid"><div>Market</div><div class="text-right">Side</div><div class="text-right">Payout</div><div class="text-right">Price per 1 ETH payout</div><div class="text-right">Expiry</div></div>
         <div *ngFor="let r of ob.store.myOrders(); trackBy: trackOrder" class="sethx-table-row sethx-table-row-action sethx-binary-my-order-grid items-center" [class.is-selected]="isSelectedOrder(r)" (click)="selectOrder(r, $event)">
-          <div class="sethx-address-value-muted truncate">#{{ r.orderId }}</div><div class="sethx-address-value truncate" [title]="r.order.marketKey">{{ r.order.marketKey }}</div><div class="text-right sethx-readonly-value">{{ r.side }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.order.payoutAmount) }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatPricePerEth(r.order.askPrice) }}</div><div class="text-right sethx-readonly-value">{{ formatExpiry(r.order.expiry) }}</div>
+          <div class="sethx-market-subline"><span class="sethx-address-value truncate" [title]="r.order.marketKey">{{ r.order.marketKey }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === r.order.marketKey" [title]="copiedValue() === r.order.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(r.order.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== r.order.marketKey" [class.fa-circle-check]="copiedValue() === r.order.marketKey"></i></button></div><div class="text-right sethx-readonly-value">{{ r.side }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.order.payoutAmount) }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatPricePerEth(r.order.askPrice) }}</div><div class="text-right sethx-readonly-value">{{ formatExpiry(r.order.expiry) }}</div>
         </div><div class="sethx-table-empty" *ngIf="ob.store.myOrders().length === 0">No binary orders for the selected account.</div></div></div>
     </ng-container>
 
     <ng-container *ngIf="view() === 'positions'">
-      <app-spot-summary-header eyebrow="Binary Options" title="My Positions" subtitle="Select a position to manage claim, reclaim, or new order actions in the right panel." [metrics]="positionMetrics()" [showActions]="false"></app-spot-summary-header>
-      <div class="overflow-x-auto"><div class="min-w-[980px] text-xs"><div class="sethx-table-header sethx-binary-position-grid"><div>Market</div><div class="text-right">Holder payout</div><div class="text-right">Writer margin</div><div class="text-right">Settlement</div><div class="text-right">Lifecycle</div></div>
-        <div *ngFor="let r of ob.store.myPositions(); trackBy: trackMarket" class="sethx-table-row sethx-table-row-action sethx-binary-position-grid items-center" [class.is-selected]="isSelectedPosition(r)" (click)="selectPosition(r, $event)"><div class="truncate min-w-0"><div class="sethx-readonly-value-strong truncate">{{ marketCondition(r) }}</div><div class="sethx-address-value truncate text-[11px]">{{ r.marketKey }}</div></div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.holderClaimable) }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.writerMargin) }}</div><div class="text-right sethx-readonly-value">{{ r.settlementStatus }}</div><div class="text-right text-[11px] text-frame">{{ r.claimHint }}</div></div>
+      <app-spot-summary-header eyebrow="Binary Options" title="My Positions" subtitle="" [metrics]="positionMetrics()" [showActions]="false"></app-spot-summary-header>
+      <div class="sethx-scroll-stable overflow-x-auto"><div class="min-w-[980px] text-xs"><div class="sethx-table-header sethx-binary-position-grid"><div>Market</div><div class="text-right">Holder payout</div><div class="text-right">Writer margin</div><div class="text-right">Settlement</div><div class="text-right">Lifecycle</div></div>
+        <div *ngFor="let r of ob.store.myPositions(); trackBy: trackMarket" class="sethx-table-row sethx-table-row-action sethx-binary-position-grid items-center" [class.is-selected]="isSelectedPosition(r)" (click)="selectPosition(r, $event)"><div class="truncate min-w-0"><div class="sethx-market-primary-line truncate">{{ marketCondition(r) }}</div><div class="sethx-market-subline"><span class="sethx-address-value truncate text-[11px]" [title]="r.marketKey">{{ r.marketKey }}</span><button type="button" class="sethx-copy-button shrink-0" [class.is-copied]="copiedValue() === r.marketKey" [title]="copiedValue() === r.marketKey ? 'Copied' : 'Copy market key'" (click)="copyValue(r.marketKey, $event)"><i class="fa-regular" [class.fa-copy]="copiedValue() !== r.marketKey" [class.fa-circle-check]="copiedValue() === r.marketKey"></i></button></div></div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.holderClaimable) }}</div><div class="text-right sethx-readonly-value">{{ ob.store.formatEth(r.writerMargin) }}</div><div class="text-right sethx-readonly-value">{{ r.settlementStatus }}</div><div class="text-right text-[11px] text-frame">{{ r.claimHint }}</div></div>
         <div class="sethx-table-empty" *ngIf="ob.store.myPositions().length === 0">No binary positions found in currently active markets.</div></div></div>
     </ng-container>
   </section>

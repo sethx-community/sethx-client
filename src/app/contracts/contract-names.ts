@@ -1,92 +1,77 @@
 export type ContractName =
-  | 'SethxToken'
-  | 'MockERC1155'
-  | 'MockERC20A'
-  | 'MockERC20B'
-  | 'MockERC20C'
-  | 'MockERC721'
-  | 'MockOracle'
-  | 'BtcUsdChainlinkOracle'
-  | 'EthUsdChainlinkOracle'
-  | 'LinkUsdChainlinkOracle'
-  | 'SethxFeeConversionOracle'
-  | 'SethxTimelock'
-  | 'TimelockControllerWrapper'
-  | 'QuoteCollateralOracle'
-  | 'PriceManager'
-  | 'AccountRegistry'
+  'SethxToken'
+  | 'FounderTokenTimelock'
   | 'TreasuryAuthority'
-  | 'FeeManager'
   | 'ProtocolTreasury'
-  | 'SethxVault'
-  | 'AccountFactory'
-  | 'BinaryMarginOptionContract'
-  | 'FuturesContract'
+  | 'SethxTimelock'
   | 'SethxGovernor'
-  | 'LendingContract'
-  | 'MarginOptionContract'
+  | 'AccountRegistry'
+  | 'SethxVault'
+  | 'PriceManager'
+  | 'FeeManager'
+  | 'TokenSpotOrderBook'
   | 'NFTSpotOrderBook'
   | 'OptionContract'
-  | 'TokenSpotOrderBook'
-  | 'TreasuryPaymentsModule'
-  | 'TreasuryVaultModule'
-  | 'BinaryMarginOptionsOrderBook'
-  | 'FuturesOrderBook'
-  | 'LendingOrderBook'
-  | 'MarginOptionsOrderBook'
   | 'OptionsOrderBook'
+  | 'BinaryMarginOptionContract'
+  | 'BinaryMarginOptionsOrderBook'
+  | 'MarginOptionContract'
+  | 'MarginOptionsOrderBook'
+  | 'FuturesContract'
+  | 'FuturesOrderBook'
   | 'SettlementManager'
-  | 'TreasuryTradeModule'
+  | 'LendingContract'
+  | 'LendingOrderBook'
+  | 'OptionsValuationAdapter'
   | 'FuturesValuationAdapter'
   | 'ValuationModule'
+  | 'RiskModule'
   | 'LiquidationEngine'
+  | 'AccountFactory'
+  | 'LendingAccountFactory'
+  | 'TreasuryPaymentsModule'
+  | 'TreasuryVaultModule'
+  | 'TreasuryTradeModule'
+  | 'SethxFeeConversionOracle'
   | 'PassiveFuturesSnapshotPublisher'
   | 'PassiveFuturesPoolFactory'
-  | 'RiskModule'
-  | 'OptionsValuationAdapter'
-  | 'LendingAccountFactory';
+;
 
 export const CONTRACT_NAMES = [
+  'SethxToken',
+  'FounderTokenTimelock',
+  'TreasuryAuthority',
+  'ProtocolTreasury',
+  'SethxTimelock',
+  'SethxGovernor',
   'AccountRegistry',
-  'AccountFactory',
-  'PriceManager',
   'SethxVault',
+  'PriceManager',
   'FeeManager',
   'TokenSpotOrderBook',
+  'NFTSpotOrderBook',
   'OptionContract',
   'OptionsOrderBook',
-  'FuturesContract',
-  'FuturesOrderBook',
   'BinaryMarginOptionContract',
   'BinaryMarginOptionsOrderBook',
   'MarginOptionContract',
   'MarginOptionsOrderBook',
-  'NFTSpotOrderBook',
+  'FuturesContract',
+  'FuturesOrderBook',
   'SettlementManager',
-  'ProtocolTreasury',
-  'TreasuryAuthority',
   'LendingContract',
   'LendingOrderBook',
-  'LendingAccountFactory',
-  'LiquidationEngine',
-  'RiskModule',
-  'ValuationModule',
-  'FuturesValuationAdapter',
   'OptionsValuationAdapter',
+  'FuturesValuationAdapter',
+  'ValuationModule',
+  'RiskModule',
+  'LiquidationEngine',
+  'AccountFactory',
+  'LendingAccountFactory',
+  'TreasuryPaymentsModule',
+  'TreasuryVaultModule',
+  'TreasuryTradeModule',
+  'SethxFeeConversionOracle',
   'PassiveFuturesSnapshotPublisher',
   'PassiveFuturesPoolFactory',
-  'SethxToken',
-  'MockERC20A',
-  'MockERC20B',
-  'MockERC20C',
-  'MockERC721',
-  'MockERC1155',
-  'MockOracle',
-  'BtcUsdChainlinkOracle',
-  'EthUsdChainlinkOracle',
-  'LinkUsdChainlinkOracle',
-  'SethxFeeConversionOracle',
-  'SethxTimelock',
-  'TimelockControllerWrapper',
-  'SethxGovernor',
 ] as const satisfies readonly ContractName[];

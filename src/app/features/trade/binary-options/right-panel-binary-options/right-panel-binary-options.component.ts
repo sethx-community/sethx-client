@@ -22,7 +22,7 @@ export class RightPanelBinaryOptionsComponent {
   readonly flow = inject(OrderFlowService);
   readonly copiedValue = signal<string | null>(null);
 
-  readonly isMarketOrderView = computed(() => this.ob.store.activeView() === 'orders');
+  readonly isMarketOrderView = computed(() => this.ob.store.activeView() === 'markets' || this.ob.store.activeView() === 'orders');
   readonly isOrdersView = computed(() => this.ob.store.activeView() === 'orders' || this.ob.store.activeView() === 'my-orders');
   readonly isPositionsView = computed(() => this.ob.store.activeView() === 'positions');
   readonly selectedPosition = this.ob.store.selectedPosition;
