@@ -207,12 +207,13 @@ elif command -v open >/dev/null 2>&1; then
 fi
 
 npm start
-`,
+`.replace(/\r\n/g, "\n"),
   { encoding: "utf8", mode: 0o755 },
 );
 
 fs.mkdirSync(releaseRoot, { recursive: true });
 
+// 1. Create the Local Desktop Zip
 try {
   execFileSync(
     "powershell",
@@ -230,24 +231,47 @@ try {
       stdio: "inherit",
     });
   } catch (error) {
-    console.error(
-      "Could not create zip archive. The release folder was still created at:",
-    );
-    console.error(packageDir);
-    process.exit(1);
+    console.error("Could not create local desktop zip archive.");
   }
 }
 
-const checksum = sha256(zipPath);
-fs.writeFileSync(
-  checksumPath,
-  `${checksum}  ${path.basename(zipPath)}\n`,
-  "utf8",
-);
+// 2. Create the Pure IPFS-Ready Zip (Zips ONLY the contents of the app folder)
+const ipfsZipPath = path.join(releaseRoot, `sethx-client-ipfs-v${version}.zip`);
+try {
+  execFileSync(
+    "powershell",
+    [
+      "-NoProfile",
+      "-Command",
+      `Compress-Archive -Path "${appDir}\\*" -DestinationPath "${ipfsZipPath}" -Force`,
+    ],
+    { stdio: "inherit" },
+  );
+} catch {
+  try {
+    execFileSync("zip", ["-r", ipfsZipPath, "app/*"], {
+      cwd: packageDir,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    console.error("Could not create IPFS zip archive.");
+  }
+}
 
-console.log("");
-console.log("Browser release package created:");
-console.log(zipPath);
-console.log("");
-console.log("Checksum file created:");
-console.log(checksumPath);
+// Generate Checksums for BOTH files
+const checksum = sha256(zipPath);
+const ipfsChecksum = fs.existsSync(ipfsZipPath) ? sha256(ipfsZipPath) : "";
+
+let checksumContent = `${checksum}  ${path.basename(zipPath)}\n`;
+if (ipfsChecksum) {
+  checksumContent += `${ipfsChecksum}  ${path.basename(ipfsZipPath)}\n`;
+}
+
+fs.writeFileSync(checksumPath, checksumContent, "utf8");
+
+console.log("\n==========================================");
+console.log("Release assets created successfully:");
+console.log(`1. Desktop Run Zip: ${zipPath}`);
+console.log(`2. IPFS Deploy Zip: ${ipfsZipPath}`);
+console.log(`3. Checksums:       ${checksumPath}`);
+console.log("==========================================\n");

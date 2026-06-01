@@ -1,12 +1,12 @@
-# Disclaimer
+# Disclaimer & Terms of Software Use
 
-SETHX Client is open-source software for interacting with SETHX-compatible smart contracts through a user-controlled wallet.
+SETHX Client is free, open-source software for interacting with SETHX-compatible smart contracts through a user-controlled wallet.
 
-The client does not hold user assets, private keys, or seed phrases. Transactions are signed through the user's own wallet and submitted to the connected network.
+The client does not hold user assets, private keys, or seed phrases. All transactions are initiated, parameterized, and signed exclusively through the user's own wallet and submitted directly to the connected decentralized network. The software acts merely as a local graphical interface and does not provide financial intermediation, custody, order transmission, or execution services.
 
-Users are responsible for reviewing all transaction details in their wallet before signing.
+Users are solely responsible for reviewing all transaction details in their wallet before signing.
 
-Smart contract interaction involves risks, including but not limited to:
+Smart contract interaction involves significant financial and technical risks, including but not limited to:
 
 - technical risk;
 - market risk;
@@ -18,10 +18,10 @@ Smart contract interaction involves risks, including but not limited to:
 - governance risk;
 - contract configuration risk.
 
-Users are responsible for determining whether use of the software and any connected protocol is permitted in their jurisdiction.
+Users are responsible for determining whether use of the software and any connected protocol is permitted in their jurisdiction, and for complying with all applicable local and international regulatory frameworks, including AML and sanctions laws.
 
-SETHX Community is not currently operating the client as a public hosted trading website. The client is released first as local/source software and as a local browser package.
+SETHX Community does not operate the client as a public hosted commercial trading website. The client is released strictly as local/source software, a local standalone browser package, and decentralized source code intended for local or peer-to-peer deployment.
 
-Third-party websites, forks, hosted interfaces, modified builds, and unofficial deployments are independent from SETHX Community unless explicitly recognized through an authorized maintainer or governance-approved process.
+Third-party websites, forks, hosted interfaces, modified builds, and unofficial deployments are completely independent from SETHX Community. SETHX Community assumes no liability, responsibility, or oversight for any interface hosted or made available by third parties.
 
-Users should verify the source, release, network, contract addresses, and transaction details before using any interface.
+Users must independently verify the source, release, network, contract addresses, and transaction details before using any interface. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
