@@ -6,6 +6,7 @@ import {
   computed,
   effect,
 } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 import { Contract, JsonRpcProvider, ZeroAddress } from 'ethers';
 import { AccountRegistryContractService } from './contracts/account-registry-contract.service';
@@ -19,13 +20,14 @@ import { norm } from '../../core/tokens/token-normalize';
 import { CURRENT_NETWORK } from '../../constants/network.config';
 import { NETWORKS } from '../../constants/networks';
 import { getContractAddress } from '../../contracts/contract-registry';
+import { TreasuryModeService } from '../shared/treasury-mode.service';
 
 const ACCOUNT_NAME_ABI = [
   'function accountName() view returns (string)',
   'function setAccountName(string newName)',
 ] as const;
 
-export type AccountType = 'normal' | 'lending';
+export type AccountType = 'normal' | 'lending' | 'treasury';
 
 export type AccountRecord = {
   address: string;
@@ -47,6 +49,7 @@ export class AccountsChainService {
   private readonly trigger = inject(TriggerService);
   private readonly transactionAccess = inject(TransactionAccessService);
   private readonly protocolConfig = inject(ProtocolConfigService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   private _accountsFp = '';
 
@@ -119,30 +122,61 @@ export class AccountsChainService {
     this.trigger.emitDomainEvent({ type: 'accountsChanged', accounts });
   }
 
-  readonly accountRecords = computed(
-    () => this._accountRecordsResource.value() ?? [],
+  private readonly _stablePersonalAccountRecords = stableResourceValue(() => this._accountRecordsResource.value(), [] as AccountRecord[], { resetKey: () => this.address() });
+
+  readonly personalAccountRecords = computed(() => this._stablePersonalAccountRecords());
+
+  readonly treasuryAccountRecords = computed<AccountRecord[]>(() =>
+    this.treasuryMode.accounts()
+      .filter((row) => row.allowed)
+      .map((row) => {
+        const address = norm(row.account);
+        return {
+          address,
+          name: `Treasury account ${this.shortAddress(address)}`,
+          active: true,
+          type: 'treasury' as const,
+        };
+      }),
   );
+
+  readonly accountRecords = computed(() => {
+    const byAddress = new Map<string, AccountRecord>();
+    for (const account of this.personalAccountRecords()) byAddress.set(norm(account.address), account);
+    for (const account of this.treasuryAccountRecords()) byAddress.set(norm(account.address), account);
+    return Array.from(byAddress.values());
+  });
+
   readonly allAccounts = computed(() =>
     this.accountRecords().map((account) => account.address),
   );
+
   readonly accounts = computed(() =>
-    this.accountRecords()
+    this.personalAccountRecords()
       .filter((account) => account.active)
       .map((account) => account.address),
   );
+
   readonly normalAccounts = computed(() =>
-    this.accountRecords()
+    this.personalAccountRecords()
       .filter((account) => account.active && account.type === 'normal')
       .map((account) => account.address),
   );
+
   readonly lendingAccounts = computed(() =>
-    this.accountRecords()
+    this.personalAccountRecords()
       .filter((account) => account.active && account.type === 'lending')
       .map((account) => account.address),
   );
-  readonly status = computed<Status>(() =>
-    toStatus(this._accountRecordsResource.status()),
+  readonly isInitialLoading = computed(() =>
+    toStatus(this._accountRecordsResource.status()) === 'pending' && this.accountRecords().length === 0,
   );
+
+  readonly status = computed<Status>(() => {
+    const status = toStatus(this._accountRecordsResource.status());
+    if (status === 'pending' && this.accountRecords().length > 0) return 'success';
+    return status;
+  });
   readonly error = computed(() => this._accountRecordsResource.error() ?? null);
 
   private readonly _latestAccountResource = resource<
@@ -157,9 +191,9 @@ export class AccountsChainService {
     },
   });
 
-  readonly latestAccount = computed(
-    () => this._latestAccountResource.value() ?? null,
-  );
+  private readonly _stableLatestAccount = stableResourceValue(() => this._latestAccountResource.value(), null as string | null, { resetKey: () => this.address() });
+
+  readonly latestAccount = computed(() => this._stableLatestAccount());
   readonly latestAccountStatus = computed(() =>
     this._latestAccountResource.status(),
   );
@@ -293,13 +327,17 @@ export class AccountsChainService {
 
   accountLabel(account: string): string {
     const key = norm(account);
-    const name = this.accountNames()[key];
+    const treasuryAccount = this.treasuryAccountRecords().find((row) => norm(row.address) === key);
+    if (treasuryAccount) return treasuryAccount.name;
 
+    const name = this.accountNames()[key];
     return name?.trim() ? name : this.shortAddress(account);
   }
 
   accountType(account: string): AccountType {
-    return this.accountTypes()[norm(account)] ?? 'normal';
+    const key = norm(account);
+    if (this.treasuryAccountRecords().some((row) => norm(row.address) === key)) return 'treasury';
+    return this.accountTypes()[key] ?? 'normal';
   }
 
   isAccountActive(account: string): boolean {

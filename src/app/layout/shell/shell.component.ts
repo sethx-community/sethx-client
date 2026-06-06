@@ -43,6 +43,7 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
   readonly mainCanScrollDown = signal(false);
   readonly rightCanScrollUp = signal(false);
   readonly rightCanScrollDown = signal(false);
+  readonly refreshPulse = signal(false);
 
   @ViewChild('mainScroll') private mainScrollRef?: ElementRef<HTMLElement>;
   @ViewChild('rightPanelScroll') private rightPanelScrollRef?: ElementRef<HTMLElement>;
@@ -74,7 +75,9 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
   }
 
   refreshCurrentPage(): void {
+    this.refreshPulse.set(true);
     this.triggers.refreshActiveRoute(this.currentUrl(), true);
+    window.setTimeout(() => this.refreshPulse.set(false), 650);
   }
 
   ngAfterViewInit(): void {

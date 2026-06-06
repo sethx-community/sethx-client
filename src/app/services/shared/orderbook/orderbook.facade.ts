@@ -31,8 +31,8 @@ export class OrderBookFacade {
   readonly ordersError = computed(() => this.store.ordersError() ?? null);
 
   // derived "loading" booleans for templates that want old shape
-  readonly loadingBooks = computed(() => this.booksUiStatus() === 'pending');
-  readonly loadingOrders = computed(() => this.ordersUiStatus() === 'pending');
+  readonly loadingBooks = computed(() => this.booksUiStatus() === 'pending' && this.visibleBooks().length === 0);
+  readonly loadingOrders = computed(() => this.ordersUiStatus() === 'pending' && this.store.visibleOrders().length === 0);
 
   // single error stream (optional convenience)
   readonly error = computed(() => this.ordersError() ?? this.booksError());
@@ -51,7 +51,7 @@ export class OrderBookFacade {
   readonly myOrders = this.store.myOrders;
   readonly myOrdersUiStatus = computed<Status>(() => toStatus(this.store.myOrdersStatus()));
   readonly myOrdersError = computed(() => this.store.myOrdersError() ?? null);
-  readonly loadingMyOrders = computed(() => this.myOrdersUiStatus() === 'pending');
+  readonly loadingMyOrders = computed(() => this.myOrdersUiStatus() === 'pending' && this.myOrders().length === 0);
 
   // orders / ladder
   readonly visibleOrders = this.store.visibleOrders;

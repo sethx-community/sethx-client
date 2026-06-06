@@ -86,7 +86,7 @@ export class BlockRefreshService implements OnDestroy {
     }
 
     this.refreshRunning = true;
-    this.triggers.refreshActiveRoute(this.currentUrl, true);
+    this.triggers.refreshActiveRouteSilently(this.currentUrl);
 
     window.setTimeout(() => {
       this.refreshRunning = false;

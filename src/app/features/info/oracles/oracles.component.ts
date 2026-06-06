@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ethers } from 'ethers';
+import { formatUnitsHuman } from '../../../core/format/number-format';
 
 import { ProtocolDataService, type ProtocolOracleInfo } from '../../../services/shared/data/protocol-data.service';
 
@@ -69,10 +70,16 @@ export class OraclesComponent {
   formatPrice(row: ProtocolOracleInfo | null): string {
     if (!row || row.price == null) return '—';
     try {
-      return ethers.formatUnits(row.price, row.decimals ?? 18);
+      return formatUnitsHuman(row.price, row.decimals ?? 18, { maxDecimals: 6, mode: 'scaled-small', compactFrom: 1_000_000 });
     } catch {
       return row.price.toString();
     }
+  }
+
+
+  formatClientCheck(value: number | null | undefined): string {
+    if (!value || value <= 0) return '—';
+    return new Date(value).toLocaleString();
   }
 
   formatTimestamp(value: bigint | null): string {

@@ -370,7 +370,8 @@
           <button
             type="button"
             class="sethx-refresh-button"
-            [class.is-refreshing]="triggers.refreshing()"
+            [class.is-refreshing]="triggers.refreshing() || refreshPulse()"
+            [class.is-clicked]="refreshPulse()"
             [attr.title]="'Refresh active page · ' + lastRefreshText()"
             (click)="refreshCurrentPage()"
           >

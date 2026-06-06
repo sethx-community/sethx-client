@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { formatTokenAmount } from '../../core/format/number-format';
 
 import { RequirementRow } from '../../core/modals/confirmation/confirmation-modal.component';
 
@@ -39,7 +39,7 @@ export function buildOrderFlowRequirementRows(
     const symbol = formatters.tokenSymbol(key);
     const decimals = formatters.tokenDecimals(key);
     const available = formatters.availableRaw(key);
-    const fmt = (raw: bigint) => `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+    const fmt = (raw: bigint) => formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
 
     return {
       tokenSymbol: symbol,

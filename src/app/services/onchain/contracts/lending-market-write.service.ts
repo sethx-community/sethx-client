@@ -103,7 +103,7 @@ export class LendingMarketWriteService {
     }
 
     const account = this.selectedAccountOrThrow();
-    const type = this.accounts.accountType(account);
+    const type = this.normalOrLendingAccountType(account);
 
     if (args.side === 1 && type !== 'lending') {
       throw new Error('Borrow orders require a lending account. Select or create a lending account first.');
@@ -163,7 +163,7 @@ export class LendingMarketWriteService {
     if (args.orderExpiry > args.marketExpiry) throw new Error('Order expiry cannot be later than the new market maturity.');
 
     const account = this.selectedAccountOrThrow();
-    const type = this.accounts.accountType(account);
+    const type = this.normalOrLendingAccountType(account);
     if (type !== 'lending') throw new Error('Rollover orders require a lending account with active debt.');
 
     const newMarketKey = this.marketKeyFor({ borrowToken: args.borrowToken, marketExpiry: args.marketExpiry, riskLevel: args.riskLevel });
@@ -204,7 +204,7 @@ export class LendingMarketWriteService {
     }
 
     const account = this.selectedAccountOrThrow();
-    const type = this.accounts.accountType(account);
+    const type = this.normalOrLendingAccountType(account);
     const contract = await this.accountContract(account, type);
 
     // Both Account and LendingAccount expose cancelLendOrder, and the underlying
@@ -225,7 +225,7 @@ export class LendingMarketWriteService {
     if (args.amount <= 0n) throw new Error('Repayment amount must be greater than zero.');
 
     const account = this.selectedAccountOrThrow();
-    const type = this.accounts.accountType(account);
+    const type = this.normalOrLendingAccountType(account);
     if (type !== 'lending') {
       throw new Error('Debt repayment requires the selected account to be a lending account.');
     }
@@ -259,7 +259,7 @@ export class LendingMarketWriteService {
     }
 
     const account = this.selectedAccountOrThrow();
-    const type = this.accounts.accountType(account);
+    const type = this.normalOrLendingAccountType(account);
     const contract = await this.accountContract(account, type);
 
     if (type === 'lending') {
@@ -304,6 +304,13 @@ export class LendingMarketWriteService {
     if (!signer) throw new Error('No wallet signer available.');
     return new Contract(this.treasuryTradeModuleAddress, TreasuryTradeModuleAbi, signer);
   }
+
+  private normalOrLendingAccountType(account: string): 'normal' | 'lending' {
+    const type = this.accounts.accountType(account);
+    if (type === 'normal' || type === 'lending') return type;
+    throw new Error('This lending action requires a normal or lending account. Use the treasury action path for treasury accounts.');
+  }
+
 
   private async accountContract(account: string, type: 'normal' | 'lending'): Promise<Contract> {
     const provider = await this.wallet.getEthersProvider();

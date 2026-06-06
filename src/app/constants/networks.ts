@@ -20,8 +20,8 @@ export const NETWORKS: Record<NetworkName, Chain> = {
     name: 'Sepolia',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: {
-      default: { http: [''] },
-      public: { http: ['https://rpc.sepolia.org'] },
+      default: { http: ['https://ethereum-sepolia-rpc.publicnode.com'] },
+      public: { http: ['https://ethereum-sepolia-rpc.publicnode.com'] },
     },
     blockExplorers: {
       default: { name: 'Sepolia Etherscan', url: 'https://sepolia.etherscan.io' },
@@ -32,8 +32,8 @@ export const NETWORKS: Record<NetworkName, Chain> = {
     name: 'Ethereum Mainnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: {
-      default: { http: [''] },
-      public: { http: ['https://rpc.ankr.com/eth'] },
+      default: { http: ['https://ethereum-rpc.publicnode.com'] },
+      public: { http: ['https://ethereum-rpc.publicnode.com'] },
     },
     blockExplorers: {
       default: { name: 'Etherscan', url: 'https://etherscan.io' },

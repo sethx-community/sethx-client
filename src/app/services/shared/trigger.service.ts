@@ -143,7 +143,7 @@ export class TriggerService {
     this.markRefreshed();
   }
 
-  refreshActiveRoute(url: string, includeBackground = true): void {
+  refreshActiveRoute(url: string, includeBackground = false): void {
     const active = this.domainsForUrl(url);
     this._refreshing.set(true);
     this.refreshDomains(active);
@@ -158,6 +158,10 @@ export class TriggerService {
       );
       this.refreshDomains(background);
     }, 750);
+  }
+
+  refreshActiveRouteSilently(url: string): void {
+    this.refreshDomains(this.domainsForUrl(url));
   }
 
   domainsForUrl(url: string): RefreshDomain[] {
@@ -234,23 +238,24 @@ export class TriggerService {
           "futures",
           "lending",
           "warnings",
+          "treasury",
         ]);
         return;
       }
 
       case "accountCreated": {
-        this.refreshDomains(["accounts", "portfolio", "warnings"]);
+        this.refreshDomains(["accounts", "portfolio", "treasury", "warnings"]);
         return;
       }
 
       case "accountsChanged": {
-        this.refreshDomains(["portfolio", "warnings"]);
+        this.refreshDomains(["portfolio", "treasury", "warnings"]);
         return;
       }
 
       case "deposit":
       case "withdraw": {
-        this.refreshDomains(["portfolio", "vault", "warnings"]);
+        this.refreshDomains(["portfolio", "vault", "treasury", "warnings"]);
         return;
       }
 
@@ -293,6 +298,7 @@ export class TriggerService {
           "futures",
           "lending",
           "warnings",
+          "treasury",
         ]);
         return;
       }

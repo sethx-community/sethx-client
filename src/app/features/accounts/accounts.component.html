@@ -27,7 +27,7 @@
       </label>
     </div>
 
-    @if (status() === 'pending') {
+    @if (accounts.isInitialLoading()) {
       <div class="sethx-info-note">Loading accounts…</div>
     } @else if (visibleAccounts().length === 0) {
       <div class="rounded border border-frame p-6 text-center">
@@ -62,7 +62,7 @@
               </div>
 
               <div class="sethx-readonly-value">
-                {{ account.type === 'lending' ? 'Margin account' : 'Trading account' }}
+                {{ accountTypeLabel(account) }}
               </div>
 
               <div>
@@ -98,34 +98,39 @@
                 <button
                   type="button"
                   class="sethx-action-link"
+                  [disabled]="account.type === 'treasury'"
                   (click)="startRename(account)"
                 >
-                  Rename
+                  {{ account.type === 'treasury' ? 'Managed' : 'Rename' }}
                 </button>
 
-                @if (account.active) {
-                  <button
-                    type="button"
-                    class="sethx-action-link"
-                    [disabled]="updatingAccount() === account.address"
-                    (click)="setActive(account, false)"
-                  >
-                    Deactivate
-                  </button>
+                @if (account.type !== 'treasury') {
+                  @if (account.active) {
+                    <button
+                      type="button"
+                      class="sethx-action-link"
+                      [disabled]="updatingAccount() === account.address"
+                      (click)="setActive(account, false)"
+                    >
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="sethx-action-link"
+                      [disabled]="updatingAccount() === account.address"
+                      (click)="setActive(account, true)"
+                    >
+                      Activate
+                    </button>
+                  }
                 } @else {
-                  <button
-                    type="button"
-                    class="sethx-action-link"
-                    [disabled]="updatingAccount() === account.address"
-                    (click)="setActive(account, true)"
-                  >
-                    Activate
-                  </button>
+                  <span class="sethx-muted-value">Treasury module</span>
                 }
               </div>
             </div>
 
-            @if (editingAccount() === account.address) {
+            @if (editingAccount() === account.address && account.type !== 'treasury') {
               <div class="border-b border-trade-border py-4">
                 <div class="sethx-edit-panel">
                   <div class="mb-3 flex items-start justify-between gap-4">

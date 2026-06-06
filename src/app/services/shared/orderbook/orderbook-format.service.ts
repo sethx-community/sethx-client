@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatUnitsHuman } from '../../../core/format/number-format';
 import { ETH_ADDRESS } from '../main.tokens';
 import { normAddr, shortAddr } from '../../../core/tokens/token-normalize';
 import { SpotOrder } from '../../onchain/contracts/token-spot-orderbook-read.service';
@@ -36,7 +37,7 @@ export class OrderBookFormatService {
 
   formatAmount(o: SpotOrder): string {
     const dec = this.tokenDecimals(o.baseToken);
-    return ethers.formatUnits(o.amount, dec);
+    return formatUnitsHuman(o.amount, dec, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   /**
@@ -53,12 +54,12 @@ export class OrderBookFormatService {
     if (diff > 0) p18 = p18 * 10n ** BigInt(diff);
     if (diff < 0) p18 = p18 / 10n ** BigInt(-diff);
 
-    return ethers.formatUnits(p18, 18);
+    return formatUnitsHuman(p18, 18, { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 });
   }
 
   formatPriceP18(p18: bigint | null | undefined): string {
     if (p18 === null || p18 === undefined) return '—';
-    return ethers.formatUnits(p18, 18);
+    return formatUnitsHuman(p18, 18, { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 });
   }
 
   // -------- time / expiry --------

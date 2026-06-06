@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatTokenAmount } from '../../../core/format/number-format';
 import type { ConfirmationField, RequirementRow } from '../../../core/modals/confirmation/confirmation-modal.component';
 import { AccountContractService } from '../../onchain/contracts/account-contract.service';
 import { ContractRegistryService } from '../../../contracts/contract-registry.service';
@@ -134,7 +135,7 @@ export class BinaryOptionsOrderBookActionsService {
     if (fee?.percentageAmount && fee.percentageAmount > 0n && norm(fee.percentageToken) === norm(ZERO_ADDRESS)) comps.push({ label: 'Percentage fee lock', raw: fee.percentageAmount });
     const total = comps.reduce((sum, c) => sum + c.raw, 0n);
     const available = this.ethAvailableRaw();
-    const fmt = (raw: bigint) => `${ethers.formatEther(raw)} ETH`;
+    const fmt = (raw: bigint) => formatTokenAmount(raw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 });
     return [{
       tokenSymbol: 'ETH',
       tokenAddress: 'address(0)',

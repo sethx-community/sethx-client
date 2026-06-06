@@ -1,6 +1,8 @@
 import { Component, signal, inject, computed, resource } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ethers } from 'ethers';
+import { formatDecimal, formatUnitsHuman } from '../../core/format/number-format';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 
 import { TradeSettingsService } from '../../services/shared/trade-settings.service';
 import { PortfolioService } from '../../services/onchain/portfolio.service';
@@ -66,7 +68,7 @@ export class PortfolioComponent {
   readonly portfolioError = this.portfolio.readError;
   readonly lastRefreshedAt = this.portfolio.lastRefreshedAt;
 
-  readonly isLoading = computed(() => this.portfolioStatus() === 'pending');
+  readonly isLoading = computed(() => this.portfolioStatus() === 'pending' && this.balanceEntryCount() === 0);
 
   readonly selectedAccountLabel = computed(() => {
     const account = this.settings.selectedAccountId();
@@ -123,7 +125,7 @@ export class PortfolioComponent {
   });
 
   readonly allAccountTokenValueText = computed(() =>
-    `$${this.allAccountTokenValue().toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+    `${formatDecimal(this.allAccountTokenValue(), { maxDecimals: 4, compactFrom: 1_000_000 })} ETH`,
   );
 
   readonly selectedTokenStats = computed(() => {
@@ -159,7 +161,7 @@ export class PortfolioComponent {
   });
 
   readonly selectedTokenEthValueText = computed(() =>
-    `${this.selectedTokenStats().ethValue.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`,
+    `${formatDecimal(this.selectedTokenStats().ethValue, { maxDecimals: 4, compactFrom: 1_000_000 })} ETH`,
   );
 
   readonly balanceEntryCount = computed(
@@ -172,7 +174,12 @@ export class PortfolioComponent {
   readonly binaryOptionsPositionCount = computed(() => this.binaryOptionsStore.myPositions().length);
   readonly nftHoldingCount = computed(() => this.nftSpotStore.myNfts().length);
 
-  readonly lendingSnapshot = computed(() => this.lendingSnapshotResource.value() ?? { debts: [], pendingDebts: [], bonds: [], orders: [] });
+  private readonly stableLendingSnapshot = stableResourceValue(
+    () => this.lendingSnapshotResource.value(),
+    { debts: [], pendingDebts: [], bonds: [], orders: [] },
+    { resetKey: () => this.selectedAccountKey() },
+  );
+  readonly lendingSnapshot = computed(() => this.stableLendingSnapshot());
   readonly lendingBorrowedAmount = computed(() => {
     const snapshot = this.lendingSnapshot();
     return snapshot.debts.reduce((sum, row) => sum + row.principal, 0n)
@@ -323,7 +330,7 @@ export class PortfolioComponent {
     try {
       const amount = Number(ethers.formatEther(value ?? 0n));
       if (!Number.isFinite(amount)) return '0 ETH';
-      return `${amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`;
+      return `${formatDecimal(amount, { maxDecimals: 4, compactFrom: 1_000_000 })} ETH`;
     } catch {
       return '0 ETH';
     }

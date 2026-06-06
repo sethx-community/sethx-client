@@ -8,18 +8,20 @@ import {
 } from '@angular/core';
 import { TriggerService } from './trigger.service';
 import { AccountsChainService } from '../onchain/accounts.service';
+import { TreasuryModeService } from './treasury-mode.service';
 import { norm } from '../../core/tokens/token-normalize';
 
 @Injectable({ providedIn: 'root' })
 export class TradeSettingsService {
   private readonly trigger = inject(TriggerService);
   private readonly accountsSvc = inject(AccountsChainService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   // user intent
   private readonly _requestedAccountId = signal<string | null>(null);
 
   // effective selection (requested if valid, else first, else null)
-  readonly selectedAccountId = computed<string | null>(() => {
+  readonly selectedPersonalAccountId = computed<string | null>(() => {
     const list = (this.accountsSvc.accounts() ?? []).map(norm);
     if (list.length === 0) return null;
 
@@ -27,6 +29,15 @@ export class TradeSettingsService {
     const r = req ? norm(req) : null;
 
     return r && list.includes(r) ? r : list[0];
+  });
+
+  readonly selectedAccountId = computed<string | null>(() => {
+    const treasuryAccount = this.treasuryMode.selectedTreasuryAccount();
+    if (this.treasuryMode.actingAsTreasurer() && treasuryAccount && this.treasuryMode.selectedAccountAccess()) {
+      return norm(treasuryAccount);
+    }
+
+    return this.selectedPersonalAccountId();
   });
 
   constructor() {

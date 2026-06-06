@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
+import { stableResourceValue } from '../../../core/signals/stable-resource';
 import { formatEther } from 'ethers';
 
 import { FeeService } from '../../../services/shared/fee.service';
@@ -82,7 +83,8 @@ export class FeeRatesComponent {
     },
   });
 
-  readonly feeContexts = computed(() => this._feeContextsRes.value() ?? []);
+  private readonly _stableFeeContexts = stableResourceValue(() => this._feeContextsRes.value(), [] as FeeContextRead[]);
+  readonly feeContexts = computed(() => this._stableFeeContexts());
   readonly feeContextStatus = computed(() => this._feeContextsRes.status());
   readonly configuredCount = computed(
     () => this.feeContexts().filter((row) => row.configured).length,

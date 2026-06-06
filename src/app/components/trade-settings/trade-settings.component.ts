@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { AccountsChainService } from '../../services/onchain/accounts.service';
 import { isEthLike, norm, toAddr } from '../../core/tokens/token-normalize';
 import { TokenService } from '../../services/shared/token.service';
+import { TreasuryModeService } from '../../services/shared/treasury-mode.service';
 
 @Component({
   selector: 'app-trade-settings',
@@ -19,6 +20,7 @@ export class TradeSettingsComponent {
   @Input() showContext = true;
   readonly settings = inject(TradeSettingsService);
   readonly accountsService = inject(AccountsChainService);
+  private readonly treasuryMode = inject(TreasuryModeService);
   private readonly feeService = inject(FeeService);
   private readonly tokenService = inject(TokenService);
 
@@ -57,7 +59,21 @@ export class TradeSettingsComponent {
 
   setAccountId(v: string): void {
     const key = norm((v ?? '').trim());
-    this.settings.selectAccount(key || null);
+    if (!key) {
+      this.treasuryMode.setActingAsTreasurer(false);
+      this.settings.selectAccount(null);
+      return;
+    }
+
+    const record = this.accountsService.accountRecords().find((account) => norm(account.address) === key);
+    if (record?.type === 'treasury') {
+      this.treasuryMode.selectTreasuryAccount(record.address);
+      this.treasuryMode.setActingAsTreasurer(true);
+      return;
+    }
+
+    this.treasuryMode.setActingAsTreasurer(false);
+    this.settings.selectAccount(key);
   }
 
   accountLabel(account: string): string {

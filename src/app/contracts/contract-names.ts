@@ -19,7 +19,6 @@ export type ContractName =
   | 'MarginOptionsOrderBook'
   | 'FuturesContract'
   | 'FuturesOrderBook'
-  | 'SettlementManager'
   | 'LendingContract'
   | 'LendingOrderBook'
   | 'OptionsValuationAdapter'
@@ -58,7 +57,6 @@ export const CONTRACT_NAMES = [
   'MarginOptionsOrderBook',
   'FuturesContract',
   'FuturesOrderBook',
-  'SettlementManager',
   'LendingContract',
   'LendingOrderBook',
   'OptionsValuationAdapter',

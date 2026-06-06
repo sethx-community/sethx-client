@@ -6,6 +6,7 @@ import {
   AccountsChainService,
 } from '../../services/onchain/accounts.service';
 import { TradeSettingsService } from '../../services/shared/trade-settings.service';
+import { TreasuryModeService } from '../../services/shared/treasury-mode.service';
 
 @Component({
   selector: 'app-accounts',
@@ -17,6 +18,7 @@ import { TradeSettingsService } from '../../services/shared/trade-settings.servi
 export class AccountsComponent {
   readonly accounts = inject(AccountsChainService);
   private readonly tradeSettings = inject(TradeSettingsService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   readonly showAll = signal(false);
   readonly editingAccount = signal<string | null>(null);
@@ -43,6 +45,7 @@ export class AccountsComponent {
   );
 
   startRename(account: AccountRecord): void {
+    if (account.type === 'treasury') return;
     this.editingAccount.set(account.address);
     this.editingName.set(account.name || '');
   }
@@ -53,6 +56,7 @@ export class AccountsComponent {
   }
 
   async saveRename(account: AccountRecord): Promise<void> {
+    if (account.type === 'treasury') return;
     this.localError.set(null);
 
     try {
@@ -64,6 +68,7 @@ export class AccountsComponent {
   }
 
   async setActive(account: AccountRecord, active: boolean): Promise<void> {
+    if (account.type === 'treasury') return;
     this.localError.set(null);
 
     try {
@@ -79,7 +84,20 @@ export class AccountsComponent {
 
   selectAccount(account: AccountRecord): void {
     if (!account.active) return;
+
+    if (account.type === 'treasury') {
+      this.treasuryMode.selectTreasuryAccount(account.address);
+      this.treasuryMode.setActingAsTreasurer(true);
+      return;
+    }
+
+    this.treasuryMode.setActingAsTreasurer(false);
     this.tradeSettings.selectAccount(account.address);
+  }
+
+  accountTypeLabel(account: AccountRecord): string {
+    if (account.type === 'treasury') return 'Treasury account';
+    return account.type === 'lending' ? 'Margin account' : 'Trading account';
   }
 
   async copyAddress(address: string): Promise<void> {

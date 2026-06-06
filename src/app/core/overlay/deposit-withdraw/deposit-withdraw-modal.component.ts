@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ethers, isAddress } from 'ethers';
+import { formatUnitsHuman } from '../../format/number-format';
 import { ETH_ADDRESS } from '../../../services/shared/main.tokens';
 import {
   ConfirmationModalComponent,
@@ -237,7 +238,7 @@ export class DepositWithdrawModalComponent implements OnInit {
     if (value == null) return '—';
     const decimals = this.data.asset === 'ETH' ? 18 : this.tokenDecimals();
     const symbol = this.data.asset === 'ETH' ? 'ETH' : this.tokenSymbol();
-    return `${ethers.formatUnits(value, decimals)} ${symbol}`;
+    return `${formatUnitsHuman(value, decimals, { maxDecimals: 6, compactFrom: 1_000_000 })} ${symbol}`;
   }
 
   closeAll(result?: any) {

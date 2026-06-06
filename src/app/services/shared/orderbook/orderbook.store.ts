@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
+import { stableResourceValue } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 import { ETH_ADDRESS } from '../main.tokens';
 import { SpotOrder } from '../../onchain/contracts/token-spot-orderbook-read.service';
@@ -273,16 +274,32 @@ export class OrderBookStore {
     },
   });
 
-  // ---- public computed exposures (NO raw resources) ----
-  readonly books = computed(() => this._booksRes.value() ?? []);
+  // ---- public computed exposures (stable committed values, not raw resources) ----
+  private readonly _stableBooks = stableResourceValue(
+    () => this._booksRes.value(),
+    [] as Book[],
+    { resetKey: () => `${this.bookOffset()}|${this.bookLimit()}` },
+  );
+  private readonly _stableBookOrders = stableResourceValue(
+    () => this._ordersRes.value(),
+    [] as SpotOrder[],
+    { resetKey: () => this.selectedBookKey() },
+  );
+  private readonly _stableMyOrders = stableResourceValue(
+    () => this._myOrdersRes.value(),
+    [] as SpotOrder[],
+    { resetKey: () => this.activeAccount() },
+  );
+
+  readonly books = computed(() => this._stableBooks());
   readonly booksStatus = computed(() => this._booksRes.status());
   readonly booksError = computed(() => this._booksRes.error() ?? null);
 
-  readonly bookOrders = computed(() => this._ordersRes.value() ?? []);
+  readonly bookOrders = computed(() => this._stableBookOrders());
   readonly ordersStatus = computed(() => this._ordersRes.status());
   readonly ordersError = computed(() => this._ordersRes.error() ?? null);
 
-  readonly myOrders = computed(() => this._myOrdersRes.value() ?? []);
+  readonly myOrders = computed(() => this._stableMyOrders());
   readonly myOrdersStatus = computed(() => this._myOrdersRes.status());
   readonly myOrdersError = computed(() => this._myOrdersRes.error() ?? null);
 

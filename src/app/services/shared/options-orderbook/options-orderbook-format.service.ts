@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatUnitsHuman, formatTokenAmount, formatDecimal } from '../../../core/format/number-format';
 import { ETH_ADDRESS } from '../main.tokens';
 import { normAddr, shortAddr } from '../../../core/tokens/token-normalize';
 import { TokenService } from '../token.service';
@@ -28,7 +29,7 @@ export class OptionsOrderBookFormatService {
 
   formatSize(sizeRaw: bigint, assetToken: string): string {
     const dec = this.tokenDecimals(assetToken);
-    return ethers.formatUnits(sizeRaw, dec);
+    return formatUnitsHuman(sizeRaw, dec, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   /**
@@ -49,6 +50,6 @@ export class OptionsOrderBookFormatService {
     if (diff > 0) p18 = p18 * 10n ** BigInt(diff);
     if (diff < 0) p18 = p18 / 10n ** BigInt(-diff);
 
-    return ethers.formatUnits(p18, 18);
+    return formatUnitsHuman(p18, 18, { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 });
   }
 }

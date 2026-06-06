@@ -21,7 +21,6 @@ export const CONTRACT_ADDRESSES = {
   MarginOptionsOrderBook: DEPLOYED_ADDRESSES.marginOptionsOrderBook,
   FuturesContract: DEPLOYED_ADDRESSES.futuresContract,
   FuturesOrderBook: DEPLOYED_ADDRESSES.futuresOrderBook,
-  SettlementManager: DEPLOYED_ADDRESSES.settlementManager,
   LendingContract: DEPLOYED_ADDRESSES.lendingContract,
   LendingOrderBook: DEPLOYED_ADDRESSES.lendingOrderBook,
   OptionsValuationAdapter: DEPLOYED_ADDRESSES.optionsValuationAdapter,

@@ -20,6 +20,25 @@ export type TreasuryAssetOverview = { ethBal: bigint; tokens: string[]; balances
 export type TreasuryAccountBalance = { ethBalance: bigint; lockedEthBalance: bigint; tokenBalance: bigint; lockedTokenBalance: bigint };
 export type PassivePoolWithdrawalRequest = { shares: bigint; requestedAt: bigint };
 
+function debugValue(value: unknown): unknown {
+  if (typeof value === 'bigint') return value.toString();
+  if (Array.isArray(value)) return value.map((item) => debugValue(item));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = debugValue(item);
+    }
+    return out;
+  }
+  return value;
+}
+
+function debugGroup(title: string, payload: Record<string, unknown>): void {
+  console.groupCollapsed(title);
+  console.log(debugValue(payload));
+  console.groupEnd();
+}
+
 @Injectable({ providedIn: 'root' })
 export class TreasuryContractService {
   private readonly wallet = inject(WalletConnectService);
@@ -97,7 +116,29 @@ export class TreasuryContractService {
 
   async getTreasuryAccounts(): Promise<string[]> {
     const trade = await this.tradeModule();
-    return [...((await trade['getTreasuryAccounts']()) as string[])];
+    const accounts = new Set<string>();
+
+    const addAccount = (value: unknown): void => {
+      const account = String(value ?? '');
+      if (!ethers.isAddress(account) || account === ethers.ZeroAddress) return;
+      accounts.add(ethers.getAddress(account));
+    };
+
+    try {
+      const listed = (await trade['getTreasuryAccounts']()) as unknown[];
+      for (const account of listed ?? []) addAccount(account);
+    } catch {
+      // Older deployments or provider hiccups should not prevent the UI from
+      // discovering the most recent treasury account below.
+    }
+
+    try {
+      addAccount(await trade['latestTreasuryAccount']());
+    } catch {
+      // Optional fallback only.
+    }
+
+    return [...accounts];
   }
 
   async treasuryAccountBalance(account: string, token: string): Promise<TreasuryAccountBalance> {
@@ -114,6 +155,88 @@ export class TreasuryContractService {
       tokenBalance: BigInt(tokenBalance ?? 0),
       lockedTokenBalance: BigInt(lockedTokenBalance ?? 0),
     };
+  }
+
+
+  private async waitForTransaction(tx: any): Promise<string | null> {
+    const receipt = await tx.wait?.();
+    return receipt?.hash ?? tx.hash ?? null;
+  }
+
+  async placeSpotOrder(params: {
+    account: string;
+    orderBook: string;
+    feeToken: string;
+    baseToken: string;
+    quoteToken: string;
+    side: 0 | 1;
+    price: bigint;
+    amount: bigint;
+    expiry: bigint;
+  }): Promise<string | null> {
+    const trade = await this.tradeModule();
+    const signerAddress = await this.currentAddress().catch(() => null);
+
+    debugGroup('[SethX treasury spot order] before send', {
+      from: signerAddress,
+      to: this.tradeModuleAddress,
+      method: 'TreasuryTradeModule.placeSpotOrder',
+      account: params.account,
+      orderBook: params.orderBook,
+      feeToken: params.feeToken,
+      baseToken: params.baseToken,
+      quoteToken: params.quoteToken,
+      side: params.side,
+      price: params.price,
+      amount: params.amount,
+      expiry: params.expiry,
+    });
+
+    try {
+      const tx = await trade['placeSpotOrder'](
+        params.account,
+        params.orderBook,
+        params.feeToken,
+        params.baseToken,
+        params.quoteToken,
+        params.side,
+        params.price,
+        params.amount,
+        params.expiry,
+      );
+
+      debugGroup('[SethX treasury spot order] submitted', {
+        hash: tx?.hash,
+        from: signerAddress,
+        to: this.tradeModuleAddress,
+      });
+
+      return this.waitForTransaction(tx);
+    } catch (e: any) {
+      debugGroup('[SethX treasury spot order] reverted before submit', {
+        code: e?.code,
+        data: e?.data,
+        reason: e?.reason,
+        shortMessage: e?.shortMessage,
+        message: e?.message,
+        transaction: e?.transaction ?? e?.tx,
+      });
+      throw e;
+    }
+  }
+
+  async cancelSpotOrder(params: {
+    account: string;
+    orderBook: string;
+    orderId: bigint;
+  }): Promise<string | null> {
+    const trade = await this.tradeModule();
+    const tx = await trade['cancelSpotOrder'](
+      params.account,
+      params.orderBook,
+      params.orderId,
+    );
+    return this.waitForTransaction(tx);
   }
 
   async openTreasuryAccount(): Promise<unknown> {

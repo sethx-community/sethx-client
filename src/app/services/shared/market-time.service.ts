@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, resource } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { JsonRpcProvider } from 'ethers';
 
 import { CURRENT_NETWORK } from '../../constants/network.config';
@@ -38,9 +39,9 @@ export class MarketTimeService {
     },
   });
 
-  readonly chainTimestamp = computed(() =>
-    this._chainTime.value() ?? Math.floor(Date.now() / 1000),
-  );
+  private readonly _stableChainTimestamp = stableResourceValue(() => this._chainTime.value(), Math.floor(Date.now() / 1000));
+
+  readonly chainTimestamp = computed(() => this._stableChainTimestamp());
 
   isFutureTimestamp(value: bigint | number | string | null | undefined, now = this.chainTimestamp()): boolean {
     const ts = toNumber(value);

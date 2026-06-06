@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ethers, isAddress, JsonRpcProvider } from 'ethers';
+import { formatUnitsHuman, formatTokenAmount } from '../../core/format/number-format';
 
 import { TradeSettingsService } from '../../services/shared/trade-settings.service';
 import { TokenService, TokenInfo } from '../../services/shared/token.service';
@@ -254,7 +255,7 @@ export class SpotOrderDraftService {
 
     const totalRaw = (amt * price) / ONE_E18;
     try {
-      return ethers.formatUnits(totalRaw, this.quoteDecimals());
+      return formatUnitsHuman(totalRaw, this.quoteDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 });
     } catch {
       return '0';
     }
@@ -393,10 +394,7 @@ export class SpotOrderDraftService {
       this.side() === 'buy' ? 'You pay / lock (quote)' : 'You sell / lock (base)';
 
     const totalQuoteRaw = (amountBaseRaw * priceFixed) / ONE_E18;
-    const totalQuoteHuman = ethers.formatUnits(
-      totalQuoteRaw,
-      this.quoteDecimals(),
-    );
+    const totalQuoteHuman = formatUnitsHuman(totalQuoteRaw, this.quoteDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 });
 
     const fields: ConfirmationField[] = [
       { label: 'Side', value: sideLabel },
@@ -860,7 +858,7 @@ export class SpotOrderDraftService {
     const info = this.tokens.getToken(key)();
     const decimals = info?.decimals ?? 18;
     const symbol = info?.symbol ?? (key === n(ETH_ADDRESS) ? 'ETH' : shortAddr(key));
-    return `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+    return formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   private buildRequirementsFromFee(

@@ -30,6 +30,7 @@ import {
 } from '../../../services/shared/token.service';
 import { AccountsChainService } from '../../../services/onchain/accounts.service';
 import { ETH_ADDRESS } from '../../../services/shared/main.tokens';
+import { formatDecimal, formatUnitsHuman } from '../../../core/format/number-format';
 
 const NATIVE_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
@@ -255,10 +256,7 @@ export class Erc20TradeComponent {
 
   private formatBookVolume(value: bigint, tokenAddress: string): string {
     const decimals = this.tokenDecimals(tokenAddress);
-    const formatted = ethers.formatUnits(value ?? 0n, decimals);
-    const numeric = Number(formatted);
-    if (!Number.isFinite(numeric)) return formatted;
-    return numeric === 0 ? '0' : numeric.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    return formatUnitsHuman(value ?? 0n, decimals, { maxDecimals: 4, compactFrom: 1_000_000 });
   }
 
   private tokenDecimals(tokenAddress: string): number {
@@ -507,13 +505,13 @@ export class Erc20TradeComponent {
     const amt = Number(amount);
     if (!Number.isFinite(amt)) return '—';
     if (this.showTokenUSD() && price != null)
-      return '$' + (amt * price).toFixed(2);
-    return amt.toFixed(4);
+      return '$' + formatDecimal((amt * price).toFixed(2), { maxDecimals: 2, compactFrom: 1_000_000 });
+    return formatDecimal(amount, { maxDecimals: 4, compactFrom: 1_000_000 });
   }
 
   getFormattedTokenAmount(tokenAddress: string, decimals = 18): string {
     const raw = this.tokenBalanceEntry(tokenAddress)?.balance ?? 0n;
-    return ethers.formatUnits(raw, decimals);
+    return formatUnitsHuman(raw, decimals, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   getFormattedTokenValue(tokenAddress: string, decimals = 18): string {
@@ -525,7 +523,7 @@ export class Erc20TradeComponent {
 
   getFormattedLockedAmount(tokenAddress: string, decimals = 18): string {
     const raw = this.tokenBalanceEntry(tokenAddress)?.locked ?? 0n;
-    return ethers.formatUnits(raw, decimals);
+    return formatUnitsHuman(raw, decimals, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   getFormattedLockedValue(tokenAddress: string, decimals = 18): string {
@@ -539,7 +537,7 @@ export class Erc20TradeComponent {
     const entry = this.tokenBalanceEntry(tokenAddress);
     const balance = entry?.balance ?? 0n;
     const locked = entry?.locked ?? 0n;
-    return ethers.formatUnits(balance - locked, decimals);
+    return formatUnitsHuman(balance - locked, decimals, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   getFormattedAvailableValue(tokenAddress: string, decimals = 18): string {
@@ -560,7 +558,7 @@ export class Erc20TradeComponent {
     const info = this.tokenPrices(address)();
     const p = info?.prices?.oracle?.price ?? 0;
     if (p == null || !Number.isFinite(p)) return '—';
-    return `$${p}`;
+    return `$${formatDecimal(p, { maxDecimals: 6, compactFrom: 1_000_000, mode: 'scaled-small' })}`;
   }
 
   getOracleChangePercent(address: string): string {

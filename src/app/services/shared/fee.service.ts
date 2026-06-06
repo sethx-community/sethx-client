@@ -6,6 +6,7 @@ import {
   signal,
   effect,
 } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import {
   FeeManagerContractService,
   FeeOutput,
@@ -78,9 +79,8 @@ export class FeeService {
     loader: async () => (await this.fees.getAcceptedPaymentTokens()) ?? [],
   });
 
-  readonly acceptedPaymentTokens = computed(
-    () => this._acceptedTokensRes.value() ?? [],
-  );
+  private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[]);
+  readonly acceptedPaymentTokens = computed(() => this._stableAcceptedPaymentTokens());
   readonly acceptedPaymentTokensStatus = computed(() =>
     this._acceptedTokensRes.status(),
   );
@@ -94,7 +94,8 @@ export class FeeService {
     loader: async () => (await this.fees.getSethxToken()) ?? null,
   });
 
-  readonly sethxToken = computed(() => this._sethxTokenRes.value() ?? null);
+  private readonly _stableSethxToken = stableResourceValue(() => this._sethxTokenRes.value(), null as string | null);
+  readonly sethxToken = computed(() => this._stableSethxToken());
   readonly sethxTokenStatus = computed(() => this._sethxTokenRes.status());
   readonly sethxTokenError = computed(
     () => this._sethxTokenRes.error() ?? null,
@@ -132,7 +133,8 @@ export class FeeService {
     },
   });
 
-  readonly feeQuote = computed(() => this._feeQuoteRes.value() ?? null);
+  private readonly _stableFeeQuote = stableResourceValue(() => this._feeQuoteRes.value(), null as FeeOutput | null, { resetKey: () => JSON.stringify(this._quoteParams()) + '|' + this.settings.preferredFeeToken() });
+  readonly feeQuote = computed(() => this._stableFeeQuote());
   readonly feeQuoteStatus = computed(() => this._feeQuoteRes.status());
   readonly feeQuoteError = computed(() => this._feeQuoteRes.error() ?? null);
 

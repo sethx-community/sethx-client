@@ -22,6 +22,7 @@ import {
   resolveExpiryForContract,
   validateResolvedExpiry,
 } from '../../shared/expiry/expiry-settings';
+import { formatTokenAmount, formatUnitsHuman } from '../../core/format/number-format';
 
 type DraftMode = 'place' | 'cancel';
 type FuturesIntent = 'buy' | 'sell' | 'quote' | 'cancel';
@@ -153,7 +154,7 @@ export class FuturesOrderDraftService {
   }
 
   private fmtToken(raw: bigint, decimals: number, symbol: string): string {
-    return `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+    return formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   private toRequirementRows(
@@ -525,43 +526,43 @@ export class FuturesOrderDraftService {
       },
       {
         label: 'Price',
-        value: `${ethers.formatUnits(priceRaw, oracleDecimals)} ${paymentSymbol}`,
+        value: formatTokenAmount(priceRaw, oracleDecimals, paymentSymbol, { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 }),
       },
       {
         label: 'Amount',
-        value: ethers.formatUnits(amountRaw, 18),
+        value: formatUnitsHuman(amountRaw, 18, { maxDecimals: 6, compactFrom: 1_000_000 }),
       },
       {
         label: 'Payment notional / fee base',
-        value: `${ethers.formatUnits(notionalRaw, 18)} ${paymentSymbol}`,
+        value: formatTokenAmount(notionalRaw, 18, paymentSymbol, { maxDecimals: 6, compactFrom: 1_000_000 }),
       },
       {
         label: 'Expected close amount',
-        value: ethers.formatUnits(expectedCloseAmount, 18),
+        value: formatUnitsHuman(expectedCloseAmount, 18, { maxDecimals: 6, compactFrom: 1_000_000 }),
         tone: expectedCloseAmount > 0n ? 'good' : 'muted',
       },
       {
         label: 'Expected open amount',
-        value: ethers.formatUnits(expectedOpenAmount, 18),
+        value: formatUnitsHuman(expectedOpenAmount, 18, { maxDecimals: 6, compactFrom: 1_000_000 }),
       },
       {
         label: 'Initial margin lock',
-        value: `${ethers.formatUnits(requiredMarginRaw, 18)} ETH`,
+        value: formatTokenAmount(requiredMarginRaw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
         tone: 'good',
       },
       {
         label: 'P&L buffer lock',
-        value: `${ethers.formatUnits(pnlBufferRaw, 18)} ETH`,
+        value: formatTokenAmount(pnlBufferRaw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
         tone: pnlBufferRaw > 0n ? 'good' : 'muted',
       },
       {
         label: 'Total collateral lock',
-        value: `${ethers.formatUnits(collateralLockRaw, 18)} ETH`,
+        value: formatTokenAmount(collateralLockRaw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
         tone: 'good',
       },
       {
         label: 'Payment token lock incl. ETH fees',
-        value: `${ethers.formatUnits(totalEthLockRaw, 18)} ETH`,
+        value: formatTokenAmount(totalEthLockRaw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
         tone: 'good',
       },
       {

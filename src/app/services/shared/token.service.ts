@@ -1,4 +1,5 @@
 import { Injectable, inject, computed, resource, effect } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { isAddress } from 'ethers';
 import { PriceManagerContractService } from '../onchain/contracts/pricemanager-contract.service';
 import { VaultContractService } from '../onchain/contracts/vault-contract.service';
@@ -77,9 +78,8 @@ export class TokenService {
     loader: async () => this._loadTokenIndex(),
   });
 
-  private readonly _index = computed(
-    () => this._indexRes.value() ?? { main: [], whitelist: [], other: [] },
-  );
+  private readonly _stableIndex = stableResourceValue(() => this._indexRes.value(), { main: [] as string[], whitelist: [] as string[], other: [] as string[] });
+  private readonly _index = computed(() => this._stableIndex());
 
   private readonly _metaRes = resource<
     Record<string, Meta>,
@@ -124,7 +124,8 @@ export class TokenService {
     },
   });
 
-  private readonly _meta = computed(() => this._metaRes.value() ?? {});
+  private readonly _stableMeta = stableResourceValue(() => this._metaRes.value(), {} as Record<string, Meta>);
+  private readonly _meta = computed(() => this._stableMeta());
 
   constructor() {
     effect(() => {

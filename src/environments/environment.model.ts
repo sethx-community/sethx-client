@@ -18,5 +18,6 @@ export interface SethxClientEnvironment {
   releaseUrl: string;
 
   reownProjectId: string;
+  sethxGraphUrl?: string;
 
 }

@@ -1,4 +1,5 @@
 import { Injectable, inject, resource, computed, effect } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { VaultContractService } from './contracts/vault-contract.service';
 import { TriggerService } from '../shared/trigger.service';
 import { toStatus, type Status } from '../../core/tokens/resource-status';
@@ -36,19 +37,23 @@ export class VaultChainService {
   });
 
   // PUBLIC computeds
-  readonly erc20Tokens = computed(() => this._erc20TokensRes.value() ?? []);
+  private readonly _stableErc20Tokens = stableResourceValue(() => this._erc20TokensRes.value(), [] as string[]);
+  private readonly _stableErc721Tokens = stableResourceValue(() => { const value = this._erc721TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[]);
+  private readonly _stableErc1155Tokens = stableResourceValue(() => { const value = this._erc1155TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[]);
+
+  readonly erc20Tokens = computed(() => this._stableErc20Tokens());
   readonly erc20Status = computed<Status>(() =>
     toStatus(this._erc20TokensRes.status()),
   );
   readonly erc20Error = computed(() => this._erc20TokensRes.error() ?? null);
 
-  readonly erc721Tokens = computed(() => this._erc721TokensRes.value() ?? []);
+  readonly erc721Tokens = computed(() => this._stableErc721Tokens());
   readonly erc721Status = computed<Status>(() =>
     toStatus(this._erc721TokensRes.status()),
   );
   readonly erc721Error = computed(() => this._erc721TokensRes.error() ?? null);
 
-  readonly erc1155Tokens = computed(() => this._erc1155TokensRes.value() ?? []);
+  readonly erc1155Tokens = computed(() => this._stableErc1155Tokens());
   readonly erc1155Status = computed<Status>(() =>
     toStatus(this._erc1155TokensRes.status()),
   );

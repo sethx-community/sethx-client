@@ -6,11 +6,16 @@ import {
   signal,
   effect,
 } from '@angular/core';
+import { ethers } from 'ethers';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { TokenService, TokenInfo } from './token.service';
+import { ETH_ADDRESS } from './main.tokens';
+import { PriceManagerContractService } from '../onchain/contracts/pricemanager-contract.service';
+import { CONTRACT_ADDRESSES } from '../../contracts/generated/addresses';
 import { TriggerService } from './trigger.service';
 import { toStatus, type Status } from '../../core/tokens/resource-status';
 
-export type PriceSource = { price: number | null; timestamp?: number };
+export type PriceSource = { price: number | null; timestamp?: number; checkedAt?: number; source?: string };
 
 export type TokenPriceInfo = {
   address: string;
@@ -30,6 +35,7 @@ export type TokenPriceInfo = {
 export class TokenPriceService {
   private readonly tokenService = inject(TokenService);
   private readonly trigger = inject(TriggerService);
+  private readonly priceManager = inject(PriceManagerContractService);
 
   // ---- previous prices (for delta computation) ----
   private readonly _prevOracle = signal(new Map<string, number | null>());
@@ -130,9 +136,12 @@ export class TokenPriceService {
   }
 
   // PUBLIC computeds (maps)
-  readonly oraclePrices = computed(() => this._oraclePricesRes.value() ?? {});
-  readonly onchainPrices = computed(() => this._onchainPricesRes.value() ?? {});
-  readonly apiPrices = computed(() => this._apiPricesRes.value() ?? {});
+  private readonly _stableOraclePrices = stableResourceValue(() => this._oraclePricesRes.value(), {} as Record<string, PriceSource>);
+  readonly oraclePrices = computed(() => this._stableOraclePrices());
+  private readonly _stableOnchainPrices = stableResourceValue(() => this._onchainPricesRes.value(), {} as Record<string, PriceSource>);
+  readonly onchainPrices = computed(() => this._stableOnchainPrices());
+  private readonly _stableApiPrices = stableResourceValue(() => this._apiPricesRes.value(), {} as Record<string, PriceSource>);
+  readonly apiPrices = computed(() => this._stableApiPrices());
 
   // PUBLIC computeds (status/error)
   readonly status = computed<Status>(() => {
@@ -168,24 +177,25 @@ export class TokenPriceService {
     const key = (address ?? '').toLowerCase();
 
     return computed<TokenPriceInfo>(() => {
+      const nativeKey = this.normalizeTokenAddress(key);
       const oracleMap = this.oraclePrices();
       const onchainMap = this.onchainPrices();
       const apiMap = this.apiPrices();
 
-      const curOracle = oracleMap[key]?.price ?? null;
-      const curOnchain = onchainMap[key]?.price ?? null;
-      const curApi = apiMap[key]?.price ?? null;
+      const curOracle = oracleMap[nativeKey]?.price ?? null;
+      const curOnchain = onchainMap[nativeKey]?.price ?? null;
+      const curApi = apiMap[nativeKey]?.price ?? null;
 
-      const prevO = this._prevOracle().get(key) ?? null;
-      const prevC = this._prevOnchain().get(key) ?? null;
-      const prevA = this._prevApi().get(key) ?? null;
+      const prevO = this._prevOracle().get(nativeKey) ?? null;
+      const prevC = this._prevOnchain().get(nativeKey) ?? null;
+      const prevA = this._prevApi().get(nativeKey) ?? null;
 
       return {
-        address: key,
+        address: nativeKey,
         prices: {
-          oracle: oracleMap[key],
-          onchain: onchainMap[key],
-          api: apiMap[key],
+          oracle: oracleMap[nativeKey],
+          onchain: onchainMap[nativeKey],
+          api: apiMap[nativeKey],
         },
         lastChange: {
           oracle: prevO != null && curOracle != null ? curOracle - prevO : null,
@@ -205,12 +215,14 @@ export class TokenPriceService {
 
     return tokens.map((t) => {
       const key = t.address.toLowerCase();
+      const nativeKey = this.normalizeTokenAddress(key);
+
       return {
-        address: key,
+        address: nativeKey,
         prices: {
-          oracle: oracleMap[key],
-          onchain: onchainMap[key],
-          api: apiMap[key],
+          oracle: oracleMap[nativeKey],
+          onchain: onchainMap[nativeKey],
+          api: apiMap[nativeKey],
         },
         lastChange: { oracle: null, onchain: null, api: null },
       } satisfies TokenPriceInfo;
@@ -232,21 +244,91 @@ export class TokenPriceService {
   }
 
   private async _safeGet(fn: () => Promise<PriceSource>): Promise<PriceSource> {
+    const checkedAt = Date.now();
     try {
       const res = await fn();
-      return { price: res.price ?? 0, timestamp: res.timestamp ?? Date.now() };
+      return { price: res.price ?? 0, timestamp: res.timestamp ?? checkedAt, checkedAt, source: res.source };
     } catch {
-      return { price: 0, timestamp: Date.now() };
+      return { price: 0, timestamp: checkedAt, checkedAt };
     }
   }
 
   private async _getPriceFromChain(_address: string): Promise<PriceSource> {
-    return { price: 0, timestamp: Date.now() };
+    return { price: 0, timestamp: Date.now(), source: 'chain' };
   }
-  private async _getPriceFromOracle(_address: string): Promise<PriceSource> {
-    return { price: 0, timestamp: Date.now() };
+
+  private async _getPriceFromOracle(address: string): Promise<PriceSource> {
+    const key = this.normalizeTokenAddress(address);
+    const now = Date.now();
+
+    if (this.isNativeEth(key)) {
+      return { price: 1, timestamp: now, source: 'native' };
+    }
+
+    if (key === CONTRACT_ADDRESSES.SethxToken.toLowerCase()) {
+      const sethxPrice = await this.getSethxEthPrice();
+      if (sethxPrice.price != null && sethxPrice.price > 0) return sethxPrice;
+    }
+
+    try {
+      const usable = await this.priceManager.getUsableOracleForTokenContext(key, 1);
+      if (usable.ok && usable.oracle) {
+        const result = await this.priceManager.read('tryGetOraclePriceInEth' as any, [usable.oracle, 1] as any) as any;
+        const ok = Boolean(result?.ok ?? result?.[0] ?? false);
+        const raw = BigInt(result?.priceE18 ?? result?.[1] ?? 0);
+        if (ok && raw > 0n) {
+          return {
+            price: Number(ethers.formatUnits(raw, 18)),
+            timestamp: now,
+            source: 'price-manager',
+          };
+        }
+      }
+    } catch {
+      // Leave as unvalued if PriceManager cannot return a live token price.
+    }
+
+    return { price: 0, timestamp: now, source: 'oracle' };
   }
+
+  private async getSethxEthPrice(): Promise<PriceSource> {
+    const now = Date.now();
+    try {
+      const result = await this.priceManager.read(
+        'getOraclePrice' as any,
+        [CONTRACT_ADDRESSES.SethxFeeConversionOracle, 5] as any,
+      ) as any;
+      const raw = BigInt(result?.price ?? result?.[0] ?? 0);
+      const decimals = Number(result?.priceDecimals ?? result?.[1] ?? 18);
+      const timestampRaw = BigInt(result?.timestamp ?? result?.[2] ?? 0);
+      const sethxPerEth = Number(ethers.formatUnits(raw, decimals));
+      if (Number.isFinite(sethxPerEth) && sethxPerEth > 0) {
+        return {
+          price: 1 / sethxPerEth,
+          timestamp: timestampRaw > 0n ? Number(timestampRaw) * 1000 : now,
+          source: 'sethx-fee-conversion-oracle',
+        };
+      }
+    } catch {
+      // Fall through to unvalued.
+    }
+    return { price: 0, timestamp: now, source: 'sethx-fee-conversion-oracle' };
+  }
+
   private async _getPriceFromAPI(_address: string): Promise<PriceSource> {
-    return { price: 0, timestamp: Date.now() };
+    return { price: 0, timestamp: Date.now(), source: 'api' };
+  }
+
+  private normalizeTokenAddress(address: string): string {
+    const key = String(address ?? '').trim().toLowerCase();
+    return this.isNativeEth(key) ? ETH_ADDRESS.toLowerCase() : key;
+  }
+
+  private isNativeEth(address: string): boolean {
+    const key = String(address ?? '').trim().toLowerCase();
+    return key === 'eth'
+      || key === ethers.ZeroAddress.toLowerCase()
+      || key === ETH_ADDRESS.toLowerCase()
+      || key === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
   }
 }

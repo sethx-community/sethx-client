@@ -25,6 +25,7 @@ import {
   ValuationModuleReadService,
 } from './contracts/valuation-module-read.service';
 import { LendingOrderModalData } from '../../../types/order_flow/order-flow.types';
+import { formatTokenAmount, formatUnitsHuman } from '../../core/format/number-format';
 
 export type LendingDraftMode = 'place' | 'cancel' | 'repay' | 'claim';
 
@@ -393,10 +394,10 @@ export class LendingOrderDraftService {
 
   private formatEth(raw: bigint): string {
     const value = Number(ethers.formatEther(raw));
-    if (!Number.isFinite(value)) return ethers.formatEther(raw);
+    if (!Number.isFinite(value)) return formatUnitsHuman(raw, 18, { maxDecimals: 6, compactFrom: 1_000_000 });
     if (value === 0) return '0';
-    if (value < 0.000001) return ethers.formatEther(raw);
-    return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
+    if (value < 0.000001) return formatUnitsHuman(raw, 18, { maxDecimals: 6, compactFrom: 1_000_000 });
+    return formatUnitsHuman(raw, 18, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   private formatBps(bps: bigint | number): string {
@@ -475,10 +476,10 @@ export class LendingOrderDraftService {
     return {
       tokenSymbol: 'ETH',
       tokenAddress: 'address(0)',
-      available: `${ethers.formatEther(availableRaw)} ETH`,
+      available: formatTokenAmount(availableRaw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
       ok: availableRaw >= raw,
-      totalRequired: `${ethers.formatEther(raw)} ETH`,
-      components: [{ label, amount: `${ethers.formatEther(raw)} ETH`, raw: raw.toString() }],
+      totalRequired: formatTokenAmount(raw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }),
+      components: [{ label, amount: formatTokenAmount(raw, 18, 'ETH', { maxDecimals: 6, compactFrom: 1_000_000 }), raw: raw.toString() }],
       requiredRaw: raw.toString(),
       availableRaw: availableRaw.toString(),
       decimals: 18,

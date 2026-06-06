@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
+import { stableResourceValue } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 
 import {
@@ -95,8 +96,18 @@ export class LendingObComponent {
     loader: async ({ params }) => this.read.loadAccountSnapshot(params.account),
   });
 
-  readonly marketRows = computed(() => this.marketRowsResource.value() ?? this.fallbackMarketRows());
-  readonly accountSnapshot = computed(() => this.accountSnapshotResource.value() ?? EMPTY_SNAPSHOT);
+  private readonly stableMarketRows = stableResourceValue(
+    () => this.marketRowsResource.value(),
+    this.fallbackMarketRows(),
+    { resetKey: () => `${this.selectedAccount()}|${this.marketSpecs().map((m) => `${m.expiry}:${m.riskLevel}`).join('|')}` },
+  );
+  readonly marketRows = computed(() => this.stableMarketRows());
+  private readonly stableAccountSnapshot = stableResourceValue(
+    () => this.accountSnapshotResource.value(),
+    EMPTY_SNAPSHOT,
+    { resetKey: () => this.selectedAccount() },
+  );
+  readonly accountSnapshot = computed(() => this.stableAccountSnapshot());
 
   readonly configuredMarketRows = computed(() =>
     this.marketRows().filter((row) => this.shouldDisplayMarket(row)),
@@ -363,7 +374,7 @@ export class LendingObComponent {
       riskLevel: row?.riskLevel ?? order.riskLevel,
       marketExpiry: row?.expiry ?? null,
       defaultOrderId: order.orderId.toString(),
-      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
+      selectedAccountType: this.selectedAccountTypeForLendingModal(),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -379,7 +390,7 @@ export class LendingObComponent {
       riskLevel: market?.riskLevel ?? row.market?.riskLevel ?? null,
       marketExpiry: market?.expiry ?? (row.market ? Number(row.market.expiry) : null),
       defaultAmountHuman: ethers.formatEther(row.faceValue),
-      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
+      selectedAccountType: this.selectedAccountTypeForLendingModal(),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -407,7 +418,7 @@ export class LendingObComponent {
       defaultPrincipalHuman: ethers.formatEther(row.faceValue),
       repayMarketKey: row.marketKey,
       repayMarketLabel: oldMarket ? this.marketLabel(oldMarket) : this.debtMarketLabel(row),
-      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
+      selectedAccountType: this.selectedAccountTypeForLendingModal(),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -423,7 +434,7 @@ export class LendingObComponent {
       marketExpiry: market?.expiry ?? (row.market ? Number(row.market.expiry) : null),
       defaultBondIndex: row.bondIndex.toString(),
       defaultClaimAction: action,
-      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
+      selectedAccountType: this.selectedAccountTypeForLendingModal(),
       selectedAccountLabel: this.selectedAccountLabel(),
     });
   }
@@ -639,7 +650,10 @@ export class LendingObComponent {
   isLoading(): boolean {
     const marketStatus = String(this.marketRowsResource.status());
     const accountStatus = String(this.accountSnapshotResource.status());
-    return marketStatus === 'loading' || accountStatus === 'loading';
+    const hasRows = this.marketRows().length > 0;
+    const snapshot = this.accountSnapshot();
+    const hasSnapshot = snapshot.debts.length > 0 || snapshot.pendingDebts.length > 0 || snapshot.bonds.length > 0 || snapshot.orders.length > 0;
+    return (marketStatus === 'loading' && !hasRows) || (accountStatus === 'loading' && !hasSnapshot);
   }
 
   trackMarket = (_: number, row: LendingMarketRow) => row.marketKey;
@@ -697,6 +711,14 @@ export class LendingObComponent {
     });
   }
 
+  private selectedAccountTypeForLendingModal(): 'normal' | 'lending' | null {
+    if (this.treasuryMode.canUse('lend')) return 'normal';
+
+    const type = this.selectedAccountRecord()?.type ?? null;
+    return type === 'normal' || type === 'lending' ? type : null;
+  }
+
+
   private lendingModalData(
     row: LendingMarketRow,
     intent: LendingOrderModalData['intent'],
@@ -712,7 +734,7 @@ export class LendingObComponent {
       liquidationLtvBps: row.liquidationLtvBps,
       riskTierConfigs: this.riskTierConfigsForExpiry(row.expiry),
       defaultSide,
-      selectedAccountType: this.treasuryMode.canUse('lend') ? 'normal' : (this.selectedAccountRecord()?.type ?? null),
+      selectedAccountType: this.selectedAccountTypeForLendingModal(),
       selectedAccountLabel: this.selectedAccountLabel(),
     };
   }

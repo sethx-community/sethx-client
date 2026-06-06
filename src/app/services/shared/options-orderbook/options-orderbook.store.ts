@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
+import { stableResourceValue } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
@@ -185,7 +186,8 @@ export class OptionsOrderBookStore {
     },
   });
 
-  readonly activeMarkets = computed(() => this._activeMarketsRes.value() ?? []);
+  private readonly _stableActiveMarkets = stableResourceValue(() => this._activeMarketsRes.value(), [] as ActiveMarketRow[], { resetKey: () => `${this.marketOffset()}|${this.marketLimit()}` });
+  readonly activeMarkets = computed(() => this._stableActiveMarkets());
 
   readonly filteredMarkets = computed(() => {
     const q = this.marketSearch().trim().toLowerCase();
@@ -376,9 +378,11 @@ export class OptionsOrderBookStore {
     },
   });
 
-  readonly myOrders = computed(() => this._myOrdersRes.value() ?? []);
+  private readonly _stableMyOrders = stableResourceValue(() => this._myOrdersRes.value(), [] as LadderRow[], { resetKey: () => this.activeAccount() });
+  readonly myOrders = computed(() => this._stableMyOrders());
 
-  readonly myPositions = computed(() => this._myPositionsRes.value() ?? []);
+  private readonly _stableMyPositions = stableResourceValue(() => this._myPositionsRes.value(), [] as MyPositionRow[], { resetKey: () => this.activeAccount() });
+  readonly myPositions = computed(() => this._stableMyPositions());
 
   selectPosition(marketKey: string) {
     this.selectedPositionMarketKey.set(String(marketKey ?? '').toLowerCase());
@@ -468,12 +472,14 @@ export class OptionsOrderBookStore {
     },
   });
 
+  private readonly _stableLadder = stableResourceValue(() => this._ladderRes.value(), { bids: [] as LadderRow[], asks: [] as LadderRow[] }, { resetKey: () => this.selectedMarketKey() });
+
   readonly bids = computed(() => {
-    const rows = this._ladderRes.value()?.bids ?? [];
+    const rows = this._stableLadder().bids;
     return this.myOrdersOnly() ? rows.filter((r) => r.isMine) : rows;
   });
   readonly asks = computed(() => {
-    const rows = this._ladderRes.value()?.asks ?? [];
+    const rows = this._stableLadder().asks;
     return this.myOrdersOnly() ? rows.filter((r) => r.isMine) : rows;
   });
 

@@ -931,7 +931,7 @@ body.theme-light {
 
 
 .theme-light .sethx-token-symbol-inline {
-  color: var(--color-text-white) !important;
+  color: var(--color-text-muted) !important;
   background-color: rgba(16, 34, 58, 0.06);
 }
 
@@ -1158,23 +1158,25 @@ body.theme-light {
   }
 
   .sethx-token-symbol-inline {
-    @apply inline-flex items-center rounded-md px-1.5 py-0.5 font-semibold;
-    color: var(--color-text-white);
+    @apply inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-center font-semibold;
+    min-width: 3.75rem;
+    color: var(--color-text-muted);
+    background-color: rgba(255, 255, 255, 0.03);
   }
 
   .sethx-token-symbol-inline.is-whitelisted {
-    @apply border border-up/50 bg-up/10;
-    color: var(--color-up);
+    @apply border border-white/25 bg-white/10;
+    color: var(--color-text-white);
   }
 
   .sethx-token-address-inline {
-    @apply font-mono;
-    color: var(--color-accent);
+    @apply rounded px-1 font-mono;
+    color: var(--color-text-muted);
   }
 
   .sethx-token-address-inline.is-whitelisted {
-    @apply rounded border border-up/40 bg-up/5 px-1;
-    color: var(--color-up);
+    @apply border border-white/20 bg-white/5;
+    color: var(--color-text-white);
   }
 
   .sethx-pair-separator {

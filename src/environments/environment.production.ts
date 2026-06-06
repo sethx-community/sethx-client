@@ -1,22 +1,23 @@
-import type { SethxClientEnvironment } from './environment.model';
+import type { SethxClientEnvironment } from "./environment.model";
 
 export const environment: SethxClientEnvironment = {
-  name: 'production',
+  name: "production",
   production: true,
 
   chainId: 1,
-  chainName: 'Ethereum',
-  nativeCurrencySymbol: 'ETH',
-  rpcUrl: '',
-  websocketRpcUrl: '',
-  blockExplorerUrl: 'https://etherscan.io',
+  chainName: "Ethereum",
+  nativeCurrencySymbol: "ETH",
+  rpcUrl: "https://ethereum-rpc.publicnode.com",
+  websocketRpcUrl: "",
+  blockExplorerUrl: "https://etherscan.io",
 
-  siteUrl: 'https://sethx.com',
-  governanceUrl: 'https://governance.sethx.com',
-  githubUrl: 'https://github.com/sethx-community',
-  clientRepositoryUrl: 'https://github.com/sethx-community/sethx-client',
-  releaseUrl: 'https://github.com/sethx-community/sethx-client/releases',
+  siteUrl: "https://sethx.com",
+  governanceUrl: "https://governance.sethx.eth.limo",
+  githubUrl: "https://github.com/sethx-community",
+  clientRepositoryUrl: "https://github.com/sethx-community/sethx-client",
+  releaseUrl: "https://github.com/sethx-community/sethx-client/releases",
 
-  reownProjectId: '',
-
+  reownProjectId: "a06102eecc532a455cd608c2934914c2",
+  sethxGraphUrl:
+    "https://api.studio.thegraph.com/query/1754710/sethx-graph/version/latest",
 };

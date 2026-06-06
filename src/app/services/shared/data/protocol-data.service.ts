@@ -68,6 +68,7 @@ export type ProtocolOracleInfo = {
   feedDecimals: number | null;
   maxStaleness: bigint | null;
   fetchFormula: string;
+  clientCheckedAt: number | null;
 };
 
 export type ProtocolLiveOverview = {
@@ -269,6 +270,7 @@ export class ProtocolDataService {
 
   private async loadOracleInfo(): Promise<void> {
     this._oracleReadStatus.set('pending');
+    const clientCheckedAt = Date.now();
     try {
       const oracles = await this.priceManager.getApprovedOracles();
       const contextNames = ['General', 'Trade value', 'Futures settlement', 'Collateral evaluation', 'Options settlement', 'Fee conversion'];
@@ -309,13 +311,13 @@ export class ProtocolDataService {
           feedDecimals: feedDecimals == null ? null : Number(feedDecimals),
           maxStaleness: maxStaleness == null ? null : BigInt(maxStaleness),
           fetchFormula: String(fetchFormula || ''),
+          clientCheckedAt,
         } as ProtocolOracleInfo;
       }));
       this._oracleInfo.set(rows);
       this._oracleReadStatus.set('loaded');
     } catch {
-      this._oracleInfo.set([]);
-      this._oracleReadStatus.set('pending');
+      this._oracleReadStatus.set(this._oracleInfo().length ? 'loaded' : 'pending');
     }
   }
 

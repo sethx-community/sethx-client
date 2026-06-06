@@ -37,10 +37,14 @@ export class LendingRpComponent {
     selectedAccountLabel: this.selectedAccountLabel(),
   }));
 
-  readonly selectedAccountType = computed(() => {
+  readonly selectedAccountType = computed<'normal' | 'lending' | null>(() => {
     if (this.treasuryMode.canUse('lend')) return 'normal';
+
     const account = this.settings.selectedAccountId();
-    return account ? this.accounts.accountType(account) : null;
+    if (!account) return null;
+
+    const type = this.accounts.accountType(account);
+    return type === 'normal' || type === 'lending' ? type : null;
   });
 
   readonly selectedAccountLabel = computed(() => {

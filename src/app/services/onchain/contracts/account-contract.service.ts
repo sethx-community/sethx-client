@@ -14,6 +14,7 @@ export class AccountContractService extends EthersContractService<EthersContract
   protected readonly defaultAddress = undefined; // always require account address
 
   private readonly settings = inject(TradeSettingsService);
+  private readonly zeroReferrer = ethers.ZeroAddress;
 
   constructor(wallet: WalletConnectService, error: ErrorService) {
     super(wallet, error);
@@ -74,7 +75,7 @@ export class AccountContractService extends EthersContractService<EthersContract
 
     return this.call(
       'acceptOrderTokenSpot',
-      [args.orderBook, args.makerOrderId, args.amount, args.feeToken] as any,
+      [args.orderBook, args.makerOrderId, args.amount, args.feeToken, this.zeroReferrer] as any,
       'Accepting spot order failed',
       account,
     );
@@ -103,6 +104,7 @@ export class AccountContractService extends EthersContractService<EthersContract
         params.price,
         params.amount,
         params.expiry,
+        this.zeroReferrer,
       ] as any,
       'Order placement failed',
       account,
@@ -142,6 +144,7 @@ export class AccountContractService extends EthersContractService<EthersContract
         params.intent,
         params.size,
         params.askPrice,
+        this.zeroReferrer,
       ] as any,
       'Order placement failed',
       account,
@@ -167,7 +170,7 @@ export class AccountContractService extends EthersContractService<EthersContract
     const account = this.getAccountOrThrow();
     return this.call(
       'acceptOrderOption',
-      [args.orderBook, args.makerOrderId, args.amount, args.feeToken] as any,
+      [args.orderBook, args.makerOrderId, args.amount, args.feeToken, this.zeroReferrer] as any,
       'Accepting option order failed',
       account,
     );
@@ -193,6 +196,7 @@ export class AccountContractService extends EthersContractService<EthersContract
         params.amount,
         params.expiry,
         params.feeToken,
+        this.zeroReferrer,
       ] as any,
       'Futures order placement failed',
       account,
@@ -217,16 +221,16 @@ export class AccountContractService extends EthersContractService<EthersContract
 
   async placeOrderMarginOption(params: { orderBook: string; marketKey: string; intent: number; size: bigint; askPrice: bigint; expiry: bigint; feeToken: string }) {
     const account = this.getAccountOrThrow();
-    return this.call('placeOrderMarginOption' as any, [params.orderBook, params.marketKey, params.intent, params.size, params.askPrice, params.expiry, params.feeToken] as any, 'Margin option order placement failed', account);
+    return this.call('placeOrderMarginOption' as any, [params.orderBook, params.marketKey, params.intent, params.size, params.askPrice, params.expiry, params.feeToken, this.zeroReferrer] as any, 'Margin option order placement failed', account);
   }
   async placeOrderMarginOptionForMarket(params: { orderBook: string; ticker: string; optionType: number; oracle: string; strikePrice: bigint; marketExpiry: bigint; collateralBps: bigint; intent: number; size: bigint; askPrice: bigint; expiry: bigint; feeToken: string }) {
     const account = this.getAccountOrThrow();
-    return this.call('placeOrderMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.collateralBps, params.intent, params.size, params.askPrice, params.expiry, params.feeToken] as any, 'Margin option order placement failed', account);
+    return this.call('placeOrderMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.collateralBps, params.intent, params.size, params.askPrice, params.expiry, params.feeToken, this.zeroReferrer] as any, 'Margin option order placement failed', account);
   }
 
   async acceptMarginOptionOrder(args: { orderBook: string; makerOrderId: bigint; amount: bigint; feeToken: string }) {
     const account = this.getAccountOrThrow();
-    return this.call('acceptOrderMarginOption' as any, [args.orderBook, args.makerOrderId, args.amount, args.feeToken] as any, 'Accepting margin option order failed', account);
+    return this.call('acceptOrderMarginOption' as any, [args.orderBook, args.makerOrderId, args.amount, args.feeToken, this.zeroReferrer] as any, 'Accepting margin option order failed', account);
   }
   async cancelMarginOptionOrder(args: { orderBook: string; orderId: bigint }) {
     const account = this.getAccountOrThrow();
@@ -265,6 +269,7 @@ export class AccountContractService extends EthersContractService<EthersContract
         params.askPrice,
         params.expiry,
         params.feeToken,
+        this.zeroReferrer,
       ] as any,
       'Binary option order placement failed',
       account,
@@ -273,7 +278,7 @@ export class AccountContractService extends EthersContractService<EthersContract
 
   async placeOrderBinaryMarginOptionForMarket(params: { orderBook: string; ticker: string; optionType: number; oracle: string; strikePrice: bigint; marketExpiry: bigint; intent: number; payoutAmount: bigint; askPrice: bigint; expiry: bigint; feeToken: string }) {
     const account = this.getAccountOrThrow();
-    return this.call('placeOrderBinaryMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.intent, params.payoutAmount, params.askPrice, params.expiry, params.feeToken] as any, 'Binary option order placement failed', account);
+    return this.call('placeOrderBinaryMarginOptionForMarket' as any, [params.orderBook, params.ticker, params.optionType, params.oracle, params.strikePrice, params.marketExpiry, params.intent, params.payoutAmount, params.askPrice, params.expiry, params.feeToken, this.zeroReferrer] as any, 'Binary option order placement failed', account);
   }
 
   async acceptBinaryMarginOptionOrder(args: {
@@ -285,7 +290,7 @@ export class AccountContractService extends EthersContractService<EthersContract
     const account = this.getAccountOrThrow();
     return this.call(
       'acceptOrderBinaryMarginOption' as any,
-      [args.orderBook, args.makerOrderId, args.payoutAmount, args.feeToken] as any,
+      [args.orderBook, args.makerOrderId, args.payoutAmount, args.feeToken, this.zeroReferrer] as any,
       'Accepting binary option order failed',
       account,
     );
@@ -354,6 +359,7 @@ export class AccountContractService extends EthersContractService<EthersContract
         params.side,
         params.price,
         params.expiry,
+        this.zeroReferrer,
       ] as any,
       'NFT spot order placement failed',
       account,
@@ -368,7 +374,7 @@ export class AccountContractService extends EthersContractService<EthersContract
     const account = this.getAccountOrThrow();
     return this.call(
       'acceptOrderNFTSpot' as any,
-      [args.orderBook, args.makerOrderId, args.feeToken] as any,
+      [args.orderBook, args.makerOrderId, args.feeToken, this.zeroReferrer] as any,
       'Accepting NFT spot order failed',
       account,
     );

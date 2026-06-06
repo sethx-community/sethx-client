@@ -26,7 +26,6 @@ export const EXPECTED_CONTRACT_IDS = {
   MarginOptionsOrderBook: 'MarginOptionsOrderBook@1.0.0',
   FuturesContract: 'FuturesContract@1.0.0',
   FuturesOrderBook: 'FuturesOrderBook@1.0.0',
-  SettlementManager: 'SettlementManager@1.0.0',
   LendingContract: 'LendingContract@1.0.0',
   LendingOrderBook: 'LendingOrderBook@1.0.0',
   OptionsValuationAdapter: 'OptionsValuationAdapter@1.0.0',

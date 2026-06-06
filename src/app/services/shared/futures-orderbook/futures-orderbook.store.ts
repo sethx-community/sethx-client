@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatUnitsHuman, formatTokenAmount, formatDecimal } from '../../../core/format/number-format';
 
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
@@ -81,7 +82,7 @@ export class FuturesOrderBookStore {
 
   formatQuotePrice(raw: bigint, quoteDecimals: number): string {
     try {
-      return ethers.formatUnits(raw, Math.max(0, Number(quoteDecimals ?? 18)));
+      return formatUnitsHuman(raw, Math.max(0, Number(quoteDecimals ?? 18)), { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 });
     } catch {
       return String(raw ?? 0n);
     }
@@ -109,7 +110,7 @@ export class FuturesOrderBookStore {
 
   formatSize(raw: bigint, decimals: number): string {
     try {
-      return ethers.formatUnits(raw, Math.max(0, Number(decimals ?? 18)));
+      return formatUnitsHuman(raw, Math.max(0, Number(decimals ?? 18)), { maxDecimals: 6, compactFrom: 1_000_000 });
     } catch {
       return String(raw ?? 0n);
     }
@@ -117,10 +118,7 @@ export class FuturesOrderBookStore {
 
   formatContracts(raw: bigint | number | string | null | undefined): string {
     try {
-      const formatted = ethers.formatUnits(BigInt(raw?.toString?.() ?? '0'), 18);
-      return formatted.includes('.')
-        ? formatted.replace(/0+$/u, '').replace(/\.$/u, '') || '0'
-        : formatted;
+      return formatUnitsHuman(BigInt(raw?.toString?.() ?? '0'), 18, { maxDecimals: 6, compactFrom: 1_000_000 });
     } catch {
       return String(raw ?? '0');
     }

@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, resource, signal } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatUnitsHuman, formatTokenAmount, formatDecimal } from '../../../core/format/number-format';
 
 import { norm } from '../../../core/tokens/token-normalize';
 import { MarketDetailItem } from '../../../shared/orderbook';
@@ -310,7 +311,7 @@ export class NftSpotOrderbookStore {
     const quoteVolume = orders.bids
       .concat(orders.asks)
       .reduce((total, order) => total + order.price, 0n);
-    const quoteVolumeLabel = `${ethers.formatUnits(quoteVolume, quoteDecimals)} ${quoteSymbol}`;
+    const quoteVolumeLabel = formatTokenAmount(quoteVolume, quoteDecimals, quoteSymbol, { maxDecimals: 6, compactFrom: 1_000_000 });
 
     return {
       key,
@@ -342,7 +343,7 @@ export class NftSpotOrderbookStore {
     quoteDecimals: number,
     activeAccount: string,
   ): Promise<NftSpotOrder> {
-    const price = `${ethers.formatUnits(order.price, quoteDecimals)} ${quoteSymbol}`;
+    const price = formatTokenAmount(order.price, quoteDecimals, quoteSymbol, { maxDecimals: 6, compactFrom: 1_000_000 });
     const side: NftSpotSide = order.side === 0 ? 'bid' : 'ask';
     const isMine = !!activeAccount && norm(order.user) === activeAccount;
     const acceptDisabledReason = await this.acceptDisabledReason(order, side, isMine, activeAccount, quoteSymbol, quoteDecimals);
@@ -380,7 +381,7 @@ export class NftSpotOrderbookStore {
     const availableQuote = await this.reads.availableVaultErc20(activeAccount, order.quoteToken);
     if (availableQuote >= order.price) return null;
 
-    const required = `${ethers.formatUnits(order.price, quoteDecimals)} ${quoteSymbol}`;
+    const required = formatTokenAmount(order.price, quoteDecimals, quoteSymbol, { maxDecimals: 6, compactFrom: 1_000_000 });
     return `To accept this ask, deposit at least ${required} into the active protocol account first.`;
   }
 

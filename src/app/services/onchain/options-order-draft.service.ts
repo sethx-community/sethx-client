@@ -28,6 +28,7 @@ import type {
   ConfirmationField,
   RequirementRow,
 } from '../../core/modals/confirmation/confirmation-modal.component';
+import { formatTokenAmount, formatUnitsHuman } from '../../core/format/number-format';
 
 type DraftMode = 'place' | 'accept' | 'cancel' | 'exercise' | 'reclaim';
 type OptionExpirySelectionMode = 'quick' | 'custom';
@@ -143,7 +144,7 @@ function fixedPriceToHuman(
     let p18 = priceFixed;
     if (diff > 0) p18 = priceFixed / 10n ** BigInt(diff);
     else if (diff < 0) p18 = priceFixed * 10n ** BigInt(-diff);
-    return ethers.formatUnits(p18, 18);
+    return formatUnitsHuman(p18, 18, { maxDecimals: 8, mode: 'scaled-small', compactFrom: 1_000_000 });
   } catch {
     return '';
   }
@@ -522,11 +523,11 @@ export class OptionsOrderDraftService {
   readonly marketHolderAvailRaw = signal<bigint>(0n);
 
   readonly marketWriterHuman = computed(() =>
-    ethers.formatUnits(this.marketWriterRaw(), this.assetDecimals()),
+    formatUnitsHuman(this.marketWriterRaw(), this.assetDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 }),
   );
 
   readonly marketHolderAvailHuman = computed(() =>
-    ethers.formatUnits(this.marketHolderAvailRaw(), this.assetDecimals()),
+    formatUnitsHuman(this.marketHolderAvailRaw(), this.assetDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 }),
   );
 
   private async refreshMarketPosition() {
@@ -906,7 +907,7 @@ export class OptionsOrderDraftService {
       const availableRaw = this.getAvailableRaw(key);
       const ok = availableRaw >= v.total;
       const fmt = (raw: bigint) =>
-        `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+        formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
 
       return {
         tokenSymbol: symbol,
@@ -1008,7 +1009,7 @@ export class OptionsOrderDraftService {
       { label: 'Size', value: `${this.sizeHuman()} ${this.assetSymbol()}` },
       {
         label: 'Premium value / fee base',
-        value: premiumBudget ? `${ethers.formatUnits(premiumBudget, this.quoteDecimals())} ${this.quoteSymbol()}` : '—',
+        value: premiumBudget ? formatTokenAmount(premiumBudget, this.quoteDecimals(), this.quoteSymbol(), { maxDecimals: 6, compactFrom: 1_000_000 }) : '—',
       },
       {
         label: 'Premium (quote/asset)',
@@ -1056,11 +1057,11 @@ export class OptionsOrderDraftService {
           ...this.confirmFields(),
           {
             label: 'Your writer contracts',
-            value: ethers.formatUnits(pos.writerSize, this.assetDecimals()),
+            value: formatUnitsHuman(pos.writerSize, this.assetDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 }),
           },
           {
             label: 'Your holder contracts (avail)',
-            value: ethers.formatUnits(holderAvail, this.assetDecimals()),
+            value: formatUnitsHuman(holderAvail, this.assetDecimals(), { maxDecimals: 6, compactFrom: 1_000_000 }),
           },
         ]);
       }

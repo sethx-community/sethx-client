@@ -5,7 +5,7 @@
       <h1 id="intro-title" class="sethx-page-title mt-2">A workspace for onchain actions</h1>
     </div>
     <p class="sethx-page-copy max-w-3xl">
-      Use this client to test your local/testnet environment or interact with the SETHX protocol on main net. Use the navigation menu on the left to explore. Always review your connected environment.
+      Interact with the SETHX protocol on Ethereum mainnet. Use the navigation menu on the left to manage accounts, review assets, trade, and monitor protocol data. Always review your connected network and wallet before signing.
     </p>
   </section>
 
@@ -39,6 +39,75 @@
         </dd>
       </div>
     </dl>
+  </section>
+
+  <section class="sethx-table-card space-y-3" aria-labelledby="recent-activity-title">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <div class="sethx-kicker">SethX Graph</div>
+        <h2 id="recent-activity-title" class="sethx-section-title mt-2">Recent indexed activity</h2>
+        <p class="sethx-page-copy mt-2 max-w-3xl">
+          Latest oracle updates and matched trades indexed from the deployed protocol.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="sethx-refresh-button"
+        [class.is-refreshing]="activityLoading()"
+        (click)="refreshRecentActivity()"
+      >
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+        <span>Refresh feed</span>
+      </button>
+    </div>
+
+    <div *ngIf="!graphConfigured()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
+      Set the SethX Graph endpoint in the environment to enable recent protocol activity.
+    </div>
+
+    <div *ngIf="activityError()" class="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+      {{ activityError() }}
+    </div>
+
+    <div *ngIf="graphConfigured() && !activityLoading() && recentActivities().length === 0 && !activityError()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
+      No indexed activity found yet.
+    </div>
+
+    <div *ngIf="recentActivities().length > 0" class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-text-muted">
+        <span>Showing {{ visibleActivities().length }} of {{ recentActivities().length }} indexed events</span>
+        <div class="flex items-center gap-2">
+          <button type="button" class="sethx-button-secondary !px-3 !py-1" [disabled]="!canPageActivityBack()" (click)="previousActivityPage()">Previous</button>
+          <span class="min-w-[4rem] text-center font-semibold text-frame">{{ activityPageLabel() }}</span>
+          <button type="button" class="sethx-button-secondary !px-3 !py-1" [disabled]="!canPageActivityForward()" (click)="nextActivityPage()">Next</button>
+        </div>
+      </div>
+
+      <div class="max-h-[26rem] overflow-y-auto pr-1">
+        <div class="grid gap-3 md:grid-cols-2">
+          <article
+            *ngFor="let item of visibleActivities(); trackBy: trackActivity"
+            class="rounded-xl border border-trade-border bg-background/40 p-4"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-[10px] font-bold uppercase tracking-[0.22em] text-gold">{{ item.ticker }}</div>
+                <h3 class="mt-1 truncate text-sm font-bold text-white">{{ item.title }}</h3>
+              </div>
+              <span class="rounded-full border border-trade-border px-2 py-1 text-[10px] font-bold uppercase text-text-muted">
+                {{ item.kind }}
+              </span>
+            </div>
+            <p class="mt-3 text-lg font-bold text-white">{{ item.primaryValue }}</p>
+            <p class="mt-1 text-xs text-text-muted">{{ item.subtitle }}</p>
+            <div class="mt-3 flex items-center justify-between gap-3 text-[11px] text-frame">
+              <span>{{ item.secondaryValue }}</span>
+              <span>{{ item.explorerLabel }}</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="sethx-table-card space-y-3" aria-labelledby="safety-title">

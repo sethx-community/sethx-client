@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatUnitsHuman, formatTokenAmount } from '../../../core/format/number-format';
 import type {
   ConfirmationField,
   RequirementRow,
@@ -215,7 +216,7 @@ export class OptionsOrderBookActionsService {
 
     // ---- premium total (quote raw) ----
     const premiumRaw = this.mulDivUp(amount, o.askPrice ?? 0n, ONE_E18);
-    const premiumHuman = `${ethers.formatUnits(premiumRaw, quoteDec)} ${quoteSym}`;
+    const premiumHuman = formatTokenAmount(premiumRaw, quoteDec, quoteSym, { maxDecimals: 6, compactFrom: 1_000_000 });
 
     const isLongSideMaker = this.isLongSideIntent(o.intent);
     const premiumPayerIsTaker = !isLongSideMaker; // matches your existing feeToken logic
@@ -232,7 +233,7 @@ export class OptionsOrderBookActionsService {
       { label: 'Market', value: marketLabel },
       {
         label: 'Fill size',
-        value: `${ethers.formatUnits(amount, assetDec)} ${assetSym}`,
+        value: formatTokenAmount(amount, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 }),
       },
       {
         label: 'Limit price (premium)',
@@ -275,17 +276,17 @@ export class OptionsOrderBookActionsService {
 
           fields.push({
             label: 'Your writer contracts',
-            value: `${ethers.formatUnits(pos.writerSize, assetDec)} ${assetSym}`,
+            value: formatTokenAmount(pos.writerSize, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 }),
           });
           fields.push({
             label: 'Your holder contracts (avail)',
-            value: `${ethers.formatUnits(holderAvail, assetDec)} ${assetSym}`,
+            value: formatTokenAmount(holderAvail, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 }),
           });
 
           // Required vs holding (intent-specific)
           fields.push({
             label: 'Required size',
-            value: `${ethers.formatUnits(amount, assetDec)} ${assetSym}`,
+            value: formatTokenAmount(amount, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 }),
           });
 
           // Maker is SellWriter => taker must sell writer contracts
@@ -294,7 +295,7 @@ export class OptionsOrderBookActionsService {
             confirmDisabled = !ok;
             fields.push({
               label: 'Writer required / available',
-              value: `${ethers.formatUnits(amount, assetDec)} / ${ethers.formatUnits(pos.writerSize, assetDec)} ${assetSym}`,
+              value: `${formatUnitsHuman(amount, assetDec, { maxDecimals: 6, compactFrom: 1_000_000 })} / ${formatTokenAmount(pos.writerSize, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 })}`, 
             });
             fields.push({
               label: 'Can sell writer?',
@@ -307,7 +308,7 @@ export class OptionsOrderBookActionsService {
             const ok = holderAvail >= amount;
             fields.push({
               label: 'Holder required / available',
-              value: `${ethers.formatUnits(amount, assetDec)} / ${ethers.formatUnits(holderAvail, assetDec)} ${assetSym}`,
+              value: `${formatUnitsHuman(amount, assetDec, { maxDecimals: 6, compactFrom: 1_000_000 })} / ${formatTokenAmount(holderAvail, assetDec, assetSym, { maxDecimals: 6, compactFrom: 1_000_000 })}`, 
             });
             fields.push({
               label: 'Will transfer holder contracts?',
@@ -505,7 +506,7 @@ export class OptionsOrderBookActionsService {
       { label: 'Intent', value: this.formatIntent(Number(order.intent ?? 0)) },
       {
         label: 'Remaining size',
-        value: `${ethers.formatUnits(remaining, assetDec)} ${this.fmt.tokenLabel(order.assetToken)}`,
+        value: formatTokenAmount(remaining, assetDec, this.fmt.tokenLabel(order.assetToken), { maxDecimals: 6, compactFrom: 1_000_000 }),
       },
       {
         label: 'Limit price',
@@ -611,7 +612,7 @@ export class OptionsOrderBookActionsService {
       const ok = availableRaw >= v.total;
 
       const fmt = (raw: bigint) =>
-        `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+        formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
 
       return {
         tokenSymbol: symbol,

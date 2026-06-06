@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
-import { ethers } from 'ethers';
+import { formatUnitsHuman } from '../../../core/format/number-format';
 
 import { ProtocolConfigService } from '../../../services/shared/config/protocol-config.service';
 import { ProtocolDataService } from '../../../services/shared/data/protocol-data.service';
@@ -37,14 +37,7 @@ export class ProtocolInfoComponent {
 
   formatToken(value: bigint | null, decimals = 18): string {
     if (value == null) return '—';
-    try {
-      const formatted = ethers.formatUnits(value, decimals);
-      const [whole, fraction = ''] = formatted.split('.');
-      const trimmed = fraction.slice(0, 6).replace(/0+$/, '');
-      return trimmed ? `${whole}.${trimmed}` : whole;
-    } catch {
-      return value.toString();
-    }
+    return formatUnitsHuman(value, decimals, { maxDecimals: 6, compactFrom: 1_000_000 });
   }
 
   trackByName(_: number, row: { name: string }): string {

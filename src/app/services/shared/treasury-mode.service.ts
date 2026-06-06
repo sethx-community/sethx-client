@@ -1,7 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 import { TreasuryContractService, TreasurerInfo } from '../onchain/contracts/treasury-contract.service';
+import { TriggerService } from './trigger.service';
 
 export type TreasuryActionKey = 'fundAccount' | 'withdrawAccount' | 'spotTrade' | 'lend' | 'passiveLp';
 export type TreasuryAccountAccess = { account: string; allowed: boolean };
@@ -10,6 +11,7 @@ export type TreasuryAccountAccess = { account: string; allowed: boolean };
 export class TreasuryModeService {
   private readonly wallet = inject(WalletConnectService);
   private readonly treasury = inject(TreasuryContractService);
+  private readonly triggers = inject(TriggerService);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -36,6 +38,55 @@ export class TreasuryModeService {
   readonly canActAsTreasurer = computed(() => {
     return Boolean(this.isTreasurerWallet() && this.killed() !== true && this.selectedAccountAccess());
   });
+
+  private storageKey(address: string | null | undefined): string | null {
+    const wallet = (address ?? '').trim().toLowerCase();
+    return wallet ? `sethx:treasury-mode:${wallet}` : null;
+  }
+
+  private loadStoredSelection(address: string): { account: string | null; acting: boolean } {
+    const key = this.storageKey(address);
+    if (!key || typeof localStorage === 'undefined') return { account: null, acting: false };
+
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) ?? '{}') as { account?: string; acting?: boolean };
+      return {
+        account: typeof parsed.account === 'string' && parsed.account.trim() ? parsed.account : null,
+        acting: parsed.acting === true,
+      };
+    } catch {
+      return { account: null, acting: false };
+    }
+  }
+
+  private storeSelection(address: string | null | undefined): void {
+    const key = this.storageKey(address);
+    if (!key || typeof localStorage === 'undefined') return;
+
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          account: this.selectedTreasuryAccount(),
+          acting: this.actingAsTreasurer(),
+        }),
+      );
+    } catch {
+      // Ignore storage errors; treasury mode remains session-only.
+    }
+  }
+
+  constructor() {
+    effect(() => {
+      this.triggers.treasuryTick();
+      const address = this.walletAddress();
+      if (!address) {
+        this.reset();
+        return;
+      }
+      void this.refresh(true);
+    });
+  }
 
   async refresh(force = false): Promise<void> {
     const address = this.walletAddress();
@@ -66,13 +117,16 @@ export class TreasuryModeService {
       );
       this.accounts.set(accessRows);
 
-      const selected = this.selectedTreasuryAccount();
+      const stored = this.loadStoredSelection(address);
+      const currentSelected = this.selectedTreasuryAccount();
+      const selected = currentSelected ?? stored.account;
       const stillAllowed = selected
         ? accessRows.some((row) => row.allowed && row.account.toLowerCase() === selected.toLowerCase())
         : false;
-      if (!stillAllowed) {
-        this.selectedTreasuryAccount.set(accessRows.find((row) => row.allowed)?.account ?? null);
-      }
+      const nextSelected = stillAllowed
+        ? selected
+        : accessRows.find((row) => row.allowed)?.account ?? null;
+      this.selectedTreasuryAccount.set(nextSelected);
 
       const actionEntries = await Promise.all(
         (Object.keys(this.treasury.actionFlags) as TreasuryActionKey[]).map(async (key) => [
@@ -83,6 +137,9 @@ export class TreasuryModeService {
       this.actionPermissions.set(Object.fromEntries(actionEntries) as Record<TreasuryActionKey, boolean>);
 
       if (!this.canActAsTreasurer()) this.actingAsTreasurer.set(false);
+      else if (stored.acting && nextSelected) this.actingAsTreasurer.set(true);
+
+      this.storeSelection(address);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to refresh treasury mode.');
       this.actingAsTreasurer.set(false);
@@ -94,14 +151,17 @@ export class TreasuryModeService {
   setActingAsTreasurer(value: boolean): void {
     if (!value) {
       this.actingAsTreasurer.set(false);
+      this.storeSelection(this.walletAddress());
       return;
     }
     if (this.canActAsTreasurer()) this.actingAsTreasurer.set(true);
+    this.storeSelection(this.walletAddress());
   }
 
   selectTreasuryAccount(account: string): void {
     this.selectedTreasuryAccount.set(account || null);
     if (!this.canActAsTreasurer()) this.actingAsTreasurer.set(false);
+    this.storeSelection(this.walletAddress());
   }
 
   canUse(action: TreasuryActionKey): boolean {
@@ -109,6 +169,7 @@ export class TreasuryModeService {
   }
 
   reset(): void {
+    this.storeSelection(this.walletAddress());
     this.treasurerInfo.set(null);
     this.killed.set(null);
     this.accounts.set([]);

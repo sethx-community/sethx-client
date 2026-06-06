@@ -6147,6 +6147,11 @@ export const SethxVaultAbi = [
         "internalType": "address",
         "name": "admin",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_sethxToken",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -6701,6 +6706,111 @@ export const SethxVaultAbi = [
     "inputs": [
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "grossFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "referralShare",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "treasuryShare",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReferralFeeShared",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "feeAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "ethValueAdded",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalEthValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReferralFeeTracked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalEthValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReferrerApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -6978,6 +7088,19 @@ export const SethxVaultAbi = [
   },
   {
     "inputs": [],
+    "name": "BPS_DENOMINATOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "DEFAULT_ADMIN_ROLE",
     "outputs": [
       {
@@ -7010,6 +7133,45 @@ export const SethxVaultAbi = [
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REFERRAL_SHARE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REFERRAL_THRESHOLD_ETH_VALUE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SETHX_PER_ETH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -7077,9 +7239,9 @@ export const SethxVaultAbi = [
         "type": "string"
       },
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "chargeFee",
@@ -7607,6 +7769,25 @@ export const SethxVaultAbi = [
         "type": "address"
       }
     ],
+    "name": "isApprovedReferrer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "name": "isERC20",
     "outputs": [
       {
@@ -7807,6 +7988,25 @@ export const SethxVaultAbi = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "referredFeeEthValue",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -7905,6 +8105,19 @@ export const SethxVaultAbi = [
     "name": "setTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sethxToken",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -11144,6 +11357,12 @@ export const TokenSpotOrderBookAbi = [
         "internalType": "address",
         "name": "user",
         "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "OrderPlaced",
@@ -11296,6 +11515,11 @@ export const TokenSpotOrderBookAbi = [
       {
         "internalType": "address",
         "name": "feeToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
         "type": "address"
       }
     ],
@@ -11495,6 +11719,11 @@ export const TokenSpotOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -11814,6 +12043,11 @@ export const TokenSpotOrderBookAbi = [
       },
       {
         "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "baseToken",
         "type": "address"
       },
@@ -11971,6 +12205,11 @@ export const TokenSpotOrderBookAbi = [
         "internalType": "uint256",
         "name": "expiry",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "placeOrder",
@@ -12387,6 +12626,12 @@ export const NFTSpotOrderBookAbi = [
       },
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
@@ -12556,6 +12801,11 @@ export const NFTSpotOrderBookAbi = [
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "acceptOrder",
@@ -12664,6 +12914,11 @@ export const NFTSpotOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -12973,6 +13228,11 @@ export const NFTSpotOrderBookAbi = [
       },
       {
         "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "nft",
         "type": "address"
       },
@@ -13115,6 +13375,11 @@ export const NFTSpotOrderBookAbi = [
         "internalType": "uint256",
         "name": "expiry",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "placeOrder",
@@ -14903,6 +15168,12 @@ export const OptionsOrderBookAbi = [
       },
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -15063,6 +15334,11 @@ export const OptionsOrderBookAbi = [
       {
         "internalType": "address",
         "name": "feeToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
         "type": "address"
       }
     ],
@@ -15256,6 +15532,11 @@ export const OptionsOrderBookAbi = [
             "type": "address"
           },
           {
+            "internalType": "address",
+            "name": "referrer",
+            "type": "address"
+          },
+          {
             "internalType": "enum OptionContract.OptionType",
             "name": "optionType",
             "type": "uint8"
@@ -15384,6 +15665,11 @@ export const OptionsOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -15830,6 +16116,11 @@ export const OptionsOrderBookAbi = [
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
         "internalType": "enum OptionContract.OptionType",
         "name": "optionType",
         "type": "uint8"
@@ -16008,6 +16299,11 @@ export const OptionsOrderBookAbi = [
         "internalType": "uint256",
         "name": "askPrice",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "placeOrder",
@@ -18212,6 +18508,12 @@ export const BinaryMarginOptionsOrderBookAbi = [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
         "name": "feeToken",
         "type": "address"
       }
@@ -18349,6 +18651,11 @@ export const BinaryMarginOptionsOrderBookAbi = [
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "acceptOrder",
@@ -18420,6 +18727,11 @@ export const BinaryMarginOptionsOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -18531,6 +18843,11 @@ export const BinaryMarginOptionsOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -18799,6 +19116,11 @@ export const BinaryMarginOptionsOrderBookAbi = [
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -18937,73 +19259,14 @@ export const BinaryMarginOptionsOrderBookAbi = [
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "placeOrder",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "ticker",
-        "type": "string"
-      },
-      {
-        "internalType": "enum BinaryMarginOptionContract.OptionType",
-        "name": "optionType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "oracle",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "strikePrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "marketExpiry",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "intentRaw",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "payoutAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "askPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "expiry",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "feeToken",
-        "type": "address"
-      }
-    ],
-    "name": "placeOrderForMarket",
     "outputs": [
       {
         "internalType": "uint256",
@@ -21296,6 +21559,12 @@ export const MarginOptionsOrderBookAbi = [
       },
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -21458,6 +21727,11 @@ export const MarginOptionsOrderBookAbi = [
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "acceptOrder",
@@ -21529,6 +21803,11 @@ export const MarginOptionsOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -21640,6 +21919,11 @@ export const MarginOptionsOrderBookAbi = [
           {
             "internalType": "address",
             "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "referrer",
             "type": "address"
           },
           {
@@ -21989,6 +22273,11 @@ export const MarginOptionsOrderBookAbi = [
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -22127,72 +22416,14 @@ export const MarginOptionsOrderBookAbi = [
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
       }
     ],
     "name": "placeOrder",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "ticker",
-        "type": "string"
-      },
-      {
-        "internalType": "enum MarginOptionContract.OptionType",
-        "name": "optionType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "oracle",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "strikePrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "marketExpiry",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "collateralBps",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum MarginOptionsOrderBook.OrderIntent",
-        "name": "intent",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "size",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "askPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "orderExpiry",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "feeToken",
-        "type": "address"
-      }
-    ],
-    "name": "placeOrderForMarket",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -24945,6 +25176,12 @@ export const FuturesOrderBookAbi = [
       },
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -25611,6 +25848,11 @@ export const FuturesOrderBookAbi = [
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      },
+      {
         "internalType": "bytes32",
         "name": "marketKey",
         "type": "bytes32"
@@ -25835,6 +26077,11 @@ export const FuturesOrderBookAbi = [
       {
         "internalType": "address",
         "name": "feeToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
         "type": "address"
       }
     ],

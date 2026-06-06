@@ -1,4 +1,5 @@
 import { Injectable, inject, computed, signal, resource, effect } from '@angular/core';
+import { stableResourceValue } from '../../core/signals/stable-resource';
 import { VaultContractService } from './contracts/vault-contract.service';
 import { VaultChainService } from './vault.service';
 import { ErrorService } from '../shared/error.service';
@@ -11,6 +12,7 @@ import { toStatus, type Status } from '../../core/tokens/resource-status';
 import { safeCall } from './safe-call';
 import { TransactionAccessService } from '../shared/compliance/transaction-access.service';
 import { ProtocolConfigService } from '../shared/config/protocol-config.service';
+import { TreasuryModeService } from '../shared/treasury-mode.service';
 
 @Injectable({ providedIn: 'root' })
 export class PortfolioService {
@@ -25,6 +27,7 @@ export class PortfolioService {
 
   private readonly accountsSvc = inject(AccountsChainService);
   private readonly settings = inject(TradeSettingsService);
+  private readonly treasuryMode = inject(TreasuryModeService);
 
   readonly writing = signal(false);
   readonly writeError = signal<string | null>(null);
@@ -80,9 +83,29 @@ export class PortfolioService {
     return fallback || null;
   });
 
+  readonly portfolioAccounts = computed(() => {
+    const found = new Map<string, string>();
+    for (const account of this.accountsSvc.accounts() ?? []) {
+      const key = this.normKey(account);
+      if (key) found.set(key, account);
+    }
+
+    const active = this.activeAccount();
+    if (active) found.set(this.normKey(active), active);
+
+    if (this.treasuryMode.actingAsTreasurer()) {
+      const treasuryAccount = this.treasuryMode.selectedTreasuryAccount();
+      if (treasuryAccount && this.treasuryMode.selectedAccountAccess()) {
+        found.set(this.normKey(treasuryAccount), treasuryAccount);
+      }
+    }
+
+    return Array.from(found.values());
+  });
+
   // ---- Stable keys for params ----
   private readonly _accountsKey = computed(() =>
-    (this.accountsSvc.accounts() ?? [])
+    this.portfolioAccounts()
       .map((a) => this.normKey(a))
       .sort()
       .join('|'),
@@ -107,7 +130,7 @@ export class PortfolioService {
 
     loader: async () => {
       // Use the live lists at execution time (they correspond to the keys)
-      const accounts = this.accountsSvc.accounts() ?? [];
+      const accounts = this.portfolioAccounts();
       const tokens = this.vault.erc20Tokens() ?? [];
 
       const result: Record<
@@ -161,9 +184,13 @@ export class PortfolioService {
   }
 
   // computed exposures
-  readonly allBalances = computed(
-    () => this._allBalancesResource.value() ?? {},
+  private readonly _stableAllBalances = stableResourceValue(
+    () => this._allBalancesResource.value(),
+    {} as Record<string, Record<string, { balance: bigint; locked: bigint }>>,
+    { resetKey: () => `${this._accountsKey()}|${this._erc20TokensKey()}` },
   );
+
+  readonly allBalances = computed(() => this._stableAllBalances());
   readonly readStatus = computed<Status>(() =>
     toStatus(this._allBalancesResource.status()),
   );

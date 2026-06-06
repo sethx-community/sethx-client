@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ethers } from 'ethers';
+import { formatTokenAmount } from '../../../core/format/number-format';
 import { SpotOrder } from '../../onchain/contracts/token-spot-orderbook-read.service';
 import { norm } from '../../../core/tokens/token-normalize';
 import type {
@@ -10,6 +11,8 @@ import { TradeSettingsService } from '../trade-settings.service';
 import { OrderBookStore } from './orderbook.store';
 import { TokenService } from '../token.service';
 import { AccountContractService } from '../../onchain/contracts/account-contract.service';
+import { TreasuryContractService } from '../../onchain/contracts/treasury-contract.service';
+import { TreasuryModeService } from '../treasury-mode.service';
 import { ContractRegistryService } from '../../../contracts/contract-registry.service';
 
 import { CURRENT_NETWORK } from '../../../constants/network.config';
@@ -38,6 +41,8 @@ export class OrderBookActionsService {
   private readonly ob = inject(OrderBookStore);
   private readonly tokens = inject(TokenService);
   private readonly accountContract = inject(AccountContractService);
+  private readonly treasuryContract = inject(TreasuryContractService);
+  private readonly treasuryMode = inject(TreasuryModeService);
   private readonly trigger = inject(TriggerService);
   private readonly txReceipt = inject(TransactionReceiptService);
   private readonly feeSvc = inject(FeeService);
@@ -58,6 +63,27 @@ export class OrderBookActionsService {
     if (!key || key === norm(ethers.ZeroAddress)) return 'ETH';
     const info = this.tokens.getToken(key)();
     return info?.symbol ?? key.slice(0, 6);
+  }
+
+  private debugValue(value: unknown): unknown {
+    if (typeof value === 'bigint') return value.toString();
+    if (Array.isArray(value)) return value.map((item) => this.debugValue(item));
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+        out[key] = this.debugValue(item);
+      }
+      return out;
+    }
+    return value;
+  }
+
+  private debugGroup(title: string, payload: Record<string, unknown>): void {
+    // Keep this visible while treasury trading is being validated on mainnet.
+    // BigInts are stringified so the object can be copied directly from DevTools.
+    console.groupCollapsed(title);
+    console.log(this.debugValue(payload));
+    console.groupEnd();
   }
 
   // -------------------- confirmation modal state --------------------
@@ -177,10 +203,35 @@ export class OrderBookActionsService {
         this.settings.selectedAccountId?.();
       if (!acct) throw new Error('No account selected');
 
-      const txHash = await this.accountContract.placeOrderTokenSpot({
-        orderBook: this.spotOrderBookAddress,
-        ...args,
+      const treasuryAccount = this.treasuryMode.selectedTreasuryAccount();
+      const treasurySpotEnabled = Boolean(
+        this.treasuryMode.canUse('spotTrade') && treasuryAccount,
+      );
+
+      this.debugGroup('[SethX spot order] route decision', {
+        selectedAccount: acct,
+        treasurySpotEnabled,
+        actingAsTreasurer: this.treasuryMode.actingAsTreasurer(),
+        selectedTreasuryAccount: treasuryAccount,
+        tokenSpotOrderBook: this.spotOrderBookAddress,
+        treasuryTradeModule: this.treasuryContract.tradeModuleAddress,
+        normalTarget: acct,
+        effectiveTarget: treasurySpotEnabled
+          ? this.treasuryContract.tradeModuleAddress
+          : acct,
+        args,
       });
+
+      const txHash = treasurySpotEnabled && treasuryAccount
+        ? await this.treasuryContract.placeSpotOrder({
+            account: treasuryAccount,
+            orderBook: this.spotOrderBookAddress,
+            ...args,
+          })
+        : await this.accountContract.placeOrderTokenSpot({
+            orderBook: this.spotOrderBookAddress,
+            ...args,
+          });
 
       // central invalidation
       this.trigger.emitDomainEvent({ type: 'orderPlaced' });
@@ -188,6 +239,14 @@ export class OrderBookActionsService {
       this.endSuccess(typeof txHash === 'string' ? txHash : null);
       return txHash;
     } catch (e: any) {
+      this.debugGroup('[SethX spot order] error', {
+        code: e?.code,
+        data: e?.data,
+        reason: e?.reason,
+        shortMessage: e?.shortMessage,
+        message: e?.message,
+        transaction: e?.transaction ?? e?.tx,
+      });
       this.endError(e, 'Order placement failed');
       throw e; // let draft keep modal open + show error
     }
@@ -212,7 +271,28 @@ export class OrderBookActionsService {
       requirements: null,
     });
 
+    const treasuryAccount = this.treasuryMode.selectedTreasuryAccount();
+    const treasuryMode = this.treasuryMode.canUse('spotTrade') && treasuryAccount;
+    const isTreasuryOrder = treasuryMode
+      ? norm(o.user) === norm(treasuryAccount)
+      : false;
+
+    if (treasuryMode && !isTreasuryOrder) {
+      this.confirmDisabled.set(true);
+      this.confirmError.set('Treasury mode can only cancel orders created by the selected treasury account.');
+      this.pendingConfirmAction = null;
+      return;
+    }
+
     this.pendingConfirmAction = async () => {
+      if (treasuryMode && treasuryAccount) {
+        return await this.treasuryContract.cancelSpotOrder({
+          account: treasuryAccount,
+          orderBook: this.spotOrderBookAddress,
+          orderId: o.orderId,
+        });
+      }
+
       return await this.accountContract.cancelSpotTokenOrder({
         orderBook: this.spotOrderBookAddress,
         orderId: o.orderId,
@@ -221,6 +301,23 @@ export class OrderBookActionsService {
   }
 
   async requestFill(o: SpotOrder) {
+    if (this.treasuryMode.actingAsTreasurer()) {
+      this.openConfirmModal({
+        title: 'Fill order',
+        confirmLabel: 'Fill',
+        fields: [
+          { label: 'Action', value: 'Fill order' },
+          { label: 'Order ID', value: o.orderId.toString() },
+          { label: 'Treasury mode', value: 'Not available for spot fills' },
+        ],
+        requirements: null,
+        confirmDisabled: true,
+      });
+      this.confirmError.set('Treasury spot fills are not available through the current treasury module. Place a treasury order instead.');
+      this.pendingConfirmAction = null;
+      return;
+    }
+
     const feeToken = this.preferredFeeToken(); // ZERO or checksummed ERC20
     const amountHuman = this.ob.fillAmountByOrderId(o.orderId);
 
@@ -433,7 +530,7 @@ export class OrderBookActionsService {
       const ok = availableRaw >= v.total;
 
       const fmt = (raw: bigint) =>
-        `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+        formatTokenAmount(raw, decimals, symbol, { maxDecimals: 6, compactFrom: 1_000_000 });
 
       return {
         tokenSymbol: symbol,
