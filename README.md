@@ -1,34 +1,29 @@
 # SETHX Client
 
-The SETHX Client is a local browser client for interacting with the SETHX protocol.
+Welcome to the **SETHX Client** repository. This codebase represents the official frontend workspace interface for the SETHX decentralized trading ecosystem.
 
-It is intended to help users inspect protocol data, connect a wallet, review contract state, and interact with deployed protocol contracts from their own environment.
+## 🚀 Accessing the Platform
 
-This is not a public hosted trading website. It is local client software that can be reviewed, built, and run by the user.
+The SETHX Client is built to be resilient, sovereign, and entirely decentralized. Depending on your needs, you can access or run the client through two distinct paths:
 
-## Community discussions
+### 1. The Community Version (Production)
 
-The main public discussion space for SETHX Community is here:
+For standard use, security, and immediate network access, the global community maintains a live, permanent deployment hosted on **IPFS** .
 
-https://github.com/sethx-community/sethx-site/discussions
+You can access the production-grade decentralized build securely using any ENS-compatible browser or gateway at:
+👉 **`sethx.eth`**
 
-Use Discussions for:
+### 2. Local Tooling & Development (This Repository)
 
-- questions
-- introductions
-- ideas
-- proposal drafts
-- contributor onboarding
-- documentation feedback
-- protocol and tooling discussion
+This repository contains the raw source code frameworks designed to be run as a **local tool** on your machine.
 
-Use this repository’s Issues only for confirmed bugs or specific development tasks related to the client.
+Developers, node runners, and advanced users are encouraged to compile and run the client locally for:
 
-## Why the client is local
+- **Custom Development:** Inspecting components, testing layout themes, or prototyping new derivative views.
+- **Maximum Privacy:** Direct local connection hooks bypassing public web trackers.
+- **Security Auditing:** Verifying contract interaction footprints before mainnet execution loops.
 
-SETHX Community is first building transparent protocol tooling, documentation, and governance infrastructure.
-
-Public protocol interfaces can have different legal and licensing requirements depending on the country. For that reason, the community starts with open local tooling and can later support country-specific interfaces where legally allowed or properly licensed.
+---
 
 ## Development
 
@@ -137,3 +132,21 @@ Use pull requests for concrete changes to this repository.
 All contributors are expected to follow the SETHX Community Code of Conduct:
 
 https://github.com/sethx-community/.github/blob/main/CODE_OF_CONDUCT.md
+
+## Community discussions
+
+The main public discussion space for SETHX Community is here:
+
+https://github.com/sethx-community/sethx-site/discussions
+
+Use Discussions for:
+
+- questions
+- introductions
+- ideas
+- proposal drafts
+- contributor onboarding
+- documentation feedback
+- protocol and tooling discussion
+
+Use this repository’s Issues only for confirmed bugs or specific development tasks related to the client.
