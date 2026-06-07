@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
-import { stableResourceValue } from '../../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
@@ -186,10 +186,10 @@ export class OptionsOrderBookStore {
     },
   });
 
-  private readonly _stableActiveMarkets = stableResourceValue(() => this._activeMarketsRes.value(), [] as ActiveMarketRow[], { resetKey: () => `${this.marketOffset()}|${this.marketLimit()}` });
-  readonly activeMarkets = computed(() => this._stableActiveMarkets());
+  private readonly _stableActiveMarkets = stableResourceValue(() => this._activeMarketsRes.value(), [] as ActiveMarketRow[], { resetKey: () => `${this.marketOffset()}|${this.marketLimit()}`, equal: structuralEqual });
+  readonly activeMarkets = stableComputed(() => this._stableActiveMarkets());
 
-  readonly filteredMarkets = computed(() => {
+  readonly filteredMarkets = stableComputed(() => {
     const q = this.marketSearch().trim().toLowerCase();
     const onlyMine = this.marketsWithMyOrdersOnly();
     const myMarkets = new Set(this.myOrders().map((o) => String(o.order?.marketKey ?? '').toLowerCase()));
@@ -214,7 +214,7 @@ export class OptionsOrderBookStore {
     return list;
   });
 
-  readonly visibleMarkets = computed(() => this.filteredMarkets());
+  readonly visibleMarkets = stableComputed(() => this.filteredMarkets());
 
   // ============================================================
   // My positions (best-effort): scans active markets and queries OptionContract positions.
@@ -378,11 +378,11 @@ export class OptionsOrderBookStore {
     },
   });
 
-  private readonly _stableMyOrders = stableResourceValue(() => this._myOrdersRes.value(), [] as LadderRow[], { resetKey: () => this.activeAccount() });
-  readonly myOrders = computed(() => this._stableMyOrders());
+  private readonly _stableMyOrders = stableResourceValue(() => this._myOrdersRes.value(), [] as LadderRow[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+  readonly myOrders = stableComputed(() => this._stableMyOrders());
 
-  private readonly _stableMyPositions = stableResourceValue(() => this._myPositionsRes.value(), [] as MyPositionRow[], { resetKey: () => this.activeAccount() });
-  readonly myPositions = computed(() => this._stableMyPositions());
+  private readonly _stableMyPositions = stableResourceValue(() => this._myPositionsRes.value(), [] as MyPositionRow[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+  readonly myPositions = stableComputed(() => this._stableMyPositions());
 
   selectPosition(marketKey: string) {
     this.selectedPositionMarketKey.set(String(marketKey ?? '').toLowerCase());
@@ -472,13 +472,13 @@ export class OptionsOrderBookStore {
     },
   });
 
-  private readonly _stableLadder = stableResourceValue(() => this._ladderRes.value(), { bids: [] as LadderRow[], asks: [] as LadderRow[] }, { resetKey: () => this.selectedMarketKey() });
+  private readonly _stableLadder = stableResourceValue(() => this._ladderRes.value(), { bids: [] as LadderRow[], asks: [] as LadderRow[] }, { resetKey: () => this.selectedMarketKey(), equal: structuralEqual });
 
-  readonly bids = computed(() => {
+  readonly bids = stableComputed(() => {
     const rows = this._stableLadder().bids;
     return this.myOrdersOnly() ? rows.filter((r) => r.isMine) : rows;
   });
-  readonly asks = computed(() => {
+  readonly asks = stableComputed(() => {
     const rows = this._stableLadder().asks;
     return this.myOrdersOnly() ? rows.filter((r) => r.isMine) : rows;
   });

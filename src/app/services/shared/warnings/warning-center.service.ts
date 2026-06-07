@@ -2,6 +2,8 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import {
   WARNING_EXPIRY_ORANGE_WINDOW_SECONDS,
   WARNING_LTV_RED_FRACTION_BPS,
+  WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS,
+  WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS,
   WarningStatus,
 } from '../../../constants/warnings.constants';
 import { norm } from '../../../core/tokens/token-normalize';
@@ -12,6 +14,9 @@ import { MarginOptionsOrderBookStore } from '../margin-options-orderbook/margin-
 import { OptionsOrderBookStore } from '../options-orderbook/options-orderbook.store';
 import { TradeSettingsService } from '../trade-settings.service';
 import { TriggerService } from '../trigger.service';
+import { FuturesOrderBookStore } from '../futures-orderbook/futures-orderbook.store';
+import { FuturesMaintenanceService } from '../../onchain/contracts/futures-maintenance.service';
+import { ProtocolDataService } from '../data/protocol-data.service';
 
 export type WarningRow = {
   level: WarningStatus;
@@ -31,6 +36,9 @@ export class WarningCenterService {
   private readonly valuation = inject(ValuationModuleReadService);
   private readonly settings = inject(TradeSettingsService);
   private readonly trigger = inject(TriggerService);
+  private readonly futures = inject(FuturesOrderBookStore);
+  private readonly futuresMaintenance = inject(FuturesMaintenanceService);
+  private readonly protocolData = inject(ProtocolDataService);
 
   private readonly _warnings = signal<WarningRow[]>([]);
   private readonly _loading = signal(false);
@@ -65,10 +73,12 @@ export class WarningCenterService {
       this.addOptionWarnings(rows, now);
       this.addMarginOptionWarnings(rows, now);
       this.addBinaryOptionWarnings(rows, now);
+      this.addOracleWarnings(rows, now);
       if (account) {
         const snapshot = await this.lending.loadAccountSnapshot(account).catch(() => ({ debts: [], pendingDebts: [], bonds: [], orders: [] }));
         this.addLendingExpiryWarnings(rows, now, snapshot);
         await this.addLendingLtvWarnings(rows, account, snapshot);
+        await this.addFuturesWarnings(rows, account, now);
       }
       rows.sort((a, b) => Number(a.due - b.due));
       if (nonce === this.refreshNonce) {
@@ -78,6 +88,62 @@ export class WarningCenterService {
     } finally {
       if (nonce === this.refreshNonce) this._loading.set(false);
     }
+  }
+
+
+  private addOracleWarnings(rows: WarningRow[], now: bigint): void {
+    const oracleInfo = this.protocolData.liveOverview().oracleInfo ?? [];
+    for (const oracle of oracleInfo) {
+      const label = oracle.label || oracle.pair || oracle.oracle;
+      if (oracle.statusLabel && oracle.statusLabel !== 'OK') {
+        rows.push({
+          level: oracle.statusLabel === 'PENDING' ? 'orange' : 'red',
+          type: 'Oracle',
+          title: 'Oracle not OK',
+          detail: `${label}: ${oracle.statusLabel}.`,
+          due: 0n,
+          action: 'Fetch price and sync oracle data from Info → Oracles.',
+        });
+      }
+      const fetched = oracle.lastFetchTimestamp ?? 0n;
+      if (fetched <= 0n) {
+        rows.push({
+          level: 'orange',
+          type: 'Oracle',
+          title: 'Oracle has not been fetched',
+          detail: `${label}: no successful fetch timestamp is available.`,
+          due: 0n,
+          action: 'Fetch price and sync oracle data from Info → Oracles.',
+        });
+      } else if (now > fetched + WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS) {
+        rows.push({
+          level: 'red',
+          type: 'Oracle',
+          title: 'Oracle fetch is very old',
+          detail: `${label}: last fetched ${this.formatAge(now - fetched)} ago.`,
+          due: 0n,
+          action: 'Fetch price and sync oracle data immediately.',
+        });
+      } else if (now > fetched + WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS) {
+        rows.push({
+          level: 'orange',
+          type: 'Oracle',
+          title: 'Oracle fetch is old',
+          detail: `${label}: last fetched ${this.formatAge(now - fetched)} ago.`,
+          due: 0n,
+          action: 'Fetch price and sync oracle data from Info → Oracles.',
+        });
+      }
+    }
+  }
+
+  private formatAge(secondsRaw: bigint): string {
+    const seconds = Number(secondsRaw);
+    if (!Number.isFinite(seconds) || seconds < 0) return '—';
+    if (seconds < 120) return `${seconds}s`;
+    if (seconds < 7200) return `${Math.round(seconds / 60)}m`;
+    if (seconds < 172800) return `${Math.round(seconds / 3600)}h`;
+    return `${Math.round(seconds / 86400)}d`;
   }
 
   private addOptionWarnings(rows: WarningRow[], now: bigint): void {
@@ -143,6 +209,65 @@ export class WarningCenterService {
         rows.push({ level: 'orange', type: 'Lending', title: 'Lending LTV above max borrow level', detail: `Risk ${riskLevel}: ${this.formatBps(currentLtv)} LTV / ${this.formatBps(maxLtv)} max LTV`, due: 0n, action: 'Consider reducing debt before liquidation risk increases.' });
       }
     }
+  }
+
+
+  private async addFuturesWarnings(rows: WarningRow[], account: string, _now: bigint): Promise<void> {
+    const markets = this.futures.activeMarkets();
+    const positions = this.futures.myPositions();
+
+    for (const row of markets) {
+      const marketKey = row.marketKey;
+      const ticker = row.market?.ticker || marketKey;
+      const imbalance = await this.futuresMaintenance.getImbalanceOrder(marketKey).catch(() => null);
+      if (imbalance?.active && imbalance.amount > 0n) {
+        rows.push({
+          level: 'orange',
+          type: 'Futures',
+          title: 'Active imbalance order',
+          detail: `${ticker}: ${this.formatTokenLike(imbalance.amount)} contracts waiting for imbalance matching.`,
+          due: 0n,
+          action: 'Sync settlement price, then match imbalance from an account or treasury account.',
+        });
+      }
+    }
+
+    for (const position of positions) {
+      const health = await this.futuresMaintenance.positionHealth(position.marketKey, account).catch(() => null);
+      if (!health || health.size <= 0n) continue;
+
+      const ticker = position.market?.ticker || position.marketKey;
+      const side = health.side === 1 ? 'long' : health.side === 2 ? 'short' : 'position';
+      const risk = health.riskRatioBps;
+
+      if (health.liquidatable) {
+        rows.push({
+          level: 'red',
+          type: 'Futures',
+          title: 'Futures position liquidatable',
+          detail: `${ticker} ${side}: live margin ${this.formatTokenLike(health.liveMargin)} / maintenance ${this.formatTokenLike(health.maintenanceMargin)}.`,
+          due: 0n,
+          action: 'Add margin, reduce exposure, or close the position immediately if possible.',
+        });
+      } else if (risk !== null && risk < 12_000n) {
+        rows.push({
+          level: 'orange',
+          type: 'Futures',
+          title: 'Futures position near liquidation',
+          detail: `${ticker} ${side}: live margin is ${this.formatBps(risk)} of maintenance requirement.`,
+          due: 0n,
+          action: 'Add margin or reduce exposure before the next price move.',
+        });
+      }
+    }
+  }
+
+  private formatTokenLike(value: bigint): string {
+    const raw = value.toString();
+    if (raw.length <= 18) return raw;
+    const head = raw.slice(0, raw.length - 18) || '0';
+    const frac = raw.slice(raw.length - 18, raw.length - 14).replace(/0+$/u, '');
+    return frac ? `${head}.${frac}` : head;
   }
 
   private isApproaching(due: bigint, now: bigint): boolean {

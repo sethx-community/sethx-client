@@ -1,75 +1,81 @@
 export type ContractName =
-  'SethxToken'
-  | 'FounderTokenTimelock'
-  | 'TreasuryAuthority'
-  | 'ProtocolTreasury'
-  | 'SethxTimelock'
-  | 'SethxGovernor'
+  'AccountFactory'
   | 'AccountRegistry'
-  | 'SethxVault'
-  | 'PriceManager'
+  | 'BinaryMarginOptionContract'
+  | 'BinaryMarginOptionsOrderBook'
+  | 'ChainlinkCrossRateEthOracle'
+  | 'ChainlinkDirectEthPairOracle'
   | 'FeeManager'
-  | 'TokenSpotOrderBook'
+  | 'FuturesContract'
+  | 'FuturesOrderBook'
+  | 'FuturesPositionStore'
+  | 'FuturesValuationAdapter'
+  | 'LendingAccountFactory'
+  | 'LendingContract'
+  | 'LendingOrderBook'
+  | 'LiquidationEngine'
+  | 'MarginOptionContract'
+  | 'MarginOptionsOrderBook'
   | 'NFTSpotOrderBook'
   | 'OptionContract'
   | 'OptionsOrderBook'
-  | 'BinaryMarginOptionContract'
-  | 'BinaryMarginOptionsOrderBook'
-  | 'MarginOptionContract'
-  | 'MarginOptionsOrderBook'
-  | 'FuturesContract'
-  | 'FuturesOrderBook'
-  | 'LendingContract'
-  | 'LendingOrderBook'
   | 'OptionsValuationAdapter'
-  | 'FuturesValuationAdapter'
-  | 'ValuationModule'
-  | 'RiskModule'
-  | 'LiquidationEngine'
-  | 'AccountFactory'
-  | 'LendingAccountFactory'
-  | 'TreasuryPaymentsModule'
-  | 'TreasuryVaultModule'
-  | 'TreasuryTradeModule'
-  | 'SethxFeeConversionOracle'
-  | 'PassiveFuturesSnapshotPublisher'
   | 'PassiveFuturesPoolFactory'
+  | 'PassiveFuturesSnapshotPublisher'
+  | 'PriceManager'
+  | 'ProtocolTreasury'
+  | 'RiskModule'
+  | 'SethxFeeConversionOracle'
+  | 'SethxGovernor'
+  | 'SethxTimelock'
+  | 'SethxToken'
+  | 'SethxVault'
+  | 'TokenSpotOrderBook'
+  | 'TreasuryAuthority'
+  | 'TreasuryFuturesMaintenanceModule'
+  | 'TreasuryPaymentsModule'
+  | 'TreasuryTradeModule'
+  | 'TreasuryVaultModule'
+  | 'ValuationModule'
 ;
 
 export const CONTRACT_NAMES = [
-  'SethxToken',
-  'FounderTokenTimelock',
-  'TreasuryAuthority',
-  'ProtocolTreasury',
-  'SethxTimelock',
-  'SethxGovernor',
+  'AccountFactory',
   'AccountRegistry',
-  'SethxVault',
-  'PriceManager',
+  'BinaryMarginOptionContract',
+  'BinaryMarginOptionsOrderBook',
+  'ChainlinkCrossRateEthOracle',
+  'ChainlinkDirectEthPairOracle',
   'FeeManager',
-  'TokenSpotOrderBook',
+  'FuturesContract',
+  'FuturesOrderBook',
+  'FuturesPositionStore',
+  'FuturesValuationAdapter',
+  'LendingAccountFactory',
+  'LendingContract',
+  'LendingOrderBook',
+  'LiquidationEngine',
+  'MarginOptionContract',
+  'MarginOptionsOrderBook',
   'NFTSpotOrderBook',
   'OptionContract',
   'OptionsOrderBook',
-  'BinaryMarginOptionContract',
-  'BinaryMarginOptionsOrderBook',
-  'MarginOptionContract',
-  'MarginOptionsOrderBook',
-  'FuturesContract',
-  'FuturesOrderBook',
-  'LendingContract',
-  'LendingOrderBook',
   'OptionsValuationAdapter',
-  'FuturesValuationAdapter',
-  'ValuationModule',
-  'RiskModule',
-  'LiquidationEngine',
-  'AccountFactory',
-  'LendingAccountFactory',
-  'TreasuryPaymentsModule',
-  'TreasuryVaultModule',
-  'TreasuryTradeModule',
-  'SethxFeeConversionOracle',
-  'PassiveFuturesSnapshotPublisher',
   'PassiveFuturesPoolFactory',
+  'PassiveFuturesSnapshotPublisher',
+  'PriceManager',
+  'ProtocolTreasury',
+  'RiskModule',
+  'SethxFeeConversionOracle',
+  'SethxGovernor',
+  'SethxTimelock',
+  'SethxToken',
+  'SethxVault',
+  'TokenSpotOrderBook',
+  'TreasuryAuthority',
+  'TreasuryFuturesMaintenanceModule',
+  'TreasuryPaymentsModule',
+  'TreasuryTradeModule',
+  'TreasuryVaultModule',
+  'ValuationModule',
 ] as const satisfies readonly ContractName[];

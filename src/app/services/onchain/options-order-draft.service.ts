@@ -29,6 +29,7 @@ import type {
   RequirementRow,
 } from '../../core/modals/confirmation/confirmation-modal.component';
 import { formatTokenAmount, formatUnitsHuman } from '../../core/format/number-format';
+import { stableComputed } from '../../core/signals/stable-resource';
 
 type DraftMode = 'place' | 'accept' | 'cancel' | 'exercise' | 'reclaim';
 type OptionExpirySelectionMode = 'quick' | 'custom';
@@ -231,7 +232,7 @@ export class OptionsOrderDraftService {
 
   // ---------------- data sources ----------------
   readonly balances = this.portfolio.accountBalances;
-  readonly tokenList = computed<TokenInfo[]>(() => this.tokens.list() ?? []);
+  readonly tokenList = stableComputed<TokenInfo[]>(() => this.tokens.list() ?? []);
 
   // ---------------- token keys ----------------
   readonly assetKey = computed(() =>

@@ -13,3 +13,10 @@ export const WARNING_EXPIRY_ORANGE_WINDOW_SECONDS = BigInt(WARNING_EXPIRY_ORANGE
 // Orange: current LTV is at or above the normal max borrow LTV.
 // Red: current LTV is at or above this percentage of the liquidation LTV.
 export const WARNING_LTV_RED_FRACTION_BPS = 9_000n;
+
+export const WARNING_ORACLE_FETCH_ORANGE_WINDOW_HOURS = 24;
+export const WARNING_ORACLE_FETCH_RED_WINDOW_HOURS = 72;
+export const WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS =
+  BigInt(WARNING_ORACLE_FETCH_ORANGE_WINDOW_HOURS) * 60n * 60n;
+export const WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS =
+  BigInt(WARNING_ORACLE_FETCH_RED_WINDOW_HOURS) * 60n * 60n;

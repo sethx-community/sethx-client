@@ -11,11 +11,12 @@ export class TokenRegistryService {
     return [
       {
         symbol: 'ETH',
-        icon: 'assets/tokens/eth.svg',
+        icon: 'assets/tokens/eth.png',
         address: ETH_ADDRESS,
       },
       {
         symbol: 'SETHX',
+        icon: 'assets/tokens/sethx.png',
         address: this.contracts.getContractAddress('SethxToken'),
       },
     ];

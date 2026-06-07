@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
@@ -35,7 +36,7 @@ export class MarginOptionsTradeComponent {
   trackMarket = (_: number, m: { marketKey: string }) => m.marketKey;
   trackOrder = (_: number, r: MarginLadderRow) => r.orderId.toString();
 
-  marginLadderRows(): Array<{ key: string; bid: MarginLadderRow | null; ask: MarginLadderRow | null }> { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); }
+  readonly marginLadderRows = stableComputed<Array<{ key: string; bid: MarginLadderRow | null; ask: MarginLadderRow | null }>>(() => { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); });
   trackMarginLadderRow = (_: number, row: { key: string }) => row.key;
 
 
@@ -65,14 +66,14 @@ export class MarginOptionsTradeComponent {
     } catch { return '—'; }
   }
 
-  marketsMetrics(): SpotSummaryMetric[] { return [
+  readonly marketsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Markets', value: this.ob.store.visibleMarkets().length },
     { label: 'Payment token', value: this.paymentTokenLabel() },
     { label: 'Open orders', value: this.ob.store.activeMarkets().reduce((s, m) => s + Number(m.orderCount ?? 0n), 0) },
     { label: 'My Positions', value: this.ob.store.myPositions().length },
     { label: 'My Orders', value: this.ob.store.myOrders().length },
     { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
-  ]; }
+  ]);
 
   selectedMarketSummaryMetrics(selected: any): SpotSummaryMetric[] { return [
     { label: 'Strike', value: this.ob.store.formatStrike(selected?.market?.strikePrice) },
@@ -83,24 +84,24 @@ export class MarginOptionsTradeComponent {
     { label: 'Best Ask', value: this.ob.store.bestAsk() !== null ? this.ob.store.formatPrice(this.ob.store.bestAsk()!, selected?.market?.paymentToken) : '—', tone: 'down' },
   ]; }
 
-  selectedMarketPositions(): MarginPositionRow[] {
+  readonly selectedMarketPositions = stableComputed<MarginPositionRow[]>(() => {
     const key = this.ob.store.selectedMarketKey();
     if (!key) return [];
     return this.ob.store.myPositions().filter((p) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
-  }
+  });
 
-  myOrdersMetrics(): SpotSummaryMetric[] { const orders = this.ob.store.myOrders(); return [
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => { const orders = this.ob.store.myOrders(); return [
     { label: 'Orders', value: orders.length },
     { label: 'Bids', value: orders.filter((o) => o.side === 'bid').length, tone: 'up' },
     { label: 'Asks', value: orders.filter((o) => o.side === 'ask').length, tone: 'down' },
     { label: 'Remaining size', value: this.ob.store.formatQuantity(orders.reduce((s, o) => s + ((o.order?.size ?? 0n) > (o.order?.filled ?? 0n) ? (o.order.size - o.order.filled) : 0n), 0n)) },
-  ]; }
+  ]; });
 
-  positionMetrics(): SpotSummaryMetric[] { return [
+  readonly positionMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Positions', value: this.ob.store.myPositions().length },
     { label: 'Holder available', value: this.ob.store.formatQuantity(this.ob.store.myPositions().reduce((s, p) => s + (p.holderAvailable ?? 0n), 0n)) },
     { label: 'Writer available', value: this.ob.store.formatQuantity(this.ob.store.myPositions().reduce((s, p) => s + (p.writerAvailable ?? 0n), 0n)) },
-  ]; }
+  ]);
 
   marketDetailItems(row: any): MarketDetailItem[] { const m = row?.market ?? {}; return [{ label: 'Market key', value: row?.marketKey, mono: true, copyable: true, fullWidth: true }, { label: 'Ticker', value: m.ticker || '—' }, { label: 'Type', value: this.ob.store.optionTypeLabel(m.optionType) }, { label: 'Payment token', value: this.ob.store.tokenLabel(m.paymentToken) }, { label: 'Oracle address', value: m.oracle || '—', mono: true }, { label: 'Latest oracle price', value: this.latestOraclePriceLabel(row) }, { label: 'Latest oracle update', value: this.latestOracleTimeLabel(row) }, { label: 'Writer coverage', value: this.ob.store.formatBpsPercent(m.collateralBps) }, { label: 'Margin / option', value: this.marginPerOptionLabel(row) }, { label: 'Settlement', value: m.settled ? this.ob.store.formatStrike(m.settlementPrice) : 'Open' }]; }
   openPlaceOrder(): void { this.flow.open(MarginOptionsOrderModalComponent, { intent: 'place', defaultMarketKey: this.ob.store.selectedMarketKey() ?? undefined }); }

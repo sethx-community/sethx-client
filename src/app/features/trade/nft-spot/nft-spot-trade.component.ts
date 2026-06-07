@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
 import { NftSpotOrderModalComponent } from '../../../core/overlay/order-modal/nftspotorder-modal.component';
@@ -64,7 +65,7 @@ export class NftSpotTradeComponent {
   readonly error = this.store.error;
   readonly myOrders = this.store.myOrders;
 
-  readonly marketsMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly marketsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Markets', value: this.markets().length },
     { label: 'My NFTs', value: this.myNfts().length },
     { label: 'My orders', value: this.myOrders().length },
@@ -81,7 +82,7 @@ export class NftSpotTradeComponent {
     this.store.showAllRows.update((value) => !value);
   }
 
-  readonly selectedMarketMetrics = computed<SpotSummaryMetric[]>(() => {
+  readonly selectedMarketMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const market = this.selectedMarket();
     return [
       { label: 'Best Bid', value: market?.bestBid ?? '—', tone: 'up' },
@@ -92,13 +93,13 @@ export class NftSpotTradeComponent {
     ];
   });
 
-  readonly myNftsMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly myNftsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'NFTs', value: this.myNfts().length },
     { label: 'Open orders', value: this.myOrders().length },
     { label: 'Filter', value: this.myNftsOnlyAvailable() ? 'Available only' : 'All NFTs', tone: 'muted' },
   ]);
 
-  readonly myOrdersMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'My orders', value: this.myOrders().length },
     { label: 'Markets', value: this.markets().length },
     { label: 'Filter', value: this.myMarketsOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
@@ -131,7 +132,7 @@ export class NftSpotTradeComponent {
     return selected?.product === 'nft-spot' ? selected : null;
   });
 
-  readonly selectedOrderDetailItems = computed<MarketDetailItem[]>(() => {
+  readonly selectedOrderDetailItems = stableComputed<MarketDetailItem[]>(() => {
     const selected = this.selectedNftOrder();
     return this.store.selectedOrderDetailItems((selected?.order as NftSpotOrder | undefined) ?? null);
   });

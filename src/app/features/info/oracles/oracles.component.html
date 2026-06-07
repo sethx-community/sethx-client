@@ -8,7 +8,10 @@
           Search an approved oracle address and inspect the metadata, last price, last fetch, contexts, and the fetch formula used by the oracle to update prices.
         </p>
       </div>
-      <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()">Refresh oracle reads</button>
+      <div class="flex flex-col items-start gap-2 sm:items-end">
+        <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()">Refresh oracle reads</button>
+        <p *ngIf="maintenanceMessage()" class="sethx-meta-text">{{ maintenanceMessage() }}</p>
+      </div>
     </div>
   </header>
 
@@ -44,7 +47,7 @@
               <div class="font-semibold text-white">{{ row.label }}</div>
               <code class="mt-1 block break-all text-accent">{{ row.oracle }}</code>
             </div>
-            <span class="sethx-status-pill" [class.is-ok]="row.statusLabel === 'OK'" [class.is-attention]="row.statusLabel !== 'OK'">{{ row.statusLabel }}</span>
+            <span class="sethx-status-pill" [ngClass]="oraclePillClass(row)">{{ oracleStatusText(row) }}</span>
           </div>
           <p class="mt-2 text-text-muted">{{ row.description }}</p>
         </button>
@@ -69,16 +72,37 @@
         <div class="sethx-readonly-card"><div class="sethx-field-label">Feed decimals</div><div class="sethx-readonly-value-strong">{{ row.feedDecimals ?? '—' }}</div></div>
         <div class="sethx-readonly-card"><div class="sethx-field-label">Last price</div><div class="sethx-readonly-value-strong">{{ formatPrice(row) }}</div></div>
         <div class="sethx-readonly-card"><div class="sethx-field-label">Max staleness</div><div class="sethx-readonly-value-strong">{{ formatStaleness(row.maxStaleness) }}</div></div>
-        <div class="sethx-readonly-card"><div class="sethx-field-label">Status</div><div class="sethx-readonly-value-strong">{{ row.statusLabel }}</div></div>
+        <div class="sethx-readonly-card">
+          <div class="sethx-field-label">Status</div>
+          <div class="mt-1">
+            <span class="sethx-status-pill" [ngClass]="oraclePillClass(row)">{{ oracleStatusText(row) }}</span>
+          </div>
+        </div>
         <div class="sethx-readonly-card"><div class="sethx-field-label">Price timestamp</div><div class="sethx-readonly-value-strong">{{ formatTimestamp(row.priceTimestamp) }}</div></div>
         <div class="sethx-readonly-card"><div class="sethx-field-label">Last fetch</div><div class="sethx-readonly-value-strong">{{ formatTimestamp(row.lastFetchTimestamp) }}</div></div>
         <div class="sethx-readonly-card"><div class="sethx-field-label">Client checked</div><div class="sethx-readonly-value-strong">{{ formatClientCheck(row.clientCheckedAt) }}</div></div>
       </div>
 
       <div class="sethx-readonly-card">
+        <div class="sethx-field-label">Oracle maintenance</div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="!!maintenanceBusy()" (click)="fetchPrice(row)">
+            {{ isBusy(row, 'fetch') ? 'Fetching…' : 'Fetch price' }}
+          </button>
+          <button type="button" class="sethx-button-secondary !py-1" [disabled]="!!maintenanceBusy()" (click)="syncOracle(row)">
+            {{ isBusy(row, 'sync') ? 'Syncing…' : 'Sync oracle data' }}
+          </button>
+          <button type="button" class="sethx-button-primary !py-1" [disabled]="!!maintenanceBusy()" (click)="fetchAndSync(row)">
+            {{ isBusy(row, 'fetch-sync') ? 'Working…' : 'Fetch + sync' }}
+          </button>
+        </div>
+        <p class="sethx-page-copy mt-2">Fetch updates the oracle adapter. Sync copies the oracle state into PriceManager for protocol use.</p>
+      </div>
+
+      <div class="sethx-readonly-card">
         <div class="sethx-field-label">Approved contexts</div>
         <div class="mt-2 flex flex-wrap gap-2">
-          <span *ngFor="let context of row.contexts" class="sethx-status-pill is-active">{{ context }}</span>
+          <span *ngFor="let context of row.contexts; trackBy: trackContext" class="sethx-status-pill is-active">{{ context }}</span>
           <span *ngIf="row.contexts.length === 0" class="sethx-muted-value">No contexts approved.</span>
         </div>
       </div>

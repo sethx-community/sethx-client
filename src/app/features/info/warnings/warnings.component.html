@@ -3,9 +3,9 @@
     <div class="sethx-kicker">Warnings</div>
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <h1 class="sethx-page-title">Position warnings</h1>
+        <h1 class="sethx-page-title">Protocol warnings</h1>
         <p class="sethx-page-copy mt-2">
-          Account-specific warnings for expiries, maturity windows, settlement actions, and lending risk. Orange warnings appear {{ orangeWindowDays }} days before expiry or maturity. Red warnings need immediate review.
+          Protocol and account warnings for oracle freshness, futures risk, expiries, maturity windows, settlement actions, and lending risk. Orange warnings need timely review; expiry and maturity warnings appear {{ orangeWindowDays }} days before the deadline. Red warnings need immediate review.
         </p>
       </div>
       <button type="button" class="sethx-button-secondary w-auto" (click)="refresh()" [disabled]="loading()">
@@ -24,13 +24,13 @@
     <article class="sethx-table-card">
       <div class="sethx-kicker">Orange warnings</div>
       <h2 class="sethx-section-title mt-2">{{ orangeCount() }}</h2>
-      <p class="sethx-page-copy mt-2">Upcoming expiries or maturities inside the {{ orangeWindowDays }} day warning window.</p>
+      <p class="sethx-page-copy mt-2">Items that need timely review, including stale oracle fetches, active imbalance orders, near-liquidation positions, and expiries or maturities inside the {{ orangeWindowDays }} day window.</p>
     </article>
 
     <article class="sethx-table-card">
       <div class="sethx-kicker">Last refresh</div>
       <h2 class="sethx-section-title mt-2">{{ lastUpdatedLabel() }}</h2>
-      <p class="sethx-page-copy mt-2">Warnings update from the selected account, positions, lending snapshot, and price risk reads.</p>
+      <p class="sethx-page-copy mt-2">Warnings update from protocol oracle data, selected account positions, lending snapshots, futures risk reads, and settlement state.</p>
     </article>
   </section>
 

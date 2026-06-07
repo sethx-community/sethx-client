@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { stableResourceValue } from '../../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 
 import {
@@ -101,15 +101,15 @@ export class LendingObComponent {
     this.fallbackMarketRows(),
     { resetKey: () => `${this.selectedAccount()}|${this.marketSpecs().map((m) => `${m.expiry}:${m.riskLevel}`).join('|')}` },
   );
-  readonly marketRows = computed(() => this.stableMarketRows());
+  readonly marketRows = stableComputed(() => this.stableMarketRows());
   private readonly stableAccountSnapshot = stableResourceValue(
     () => this.accountSnapshotResource.value(),
     EMPTY_SNAPSHOT,
-    { resetKey: () => this.selectedAccount() },
+    { resetKey: () => this.selectedAccount(), equal: structuralEqual },
   );
-  readonly accountSnapshot = computed(() => this.stableAccountSnapshot());
+  readonly accountSnapshot = stableComputed(() => this.stableAccountSnapshot());
 
-  readonly configuredMarketRows = computed(() =>
+  readonly configuredMarketRows = stableComputed(() =>
     this.marketRows().filter((row) => this.shouldDisplayMarket(row)),
   );
 
@@ -117,7 +117,7 @@ export class LendingObComponent {
     this.marketRows().filter((row) => !this.shouldDisplayMarket(row)).length,
   );
 
-  readonly filteredMarkets = computed(() => {
+  readonly filteredMarkets = stableComputed(() => {
     const q = this.search().trim().toLowerCase();
     const onlyMine = this.marketsWithMyOrdersOnly();
     const rows = [...this.configuredMarketRows()];
@@ -143,7 +143,7 @@ export class LendingObComponent {
     });
   });
 
-  readonly visibleMarkets = computed(() => {
+  readonly visibleMarkets = stableComputed(() => {
     const start = Math.max(0, Number(this.marketOffset() || 0));
     const limit = Math.max(1, Number(this.marketLimit() || 25));
     return this.filteredMarkets().slice(start, start + limit);
@@ -159,18 +159,18 @@ export class LendingObComponent {
       ?? null;
   });
 
-  readonly selectedLendOrders = computed(() => {
+  readonly selectedLendOrders = stableComputed(() => {
     const rows = this.selectedMarket()?.lendOrders ?? [];
     return this.myOrdersOnly() ? rows.filter((order) => this.isMyOrder(order)) : rows;
   });
-  readonly selectedBorrowOrders = computed(() => {
+  readonly selectedBorrowOrders = stableComputed(() => {
     const rows = this.selectedMarket()?.borrowOrders ?? [];
     return this.myOrdersOnly() ? rows.filter((order) => this.isMyOrder(order)) : rows;
   });
 
-  readonly myOpenOrders = computed(() => this.accountSnapshot().orders);
-  readonly myLendOrders = computed(() => this.myOpenOrders().filter((order) => order.side === 0));
-  readonly myBorrowOrders = computed(() => this.myOpenOrders().filter((order) => order.side === 1));
+  readonly myOpenOrders = stableComputed(() => this.accountSnapshot().orders);
+  readonly myLendOrders = stableComputed(() => this.myOpenOrders().filter((order) => order.side === 0));
+  readonly myBorrowOrders = stableComputed(() => this.myOpenOrders().filter((order) => order.side === 1));
 
   readonly selectedAccountRecord = computed(() => {
     if (this.treasuryMode.canUse('lend')) return null;
@@ -180,7 +180,7 @@ export class LendingObComponent {
 
   readonly isSelectedAccountLending = computed(() => !this.treasuryMode.canUse('lend') && this.selectedAccountRecord()?.type === 'lending');
 
-  readonly pageMetrics = computed<MarketSummaryMetric[]>(() => {
+  readonly pageMetrics = stableComputed<MarketSummaryMetric[]>(() => {
     const rows = this.configuredMarketRows();
     const hiddenDisabled = this.hiddenDisabledSpecs();
     const snapshot = this.accountSnapshot();
@@ -195,7 +195,7 @@ export class LendingObComponent {
     ];
   });
 
-  readonly selectedMarketMetrics = computed<MarketSummaryMetric[]>(() => {
+  readonly selectedMarketMetrics = stableComputed<MarketSummaryMetric[]>(() => {
     const row = this.selectedMarket();
     if (!row) return [];
     return [
@@ -209,7 +209,7 @@ export class LendingObComponent {
     ];
   });
 
-  readonly accountMetrics = computed<MarketSummaryMetric[]>(() => {
+  readonly accountMetrics = stableComputed<MarketSummaryMetric[]>(() => {
     const snapshot = this.accountSnapshot();
     const debtFace = snapshot.debts.reduce((sum, row) => sum + row.faceValue, 0n);
     const pending = snapshot.pendingDebts.reduce((sum, row) => sum + row.pendingPrincipal, 0n);
@@ -226,7 +226,7 @@ export class LendingObComponent {
     ];
   });
 
-  readonly marketDetailItems = computed<MarketDetailItem[]>(() => {
+  readonly marketDetailItems = stableComputed<MarketDetailItem[]>(() => {
     const row = this.selectedMarket();
     if (!row) return [];
     return [
@@ -659,7 +659,7 @@ export class LendingObComponent {
   trackMarket = (_: number, row: LendingMarketRow) => row.marketKey;
   trackOrder = (_: number, order: LendingOrder) => order.orderId.toString();
 
-  lendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
+  readonly lendingBookRows = stableComputed<Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }>>(() => {
     const lends = this.selectedLendOrders();
     const borrows = this.selectedBorrowOrders();
     const length = Math.max(lends.length, borrows.length);
@@ -668,27 +668,27 @@ export class LendingObComponent {
       lend: lends[index] ?? null,
       borrow: borrows[index] ?? null,
     }));
-  }
+  });
 
-  focusLendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
-    return this.lendingBookRows().slice(0, this.ladderFocus());
-  }
+  readonly focusLendingBookRows = stableComputed<Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }>>(() =>
+    this.lendingBookRows().slice(0, this.ladderFocus()),
+  );
 
-  restLendingBookRows(): Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }> {
-    return this.lendingBookRows().slice(this.ladderFocus());
-  }
+  readonly restLendingBookRows = stableComputed<Array<{ key: string; lend: LendingOrder | null; borrow: LendingOrder | null }>>(() =>
+    this.lendingBookRows().slice(this.ladderFocus()),
+  );
 
-  selectedMarketDebts(): LendingDebtRow[] {
+  readonly selectedMarketDebts = stableComputed<LendingDebtRow[]>(() => {
     const key = this.selectedMarketKey();
     if (!key) return [];
     return this.accountSnapshot().debts.filter((row) => row.marketKey.toLowerCase() === key.toLowerCase());
-  }
+  });
 
-  selectedMarketBonds(): LendingBondLotRow[] {
+  readonly selectedMarketBonds = stableComputed<LendingBondLotRow[]>(() => {
     const key = this.selectedMarketKey();
     if (!key) return [];
     return this.accountSnapshot().bonds.filter((row) => row.marketKey.toLowerCase() === key.toLowerCase());
-  }
+  });
 
   selectedMarketHasPosition(): boolean {
     return this.selectedMarketDebts().length > 0 || this.selectedMarketBonds().length > 0;

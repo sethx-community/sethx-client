@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, resource, signal } from '@angular/core';
 import { ethers } from 'ethers';
 import { formatUnitsHuman, formatTokenAmount, formatDecimal } from '../../../core/format/number-format';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../../core/signals/stable-resource';
 
 import { norm } from '../../../core/tokens/token-normalize';
 import { MarketDetailItem } from '../../../shared/orderbook';
@@ -125,9 +126,11 @@ export class NftSpotOrderbookStore {
     },
   });
 
-  readonly myNfts = computed(() => {
+  private readonly _stableMyNfts = stableResourceValue(() => this._myNftsRes.value(), [] as NftSpotOwnedNft[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+
+  readonly myNfts = stableComputed(() => {
     const onlyAvailable = this.myNftsOnlyAvailable();
-    return (this._myNftsRes.value() ?? []).filter((nft) => !onlyAvailable || !nft.locked);
+    return this._stableMyNfts().filter((nft) => !onlyAvailable || !nft.locked);
   });
   readonly myNftsStatus = computed(() => this._myNftsRes.status());
   readonly myNftsError = computed(() => this._myNftsRes.error() ?? null);
@@ -143,11 +146,13 @@ export class NftSpotOrderbookStore {
     },
   });
 
-  readonly loadedMarkets = computed(() => this._marketsRes.value() ?? []);
+  private readonly _stableLoadedMarkets = stableResourceValue(() => this._marketsRes.value(), [] as LoadedMarket[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+
+  readonly loadedMarkets = stableComputed(() => this._stableLoadedMarkets());
   readonly status = computed(() => this._marketsRes.status());
   readonly error = computed(() => this._marketsRes.error() ?? null);
 
-  readonly markets = computed(() => {
+  readonly markets = stableComputed(() => {
     const term = this.search().trim().toLowerCase();
     return this.loadedMarkets().filter((market) => {
       if (this.myMarketsOnly() && market.myOrders <= 0) return false;
@@ -162,7 +167,7 @@ export class NftSpotOrderbookStore {
     });
   });
 
-  readonly visibleMarkets = computed(() => {
+  readonly visibleMarkets = stableComputed(() => {
     const start = Math.max(0, Number(this.marketOffset() || 0));
     const limit = Math.max(1, Number(this.marketLimit() || 25));
     return this.markets().slice(start, start + limit);
@@ -178,33 +183,33 @@ export class NftSpotOrderbookStore {
     return this.loadedMarkets().find((market) => market.key === key) ?? null;
   });
 
-  readonly visibleOrders = computed(() => {
+  readonly visibleOrders = stableComputed(() => {
     const market = this.selectedMarket();
     if (!market) return [];
     const orders = [...market.bids, ...market.asks];
     return this.myOrdersOnly() ? orders.filter((order) => order.isMine) : orders;
   });
 
-  readonly myOrders = computed(() =>
+  readonly myOrders = stableComputed(() =>
     this.loadedMarkets()
       .flatMap((market) => [...market.bids, ...market.asks])
       .filter((order) => order.isMine),
   );
 
-  readonly bidOrders = computed(() => this.visibleOrders().filter((order) => order.side === 'bid'));
-  readonly askOrders = computed(() => this.visibleOrders().filter((order) => order.side === 'ask'));
+  readonly bidOrders = stableComputed(() => this.visibleOrders().filter((order) => order.side === 'bid'));
+  readonly askOrders = stableComputed(() => this.visibleOrders().filter((order) => order.side === 'ask'));
 
-  readonly pairedRows = computed(() => {
+  readonly pairedRows = stableComputed(() => {
     const bids = this.bidOrders();
     const asks = this.askOrders();
     const size = Math.max(bids.length, asks.length);
     return Array.from({ length: size }, (_, index) => ({ bid: bids[index] ?? null, ask: asks[index] ?? null }));
   });
 
-  readonly focusRows = computed(() => this.pairedRows().slice(0, this.ladderFocus()));
-  readonly restRows = computed(() => this.showAllRows() ? this.pairedRows().slice(this.ladderFocus()) : []);
+  readonly focusRows = stableComputed(() => this.pairedRows().slice(0, this.ladderFocus()));
+  readonly restRows = stableComputed(() => this.showAllRows() ? this.pairedRows().slice(this.ladderFocus()) : []);
 
-  readonly marketDetailItems = computed<MarketDetailItem[]>(() => {
+  readonly marketDetailItems = stableComputed<MarketDetailItem[]>(() => {
     const market = this.pinnedMarket() ?? this.selectedMarket();
     return market ? this.marketDetailItemsFor(market) : [];
   });

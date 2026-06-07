@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 import { CommonModule } from '@angular/common';
 import { ethers } from 'ethers';
 
@@ -7,6 +8,7 @@ import { OrderFlowService } from '../../../core/overlay/order-flow.service';
 import { FuturesOrderModalComponent } from '../../../core/overlay/order-modal/futuresorder-modal.component';
 import { OrderbookSelectionService, MarketDetailPanelComponent, SpotSummaryHeaderComponent, type MarketDetailItem, type SpotSummaryMetric } from '../../../shared/orderbook';
 import { OrderReviewFlowComponent } from '../../../shared/order-flow';
+import { FuturesMaintenanceService } from '../../../services/onchain/contracts/futures-maintenance.service';
 
 @Component({
   selector: 'app-futures-trade',
@@ -21,6 +23,9 @@ export class FuturesTradeComponent {
   readonly ob = inject(FuturesOrderBookFacade);
   readonly flow = inject(OrderFlowService);
   readonly orderSelection = inject(OrderbookSelectionService);
+  readonly maintenance = inject(FuturesMaintenanceService);
+
+  trackMetric = (_: number, row: SpotSummaryMetric) => row.label;
 
   readonly view = signal<'markets' | 'orders' | 'positions' | 'my-orders'>('markets');
   readonly expandedMarketInfo = signal<Record<string, boolean>>({});
@@ -95,6 +100,35 @@ export class FuturesTradeComponent {
   }
 
 
+  async syncSelectedSettlement(): Promise<void> {
+    const marketKey = this.ob.store.selectedMarketKey();
+    if (!marketKey) return;
+    await this.maintenance.syncSettlementPrice(marketKey);
+  }
+
+  async syncSelectedSettlementAsTreasurer(): Promise<void> {
+    const marketKey = this.ob.store.selectedMarketKey();
+    if (!marketKey) return;
+    await this.maintenance.syncSettlementPriceAsTreasurer(marketKey);
+  }
+
+  async matchSelectedImbalance(): Promise<void> {
+    const marketKey = this.ob.store.selectedMarketKey();
+    if (!marketKey) return;
+    await this.maintenance.matchImbalanceFromSelectedAccount(marketKey, 25n);
+  }
+
+  readonly selectedMaintenanceActions = stableComputed<SpotSummaryMetric[]>(() => {
+    const row = this.ob.store.selectedMarketRow();
+    const marketKey = this.ob.store.selectedMarketKey();
+    if (!row || !marketKey) return [];
+    return [
+      { label: 'Settlement block', value: row.market?.lastSettlementBlock?.toString?.() ?? '—' },
+      { label: 'Last settlement', value: this.formatSettlementPriceFull(row) },
+      { label: 'Account path', value: this.maintenance.selectedExecutionAccount() ? this.shortAddress(this.maintenance.selectedExecutionAccount()) : 'No account', tone: this.maintenance.selectedExecutionAccount() ? 'muted' : 'down' },
+    ];
+  });
+
   bestFuturesBid(): bigint | null {
     const orders = this.ob.store.buyOrders();
     if (!orders.length) return null;
@@ -126,16 +160,14 @@ export class FuturesTradeComponent {
     return this.ob.store.formatOraclePrice(BigInt(row?.price ?? 0n), market?.oraclePriceDecimals ?? 18);
   }
 
-  marketsMetrics(): SpotSummaryMetric[] {
-    return [
-      { label: 'Markets', value: this.ob.store.visibleMarkets().length },
-      { label: 'My Positions', value: this.ob.store.myPositions().length },
-      { label: 'My Orders', value: this.ob.store.myOrders().length },
-      { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
-    ];
-  }
+  readonly marketsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
+    { label: 'Markets', value: this.ob.store.visibleMarkets().length },
+    { label: 'My Positions', value: this.ob.store.myPositions().length },
+    { label: 'My Orders', value: this.ob.store.myOrders().length },
+    { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
+  ]);
 
-  myOrdersMetrics(): SpotSummaryMetric[] {
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const orders = this.ob.store.myOrders();
     const buy = orders.filter((order: any) => order.side === 0).length;
     const sell = orders.filter((order: any) => order.side === 1).length;
@@ -145,9 +177,9 @@ export class FuturesTradeComponent {
       { label: 'Sell / Short', value: sell, tone: sell > 0 ? 'down' : 'muted' },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
-  }
+  });
 
-  positionsMetrics(): SpotSummaryMetric[] {
+  readonly positionsMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const positions = this.ob.store.myPositions();
     const long = positions.reduce((acc, p) => acc + BigInt(p.longSize ?? 0n), 0n);
     const short = positions.reduce((acc, p) => acc + BigInt(p.shortSize ?? 0n), 0n);
@@ -157,7 +189,7 @@ export class FuturesTradeComponent {
       { label: 'Short contracts', value: this.ob.store.formatContracts(short), tone: short > 0n ? 'down' : 'muted' },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
-  }
+  });
 
   selectedMarketSummaryMetrics(row: any): SpotSummaryMetric[] {
     return [
@@ -238,7 +270,7 @@ export class FuturesTradeComponent {
   nextMarketsPage(): void { const limit = Math.max(1, Number(this.ob.store.marketLimit() || 25)); this.ob.store.marketOffset.set(Number(this.ob.store.marketOffset() || 0) + limit); }
 
 
-  futuresLadderRows(): Array<{ bid: any | null; ask: any | null }> {
+  readonly futuresLadderRows = stableComputed<Array<{ bid: any | null; ask: any | null }>>(() => {
     const bids = this.ob.store.buyOrders();
     const asks = this.ob.store.sellOrders();
     const length = Math.max(bids.length, asks.length);
@@ -246,7 +278,7 @@ export class FuturesTradeComponent {
       bid: bids[index] ?? null,
       ask: asks[index] ?? null,
     }));
-  }
+  });
 
   trackFuturesLadderRow(index: number, row: { bid: any | null; ask: any | null }): string {
     return `${row.bid?.orderId?.toString?.() ?? 'b'}-${row.ask?.orderId?.toString?.() ?? 'a'}-${index}`;

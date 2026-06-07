@@ -1,1 +1,1 @@
-export const REFRESH_INTERVAL_MS = 12_000;
+export const REFRESH_INTERVAL_MS = 60_000;

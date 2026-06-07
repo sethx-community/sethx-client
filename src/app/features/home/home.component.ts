@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { stableComputed } from '../../core/signals/stable-resource';
 
 import { CURRENT_NETWORK_CONFIG } from '../../constants/network.config';
 import { SethxGraphService, RecentGraphActivity } from '../../services/graph';
@@ -27,7 +28,7 @@ export class HomeComponent {
   readonly activityPageSize = 4;
 
   readonly activityPageCount = computed(() => Math.max(1, Math.ceil(this.recentActivities().length / this.activityPageSize)));
-  readonly visibleActivities = computed(() => {
+  readonly visibleActivities = stableComputed(() => {
     const pageCount = this.activityPageCount();
     const page = Math.min(Math.max(0, this.activityPage()), pageCount - 1);
     const start = page * this.activityPageSize;

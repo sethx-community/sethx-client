@@ -13,11 +13,12 @@ function optionalContractAddress(name: Parameters<typeof getContractAddress>[0])
 export const MAIN_TOKENS = [
   {
     symbol: 'ETH',
-    icon: 'assets/tokens/eth.svg',
+    icon: 'assets/tokens/eth.png',
     address: ETH_ADDRESS,
   },
   {
     symbol: 'SETHX',
+    icon: 'assets/tokens/sethx.png',
     address: optionalContractAddress('SethxToken'),
   },
 ];

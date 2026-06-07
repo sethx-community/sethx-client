@@ -2,7 +2,7 @@ import { Component, signal, inject, computed, resource } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ethers } from 'ethers';
 import { formatDecimal, formatUnitsHuman } from '../../core/format/number-format';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../core/signals/stable-resource';
 
 import { TradeSettingsService } from '../../services/shared/trade-settings.service';
 import { PortfolioService } from '../../services/onchain/portfolio.service';
@@ -79,7 +79,7 @@ export class PortfolioComponent {
   readonly whitelist = this.tokens.whitelist;
   readonly other = this.tokens.other;
 
-  readonly tokenMetaByAddress = computed(() => {
+  readonly tokenMetaByAddress = stableComputed(() => {
     const map = new Map<string, TokenInfo>();
     for (const token of [...this.main(), ...this.whitelist(), ...this.other()]) {
       map.set(this.normKey(token.address), token);
@@ -128,7 +128,7 @@ export class PortfolioComponent {
     `${formatDecimal(this.allAccountTokenValue(), { maxDecimals: 4, compactFrom: 1_000_000 })} ETH`,
   );
 
-  readonly selectedTokenStats = computed(() => {
+  readonly selectedTokenStats = stableComputed(() => {
     const balances = this.accountBalances() ?? {};
     let tokenCount = 0;
     let valuedTokenCount = 0;
@@ -177,7 +177,7 @@ export class PortfolioComponent {
   private readonly stableLendingSnapshot = stableResourceValue(
     () => this.lendingSnapshotResource.value(),
     { debts: [], pendingDebts: [], bonds: [], orders: [] },
-    { resetKey: () => this.selectedAccountKey() },
+    { resetKey: () => this.selectedAccountKey(), equal: structuralEqual },
   );
   readonly lendingSnapshot = computed(() => this.stableLendingSnapshot());
   readonly lendingBorrowedAmount = computed(() => {
@@ -247,7 +247,7 @@ export class PortfolioComponent {
 
   readonly lendingLendPositionCount = computed(() => this.lendingSnapshot().bonds.length);
 
-  readonly assetOverviewRows = computed(() => [
+  readonly assetOverviewRows = stableComputed(() => [
     {
       id: 'tokens',
       kind: 'Balance',
@@ -311,6 +311,9 @@ export class PortfolioComponent {
   ]);
 
   refreshBalances(): void {
+    // Manual refresh is allowed to re-discover token metadata. Background
+    // block refreshes only refresh balances/prices and keep token arrays stable.
+    this.tokens.refreshTokens();
     this.portfolio.refreshPortfolio();
   }
 

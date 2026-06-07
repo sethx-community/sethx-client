@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 import { CommonModule } from '@angular/common';
 import { OptionsOrderBookFacade } from '../../../services/shared/options-orderbook/options-orderbook.facade';
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
@@ -133,7 +134,7 @@ export class OptionsTradeComponent {
     });
   }
 
-  optionLadderRows(): Array<{ key: string; bid: LadderRow | null; ask: LadderRow | null }> {
+  readonly optionLadderRows = stableComputed<Array<{ key: string; bid: LadderRow | null; ask: LadderRow | null }>>(() => {
     const bids = this.ob.store.bids();
     const asks = this.ob.store.asks();
     const length = Math.max(bids.length, asks.length);
@@ -142,27 +143,25 @@ export class OptionsTradeComponent {
       bid: bids[index] ?? null,
       ask: asks[index] ?? null,
     }));
-  }
+  });
 
   trackOptionLadderRow = (_: number, row: { key: string }) => row.key;
 
 
-  marketsMetrics(): SpotSummaryMetric[] {
-    return [
+  readonly marketsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
       { label: 'Markets', value: this.ob.store.visibleMarkets().length },
       { label: 'My Positions', value: this.ob.store.myPositions().length },
       { label: 'My Orders', value: this.ob.store.myOrders().length },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
-    ];
-  }
+  ]);
 
-  selectedMarketPositions(): any[] {
+  readonly selectedMarketPositions = stableComputed<any[]>(() => {
     const key = this.ob.store.selectedMarketKey();
     if (!key) return [];
     return this.ob.store.myPositions().filter((p: any) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
-  }
+  });
 
-  positionsMetrics(): SpotSummaryMetric[] {
+  readonly positionsMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const positions = this.ob.store.myPositions();
     const holders = positions.filter((p: any) => (p.holderAvail ?? 0n) > 0n).length;
     const writers = positions.filter((p: any) => (p.writerSize ?? 0n) > 0n).length;
@@ -172,9 +171,9 @@ export class OptionsTradeComponent {
       { label: 'Writer', value: writers, tone: writers > 0 ? 'down' : 'muted' },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
-  }
+  });
 
-  myOrdersMetrics(): SpotSummaryMetric[] {
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const orders = this.ob.store.myOrders();
     const bids = orders.filter((row: any) => row.side === 'bid').length;
     const asks = orders.filter((row: any) => row.side === 'ask').length;
@@ -184,7 +183,7 @@ export class OptionsTradeComponent {
       { label: 'Asks', value: asks, tone: asks > 0 ? 'down' : 'muted' },
       { label: 'Filtered', value: this.ob.store.marketsWithMyOrdersOnly() ? 'My orders only' : 'All markets', tone: 'muted' },
     ];
-  }
+  });
 
 
   selectedMarketSummaryMetrics(sel: any, info: any): SpotSummaryMetric[] {

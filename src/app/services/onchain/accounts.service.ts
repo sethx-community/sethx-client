@@ -6,7 +6,7 @@ import {
   computed,
   effect,
 } from '@angular/core';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue } from '../../core/signals/stable-resource';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 import { Contract, JsonRpcProvider, ZeroAddress } from 'ethers';
 import { AccountRegistryContractService } from './contracts/account-registry-contract.service';
@@ -124,9 +124,9 @@ export class AccountsChainService {
 
   private readonly _stablePersonalAccountRecords = stableResourceValue(() => this._accountRecordsResource.value(), [] as AccountRecord[], { resetKey: () => this.address() });
 
-  readonly personalAccountRecords = computed(() => this._stablePersonalAccountRecords());
+  readonly personalAccountRecords = stableComputed(() => this._stablePersonalAccountRecords());
 
-  readonly treasuryAccountRecords = computed<AccountRecord[]>(() =>
+  readonly treasuryAccountRecords = stableComputed<AccountRecord[]>(() =>
     this.treasuryMode.accounts()
       .filter((row) => row.allowed)
       .map((row) => {
@@ -140,30 +140,30 @@ export class AccountsChainService {
       }),
   );
 
-  readonly accountRecords = computed(() => {
+  readonly accountRecords = stableComputed(() => {
     const byAddress = new Map<string, AccountRecord>();
     for (const account of this.personalAccountRecords()) byAddress.set(norm(account.address), account);
     for (const account of this.treasuryAccountRecords()) byAddress.set(norm(account.address), account);
     return Array.from(byAddress.values());
   });
 
-  readonly allAccounts = computed(() =>
+  readonly allAccounts = stableComputed(() =>
     this.accountRecords().map((account) => account.address),
   );
 
-  readonly accounts = computed(() =>
+  readonly accounts = stableComputed(() =>
     this.personalAccountRecords()
       .filter((account) => account.active)
       .map((account) => account.address),
   );
 
-  readonly normalAccounts = computed(() =>
+  readonly normalAccounts = stableComputed(() =>
     this.personalAccountRecords()
       .filter((account) => account.active && account.type === 'normal')
       .map((account) => account.address),
   );
 
-  readonly lendingAccounts = computed(() =>
+  readonly lendingAccounts = stableComputed(() =>
     this.personalAccountRecords()
       .filter((account) => account.active && account.type === 'lending')
       .map((account) => account.address),

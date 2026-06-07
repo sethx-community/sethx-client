@@ -3,8 +3,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ethers } from 'ethers';
 import { formatUnitsHuman } from '../../../core/format/number-format';
+import { stableComputed } from '../../../core/signals/stable-resource';
+import {
+  WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS,
+  WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS,
+} from '../../../constants/warnings.constants';
 
 import { ProtocolDataService, type ProtocolOracleInfo } from '../../../services/shared/data/protocol-data.service';
+import { PriceManagerContractService } from '../../../services/onchain/contracts/pricemanager-contract.service';
 
 @Component({
   selector: 'app-oracles',
@@ -14,11 +20,14 @@ import { ProtocolDataService, type ProtocolOracleInfo } from '../../../services/
 })
 export class OraclesComponent {
   readonly protocolData = inject(ProtocolDataService);
+  readonly priceManager = inject(PriceManagerContractService);
   readonly live = this.protocolData.liveOverview;
   readonly filter = signal('');
   readonly selectedOracle = signal<string | null>(null);
+  readonly maintenanceBusy = signal<string | null>(null);
+  readonly maintenanceMessage = signal<string | null>(null);
 
-  readonly filteredOracles = computed(() => {
+  readonly filteredOracles = stableComputed(() => {
     const query = this.filter().trim().toLowerCase();
     const rows = this.live().oracleInfo;
     if (!query) return rows;
@@ -98,7 +107,94 @@ export class OraclesComponent {
     return `${Math.round(seconds / 86400)}d`;
   }
 
+
+  oracleSeverity(row: ProtocolOracleInfo): 'ok' | 'orange' | 'red' {
+    const status = (row.statusLabel || '').toUpperCase();
+
+    if (status && status !== 'OK') {
+      return status === 'PENDING' ? 'orange' : 'red';
+    }
+
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const fetched = row.lastFetchTimestamp ?? 0n;
+
+    if (fetched <= 0n) return 'orange';
+    if (now > fetched + WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS) return 'red';
+    if (now > fetched + WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS) return 'orange';
+
+    return 'ok';
+  }
+
+  oracleStatusText(row: ProtocolOracleInfo): string {
+    const severity = this.oracleSeverity(row);
+    const status = (row.statusLabel || '').toUpperCase();
+
+    if (severity === 'red') {
+      if (status && status !== 'OK') return row.statusLabel || 'Needs review';
+      return 'Fetch very old';
+    }
+
+    if (severity === 'orange') {
+      if (status === 'PENDING') return 'Pending';
+      if (!row.lastFetchTimestamp || row.lastFetchTimestamp <= 0n) return 'Not fetched';
+      if (status && status !== 'OK') return row.statusLabel || 'Needs review';
+      return 'Fetch old';
+    }
+
+    return row.statusLabel || 'OK';
+  }
+
+  oraclePillClass(row: ProtocolOracleInfo): Record<string, boolean> {
+    const severity = this.oracleSeverity(row);
+
+    return {
+      'is-ok': severity === 'ok',
+      'is-warning': severity === 'orange',
+      'is-attention': severity === 'red',
+    };
+  }
+
+  async fetchPrice(row: ProtocolOracleInfo): Promise<void> {
+    await this.runMaintenance(row, 'fetch', () => this.priceManager.fetchPrice(row.oracle));
+  }
+
+  async syncOracle(row: ProtocolOracleInfo): Promise<void> {
+    await this.runMaintenance(row, 'sync', () => this.priceManager.syncOracleData(row.oracle));
+  }
+
+  async fetchAndSync(row: ProtocolOracleInfo): Promise<void> {
+    await this.runMaintenance(row, 'fetch-sync', () => this.priceManager.fetchAndSyncOracle(row.oracle));
+  }
+
+  private async runMaintenance(
+    row: ProtocolOracleInfo,
+    action: 'fetch' | 'sync' | 'fetch-sync',
+    task: () => Promise<unknown>,
+  ): Promise<void> {
+    const key = `${action}:${row.oracle.toLowerCase()}`;
+    this.maintenanceBusy.set(key);
+    this.maintenanceMessage.set(null);
+    try {
+      await task();
+      this.maintenanceMessage.set(`${row.label || this.short(row.oracle)} ${action === 'fetch-sync' ? 'fetched and synced' : action === 'fetch' ? 'fetched' : 'synced'}.`);
+      this.protocolData.warmLiveReads();
+    } catch (error: any) {
+      this.maintenanceMessage.set(error?.shortMessage ?? error?.reason ?? error?.message ?? 'Oracle maintenance failed.');
+    } finally {
+      this.maintenanceBusy.set(null);
+    }
+  }
+
+  isBusy(row: ProtocolOracleInfo, action: 'fetch' | 'sync' | 'fetch-sync'): boolean {
+    return this.maintenanceBusy() === `${action}:${row.oracle.toLowerCase()}`;
+  }
+
   trackOracle(_: number, row: ProtocolOracleInfo): string {
     return row.oracle;
   }
+
+  trackContext(_: number, context: string): string {
+    return context;
+  }
 }
+

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 import { FormsModule } from '@angular/forms';
 import { AccountType, AccountsChainService } from '../../../services/onchain/accounts.service';
 import {
@@ -30,7 +31,7 @@ export class RightPanelAccountsComponent {
   readonly lastExplorerUrl = this.accounts.lastExplorerUrl;
   readonly canWrite = computed(() => this.transactionAccess.canWrite());
 
-  readonly createPreviewFields = computed<ConfirmationField[]>(() => [
+  readonly createPreviewFields = stableComputed<ConfirmationField[]>(() => [
     {
       label: 'Action',
       value: 'Create account',

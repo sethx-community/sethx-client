@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ethers, isAddress, JsonRpcProvider } from 'ethers';
 import { formatUnitsHuman, formatTokenAmount } from '../../core/format/number-format';
+import { stableComputed } from '../../core/signals/stable-resource';
 
 import { TradeSettingsService } from '../../services/shared/trade-settings.service';
 import { TokenService, TokenInfo } from '../../services/shared/token.service';
@@ -133,7 +134,7 @@ export class SpotOrderDraftService {
 
   // ---------------- data sources ----------------
   readonly balances = this.portfolio.accountBalances;
-  readonly tokenList = computed<TokenInfo[]>(() => this.tokens.list() ?? []);
+  readonly tokenList = stableComputed<TokenInfo[]>(() => this.tokens.list() ?? []);
 
   // ---------------- base/quote keys ----------------
   readonly baseKey = computed(() =>

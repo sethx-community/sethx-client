@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { stableComputed } from '../../core/signals/stable-resource';
 import { FormsModule } from '@angular/forms';
 import {
   AccountRecord,
@@ -31,7 +32,7 @@ export class AccountsComponent {
   readonly updatingAccount = this.accounts.updatingAccount;
   readonly selectedAccountId = this.tradeSettings.selectedAccountId;
 
-  readonly visibleAccounts = computed<AccountRecord[]>(() => {
+  readonly visibleAccounts = stableComputed<AccountRecord[]>(() => {
     const records = this.accounts.accountRecords();
     return this.showAll() ? records : records.filter((account) => account.active);
   });

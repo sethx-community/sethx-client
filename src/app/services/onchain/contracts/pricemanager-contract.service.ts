@@ -60,4 +60,48 @@ export class PriceManagerContractService extends EthersContractService<Contract>
     return Array.from(res as any) as string[];
   }
 
+
+  // === Oracle maintenance writes ===
+
+  async fetchPrice(oracle: string): Promise<string | null> {
+    return this.call(
+      'fetchPrice' as any,
+      [oracle] as any,
+      'Fetching oracle price failed',
+    );
+  }
+
+  async syncOracleData(oracle: string): Promise<string | null> {
+    return this.call(
+      'syncOracleData' as any,
+      [oracle] as any,
+      'Syncing oracle data failed',
+    );
+  }
+
+  async fetchAndSyncOracle(oracle: string): Promise<{ fetchTx: string | null; syncTx: string | null }> {
+    const fetchTx = await this.fetchPrice(oracle);
+    const syncTx = await this.syncOracleData(oracle);
+    return { fetchTx, syncTx };
+  }
+
+  async getOracleSnapshot(oracle: string): Promise<{
+    price: bigint;
+    priceTimestamp: bigint;
+    lastFetchTimestamp: bigint;
+    status: string;
+  } | null> {
+    try {
+      const res = (await this.read('getOracleSnapshot' as any, [oracle] as any)) as any;
+      return {
+        price: BigInt(res?.price ?? res?.[0] ?? 0),
+        priceTimestamp: BigInt(res?.priceTimestamp ?? res?.[1] ?? 0),
+        lastFetchTimestamp: BigInt(res?.lastFetchTimestamp ?? res?.[2] ?? 0),
+        status: String(res?.status ?? res?.[3] ?? ''),
+      };
+    } catch {
+      return null;
+    }
+  }
+
 }

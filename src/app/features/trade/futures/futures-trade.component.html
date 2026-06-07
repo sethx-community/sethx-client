@@ -125,6 +125,28 @@
         [showActions]="false"
       ></app-spot-summary-header>
 
+      <section class="sethx-edit-panel">
+        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div class="sethx-panel-section-title mb-1">Futures maintenance</div>
+            <p class="sethx-page-copy">Sync settlement before imbalance matching. Treasurer settlement sync uses the treasury maintenance module; imbalance matching uses the selected account path.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="sethx-button-secondary !py-1" [disabled]="maintenance.loading()" (click)="syncSelectedSettlement()">Sync settlement</button>
+            <button type="button" class="sethx-button-secondary !py-1" [disabled]="maintenance.loading()" (click)="syncSelectedSettlementAsTreasurer()">Treasurer sync</button>
+            <button type="button" class="sethx-button-primary !py-1" [disabled]="maintenance.loading()" (click)="matchSelectedImbalance()">Match imbalance</button>
+          </div>
+        </div>
+        <div class="mt-3 grid gap-3 md:grid-cols-3">
+          <div class="sethx-readonly-card" *ngFor="let metric of selectedMaintenanceActions(); trackBy: trackMetric">
+            <div class="sethx-field-label">{{ metric.label }}</div>
+            <div class="sethx-readonly-value-strong">{{ metric.value }}</div>
+          </div>
+        </div>
+        <p *ngIf="maintenance.error()" class="mt-2 text-xs text-down">{{ maintenance.error() }}</p>
+        <p *ngIf="maintenance.lastTxHash()" class="mt-2 text-xs text-text-muted">Last tx: <span class="sethx-address-value">{{ shortAddress(maintenance.lastTxHash()) }}</span></p>
+      </section>
+
       <section class="sethx-edit-panel" *ngIf="ob.store.selectedMarketPosition() as p; else noSelectedMarketPosition">
         <div class="sethx-panel-section-title mb-3">My Position</div>
         <div class="sethx-futures-position-summary-grid">

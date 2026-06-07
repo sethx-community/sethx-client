@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { formatUnitsHuman } from '../../../core/format/number-format';
+import { stableComputed } from '../../../core/signals/stable-resource';
 
 import { ProtocolConfigService } from '../../../services/shared/config/protocol-config.service';
 import { ProtocolDataService } from '../../../services/shared/data/protocol-data.service';
@@ -19,8 +20,8 @@ export class ProtocolInfoComponent {
   readonly products = this.protocolConfig.products;
   readonly assets = this.protocolConfig.assets;
   readonly live = this.protocolData.liveOverview;
-  readonly contracts = computed(() => this.buildContractRows());
-  readonly keyContracts = computed(() => this.contracts().filter((row) => row.priority));
+  readonly contracts = stableComputed(() => this.buildContractRows());
+  readonly keyContracts = stableComputed(() => this.contracts().filter((row) => row.priority));
 
   constructor() {
     this.protocolData.warmLiveReads();
@@ -43,6 +44,16 @@ export class ProtocolInfoComponent {
   trackByName(_: number, row: { name: string }): string {
     return row.name;
   }
+
+
+  trackProduct(_: number, row: { name?: string; label?: string; id?: string }): string {
+    return row.name ?? row.label ?? row.id ?? String(_);
+  }
+
+  trackVaultQuantity(_: number, row: { token?: string; symbol?: string; asset?: string }): string {
+    return row.token ?? row.symbol ?? row.asset ?? String(_);
+  }
+
 
   private buildContractRows(): { name: string; address: string; description: string; priority: boolean }[] {
     const descriptions: Record<string, string> = {

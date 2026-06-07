@@ -1183,3 +1183,17 @@ body.theme-light {
     @apply mx-1 text-text-subtle;
   }
 }
+
+.sethx-token-symbol-fallback {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--sethx-border, rgba(148, 163, 184, 0.35));
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.72;
+}

@@ -21,10 +21,46 @@ export type FuturesMarket = {
 };
 
 export type FuturesPosition = {
+  side: number;
   size: bigint;
   margin: bigint;
+  referencePrice: bigint;
+  liquidationPrice: bigint;
+  liquidationTick: bigint;
+  lossIndexSnapshot: bigint;
   marginPerUnitNorm: bigint;
   isActive: boolean;
+};
+
+export type FuturesPositionHealth = {
+  position: FuturesPosition;
+  unrealizedPnl: bigint;
+  liveMargin: bigint;
+  maintenanceMargin: bigint;
+  liquidatable: boolean;
+  riskRatioBps: bigint | null;
+};
+
+export type FuturesImbalanceOrder = {
+  active: boolean;
+  syntheticMakerSide: number;
+  amount: bigint;
+  settlementPrice: bigint;
+};
+
+export type FuturesLiquidationList = {
+  head: string;
+  tail: string;
+  count: bigint;
+};
+
+export type FuturesLiquidationNode = {
+  active: boolean;
+  side: number;
+  liquidationPrice: bigint;
+  liquidationTick: bigint;
+  prev: string;
+  next: string;
 };
 
 export type FuturesMarketStats = {
@@ -127,18 +163,147 @@ export class FuturesContractReadService {
   async getPosition(
     account: string,
     marketKey: string,
-    isLong: boolean,
+    isLong?: boolean,
   ): Promise<FuturesPosition | null> {
     const c = await this.contractOrNull();
     if (!c || !account) return null;
 
-    const res: any = await c['getPosition'](account, marketKey, isLong);
+    const res: any = await c['getPosition'](account, marketKey);
+    const side = Number(res?.side ?? res?.[0] ?? 0);
+    const isActive = bi(res?.size ?? res?.[1]) > 0n && side !== 0;
+
+    // Compatibility shim: older client code asks for long and short separately.
+    // New protocol stores one net position with side 1=LONG and 2=SHORT.
+    if (isLong === true && side !== 1) return this.emptyPosition(1);
+    if (isLong === false && side !== 2) return this.emptyPosition(2);
+
     return {
-      size: bi(res?.size ?? res?.[0]),
-      margin: bi(res?.margin ?? res?.[1]),
-      marginPerUnitNorm: bi(res?.marginPerUnitNorm ?? res?.[2]),
-      isActive: Boolean(res?.isActive ?? res?.[3]),
+      side,
+      size: bi(res?.size ?? res?.[1]),
+      margin: bi(res?.margin ?? res?.[2]),
+      referencePrice: bi(res?.referencePrice ?? res?.[3]),
+      liquidationPrice: bi(res?.liquidationPrice ?? res?.[4]),
+      liquidationTick: bi(res?.liquidationTick ?? res?.[5]),
+      lossIndexSnapshot: bi(res?.lossIndexSnapshot ?? res?.[6]),
+      marginPerUnitNorm: 0n,
+      isActive,
     };
+  }
+
+  private emptyPosition(side: number): FuturesPosition {
+    return {
+      side,
+      size: 0n,
+      margin: 0n,
+      referencePrice: 0n,
+      liquidationPrice: 0n,
+      liquidationTick: 0n,
+      lossIndexSnapshot: 0n,
+      marginPerUnitNorm: 0n,
+      isActive: false,
+    };
+  }
+
+  async positionHealth(marketKey: string, account: string): Promise<FuturesPositionHealth | null> {
+    const c = await this.contractOrNull();
+    if (!c || !account) return null;
+    try {
+      const res: any = await c['positionHealth'](marketKey, account);
+      const pos = res?.position ?? res?.[0];
+      const position: FuturesPosition = {
+        side: Number(pos?.side ?? pos?.[0] ?? 0),
+        size: bi(pos?.size ?? pos?.[1]),
+        margin: bi(pos?.margin ?? pos?.[2]),
+        referencePrice: bi(pos?.referencePrice ?? pos?.[3]),
+        liquidationPrice: bi(pos?.liquidationPrice ?? pos?.[4]),
+        liquidationTick: bi(pos?.liquidationTick ?? pos?.[5]),
+        lossIndexSnapshot: bi(pos?.lossIndexSnapshot ?? pos?.[6]),
+        marginPerUnitNorm: 0n,
+        isActive: bi(pos?.size ?? pos?.[1]) > 0n && Number(pos?.side ?? pos?.[0] ?? 0) !== 0,
+      };
+      const maintenanceMargin = bi(res?.maintenanceMargin ?? res?.[3]);
+      const liveMargin = bi(res?.liveMargin ?? res?.[2]);
+      return {
+        position,
+        unrealizedPnl: bi(res?.unrealizedPnl ?? res?.[1]),
+        liveMargin,
+        maintenanceMargin,
+        liquidatable: Boolean(res?.liquidatable ?? res?.[4]),
+        riskRatioBps: maintenanceMargin > 0n ? (liveMargin * 10_000n) / maintenanceMargin : null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getImbalanceOrder(marketKey: string): Promise<FuturesImbalanceOrder | null> {
+    const c = await this.contractOrNull();
+    if (!c) return null;
+    try {
+      const res: any = await c['getImbalanceOrder'](marketKey);
+      return {
+        active: Boolean(res?.active ?? res?.[0]),
+        syntheticMakerSide: Number(res?.syntheticMakerSide ?? res?.[1] ?? 0),
+        amount: bi(res?.amount ?? res?.[2]),
+        settlementPrice: bi(res?.settlementPrice ?? res?.[3]),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getOpenInterestImbalance(marketKey: string): Promise<bigint> {
+    const c = await this.contractOrNull();
+    if (!c) return 0n;
+    try {
+      return bi(await c['getOpenInterestImbalance'](marketKey));
+    } catch {
+      return 0n;
+    }
+  }
+
+  async getLiquidationList(marketKey: string, side: 1 | 2): Promise<FuturesLiquidationList | null> {
+    const c = await this.contractOrNull();
+    if (!c) return null;
+    try {
+      const res: any = await c['getLiquidationList'](marketKey, side);
+      return {
+        head: normAddr(res?.head ?? res?.[0]),
+        tail: normAddr(res?.tail ?? res?.[1]),
+        count: bi(res?.count ?? res?.[2]),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getLiquidationNode(marketKey: string, account: string): Promise<FuturesLiquidationNode | null> {
+    const c = await this.contractOrNull();
+    if (!c || !account) return null;
+    try {
+      const res: any = await c['getLiquidationNode'](marketKey, account);
+      return {
+        active: Boolean(res?.active ?? res?.[0]),
+        side: Number(res?.side ?? res?.[1] ?? 0),
+        liquidationPrice: bi(res?.liquidationPrice ?? res?.[2]),
+        liquidationTick: bi(res?.liquidationTick ?? res?.[3]),
+        prev: normAddr(res?.prev ?? res?.[4]),
+        next: normAddr(res?.next ?? res?.[5]),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async requireFreshImbalanceSettlement(marketKey: string): Promise<boolean> {
+    const c = await this.contractOrNull();
+    if (!c) return false;
+    try {
+      await c['requireFreshImbalanceSettlement'](marketKey);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async getLongHolders(marketKey: string): Promise<string[]> {

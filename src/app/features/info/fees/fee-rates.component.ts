@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
-import { stableResourceValue } from '../../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue } from '../../../core/signals/stable-resource';
 import { formatEther } from 'ethers';
 
 import { FeeService } from '../../../services/shared/fee.service';
@@ -84,7 +84,7 @@ export class FeeRatesComponent {
   });
 
   private readonly _stableFeeContexts = stableResourceValue(() => this._feeContextsRes.value(), [] as FeeContextRead[]);
-  readonly feeContexts = computed(() => this._stableFeeContexts());
+  readonly feeContexts = stableComputed(() => this._stableFeeContexts());
   readonly feeContextStatus = computed(() => this._feeContextsRes.status());
   readonly configuredCount = computed(
     () => this.feeContexts().filter((row) => row.configured).length,
@@ -95,6 +95,15 @@ export class FeeRatesComponent {
 
   constructor() {
     this.refresh();
+  }
+
+
+  trackFeeContext(_: number, row: FeeContextRead): string {
+    return row.context;
+  }
+
+  trackToken(_: number, token: string): string {
+    return token;
   }
 
   refresh(): void {

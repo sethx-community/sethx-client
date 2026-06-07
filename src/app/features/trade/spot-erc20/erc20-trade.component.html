@@ -143,42 +143,42 @@
           </div>
 
           <div class="sethx-table-section">Main tokens</div>
-          <ng-container *ngFor="let token of ownedMainTokens()">
+          <ng-container *ngFor="let row of ownedMainTokenRows(); trackBy: trackTokenHoldingRow">
             <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline" [class.is-whitelisted]="isWhitelistedToken(token.address)">{{ token.symbol }}</span></div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
+              <div class="sethx-token-identity">@if (row.icon) { <img [src]="row.icon" [alt]="row.symbol" class="h-5 w-5" /> } @else { <span class="sethx-token-symbol-fallback">{{ row.symbol.slice(0, 1) }}</span> }<span class="sethx-token-symbol-inline" [class.is-whitelisted]="row.isWhitelisted">{{ row.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.total }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.locked }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.available }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.estimatedEthValue }}</div>
             </div>
           </ng-container>
-          @if (ownedMainTokens().length === 0) { <div class="sethx-table-empty">No main tokens owned by the selected account.</div> }
+          @if (ownedMainTokenRows().length === 0) { <div class="sethx-table-empty">No main tokens owned by the selected account.</div> }
 
           <div class="my-3 border-t border-frame"></div>
           <div class="sethx-table-section">Whitelisted / trusted tokens</div>
-          <ng-container *ngFor="let token of ownedWhitelistTokens()">
+          <ng-container *ngFor="let row of ownedWhitelistTokenRows(); trackBy: trackTokenHoldingRow">
             <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline is-whitelisted">{{ token.symbol }}</span></div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
+              <div class="sethx-token-identity">@if (row.icon) { <img [src]="row.icon" [alt]="row.symbol" class="h-5 w-5" /> } @else { <span class="sethx-token-symbol-fallback">{{ row.symbol.slice(0, 1) }}</span> }<span class="sethx-token-symbol-inline is-whitelisted">{{ row.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.total }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.locked }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.available }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.estimatedEthValue }}</div>
             </div>
           </ng-container>
-          @if (ownedWhitelistTokens().length === 0) { <div class="sethx-table-empty">No trusted non-main tokens owned by the selected account.</div> }
+          @if (ownedWhitelistTokenRows().length === 0) { <div class="sethx-table-empty">No trusted non-main tokens owned by the selected account.</div> }
 
           <div class="my-3 border-t border-frame"></div>
           <div class="sethx-table-section">Other tokens</div>
-          <ng-container *ngFor="let token of ownedOtherTokens()">
+          <ng-container *ngFor="let row of ownedOtherTokenRows(); trackBy: trackTokenHoldingRow">
             <div class="sethx-table-row grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-x-4">
-              <div class="sethx-token-identity"><img [src]="token.icon" [alt]="token.symbol" class="h-5 w-5" /><span class="sethx-token-symbol-inline">{{ token.symbol }}</span></div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedTokenAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedLockedAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getFormattedAvailableAmount(token.address, token.decimals) }}</div>
-              <div class="text-right sethx-readonly-value-strong">{{ getEstimatedEthValue(token.address) }}</div>
+              <div class="sethx-token-identity"><span class="sethx-token-symbol-fallback">{{ row.symbol.slice(0, 1) }}</span><span class="sethx-token-symbol-inline">{{ row.symbol }}</span></div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.total }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.locked }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.available }}</div>
+              <div class="text-right sethx-readonly-value-strong">{{ row.estimatedEthValue }}</div>
             </div>
           </ng-container>
-          @if (ownedOtherTokens().length === 0) { <div class="sethx-table-empty">No other tokens owned by the selected account.</div> }
+          @if (ownedOtherTokenRows().length === 0) { <div class="sethx-table-empty">No other tokens owned by the selected account.</div> }
         </div>
       </div>
 
@@ -205,7 +205,7 @@
             <div class="text-right">Action</div>
           </div>
 
-          <ng-container *ngFor="let order of ob.myOrders()">
+          <ng-container *ngFor="let order of ob.myOrders(); trackBy: trackOrder">
             <div class="sethx-table-row sethx-table-row-action grid grid-cols-[0.9fr_1.1fr_0.7fr_1fr_1fr_1fr_0.8fr] gap-x-4 items-center" [class.is-selected]="isMyOrderSelected(order)" (click)="selectMyOrder(order, $event)">
               <div class="sethx-address-value-muted truncate">{{ order.orderId }}</div>
               <div class="truncate">

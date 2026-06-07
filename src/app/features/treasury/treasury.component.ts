@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { stableComputed } from '../../core/signals/stable-resource';
 import { FormsModule } from '@angular/forms';
 
 import { TreasuryContractService, TreasurerInfo, TreasuryAssetOverview, TreasuryAccountBalance } from '../../services/onchain/contracts/treasury-contract.service';
@@ -100,14 +101,23 @@ export class TreasuryComponent implements OnInit {
 
   readonly dashboard = this.treasuryData.dashboard;
 
-  tokenRows(): { token: string; balance: bigint }[] {
+
+  trackTokenRow(_: number, row: { token: string }): string { return row.token; }
+  trackTreasuryAccount(_: number, row: TreasuryAccountRow): string { return row.account; }
+  trackTreasurer(_: number, treasurer: string): string { return treasurer; }
+
+  trackPermission(_: number, row: PermissionRow): string { return row.key; }
+  trackAction(_: number, row: ActionRow): string { return row.key; }
+
+
+  readonly tokenRows = stableComputed<{ token: string; balance: bigint }[]>(() => {
     const overview = this.overview();
     if (!overview) return [];
     return overview.tokens.map((token, index) => ({ token, balance: overview.balances[index] ?? 0n }));
-  }
+  });
 
   overview(): TreasuryAssetOverview | null { return this.dashboard().overview; }
-  treasurers(): string[] { return this.dashboard().treasurers; }
+  readonly treasurers = stableComputed<string[]>(() => this.dashboard().treasurers);
   killed(): boolean { return Boolean(this.dashboard().killed); }
   ethBalance(): bigint { return this.overview()?.ethBal ?? 0n; }
   error(): string | null { return this.localError() ?? this.readError(); }

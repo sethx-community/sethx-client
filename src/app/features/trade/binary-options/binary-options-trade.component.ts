@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderFlowService } from '../../../core/overlay/order-flow.service';
@@ -62,7 +63,7 @@ export class BinaryOptionsTradeComponent {
   trackMarket = (_: number, m: { marketKey: string }) => m.marketKey;
   trackOrder = (_: number, r: BinaryLadderRow) => r.orderId.toString();
 
-  binaryLadderRows(): Array<{ key: string; bid: BinaryLadderRow | null; ask: BinaryLadderRow | null }> { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); }
+  readonly binaryLadderRows = stableComputed<Array<{ key: string; bid: BinaryLadderRow | null; ask: BinaryLadderRow | null }>>(() => { const bids = this.ob.store.bids(); const asks = this.ob.store.asks(); const length = Math.max(bids.length, asks.length); return Array.from({ length }, (_, index) => ({ key: `${bids[index]?.orderId?.toString() ?? 'empty-bid'}:${asks[index]?.orderId?.toString() ?? 'empty-ask'}:${index}`, bid: bids[index] ?? null, ask: asks[index] ?? null })); });
   trackBinaryLadderRow = (_: number, row: { key: string }) => row.key;
 
   isPositive(v: bigint | null | undefined): boolean { return (v ?? 0n) > 0n; }
@@ -116,13 +117,13 @@ export class BinaryOptionsTradeComponent {
   latestOracleTimeLabel(row: any): string { const ts = row?.market?.latestOracleTimestamp; if (!ts || ts === 0n) return '—'; return this.formatExpiry(ts); }
   binaryMarketDetailItems(row: any): MarketDetailItem[] { const m = row?.market ?? {}; return [{ label: 'Market key', value: row?.marketKey, mono: true }, { label: 'Condition', value: this.marketCondition(row) }, { label: 'Ticker', value: m.ticker || '—' }, { label: 'Payment token', value: 'ETH' }, { label: 'Writer coverage', value: '100%' }, { label: 'Oracle address', value: m.oracle || '—', mono: true }, { label: 'Latest oracle price', value: this.latestOraclePriceLabel(row) }, { label: 'Latest oracle update', value: this.latestOracleTimeLabel(row) }, { label: 'Settlement status', value: m.settled ? 'SETTLED' : 'OPEN' }, { label: 'Settlement price', value: m.settled ? this.ob.store.formatStrike(m.settlementPrice) : '—' }]; }
 
-  marketsMetrics(): SpotSummaryMetric[] { return [
+  readonly marketsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Markets', value: this.ob.store.visibleMarkets().length },
     { label: 'Payment token', value: 'ETH' },
     { label: 'Open orders', value: this.ob.store.activeMarkets().reduce((s, m) => s + Number(m.orderCount ?? 0n), 0) },
     { label: 'My Positions', value: this.ob.store.myPositions().length },
     { label: 'My Orders', value: this.ob.store.myOrders().length },
-  ]; }
+  ]);
 
   selectedMarketSummaryMetrics(selected: any, info?: any): SpotSummaryMetric[] { const m = info ?? selected?.market; return [
     { label: 'Expiry', value: this.formatExpiry(m?.expiry) },
@@ -133,24 +134,24 @@ export class BinaryOptionsTradeComponent {
     { label: 'Spread', value: this.ob.store.spread() !== null ? this.ob.store.formatPricePerEth(this.ob.store.spread()!) : '—' },
   ]; }
 
-  selectedMarketPositions(): any[] {
+  readonly selectedMarketPositions = stableComputed<any[]>(() => {
     const key = this.ob.store.selectedMarketKey();
     if (!key) return [];
     return this.ob.store.myPositions().filter((p: any) => String(p.marketKey ?? '').toLowerCase() === String(key).toLowerCase());
-  }
+  });
 
-  myOrdersMetrics(): SpotSummaryMetric[] { const orders = this.ob.store.myOrders(); return [
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => { const orders = this.ob.store.myOrders(); return [
     { label: 'Orders', value: orders.length },
     { label: 'Bids', value: orders.filter((o) => o.side === 'bid').length, tone: 'up' },
     { label: 'Asks', value: orders.filter((o) => o.side === 'ask').length, tone: 'down' },
     { label: 'Total payout', value: this.ob.store.formatEth(orders.reduce((s, o) => s + (o.order?.payoutAmount ?? 0n), 0n)) },
-  ]; }
+  ]; });
 
-  positionMetrics(): SpotSummaryMetric[] { return [
+  readonly positionMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Positions', value: this.ob.store.myPositions().length },
     { label: 'Holder payout', value: this.ob.store.formatEth(this.ob.store.myPositions().reduce((s, p) => s + (p.holderClaimable ?? 0n), 0n)) },
     { label: 'Writer margin', value: this.ob.store.formatEth(this.ob.store.myPositions().reduce((s, p) => s + (p.writerMargin ?? 0n), 0n)) },
-  ]; }
+  ]);
 
   openPlaceOrder(): void { this.flow.open(BinaryOrderModalComponent, { intent: 'place', defaultMarketKey: this.ob.store.selectedMarketKey() ?? undefined }); }
   openFeeQuote(): void { this.flow.open(BinaryOrderModalComponent, { intent: 'quote', defaultMarketKey: this.ob.store.selectedMarketKey() ?? undefined }); }

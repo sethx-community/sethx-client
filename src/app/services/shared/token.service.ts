@@ -1,5 +1,5 @@
 import { Injectable, inject, computed, resource, effect } from '@angular/core';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue } from '../../core/signals/stable-resource';
 import { isAddress } from 'ethers';
 import { PriceManagerContractService } from '../onchain/contracts/pricemanager-contract.service';
 import { VaultContractService } from '../onchain/contracts/vault-contract.service';
@@ -30,6 +30,52 @@ type Meta = { symbol: string; name: string; decimals: number };
 const ORACLE_CONTEXT = {
   TRADE_VALUE: 1,
 } as const;
+
+
+const LOCAL_TOKEN_ICON_BY_ADDRESS: Record<string, string> = {
+  [n(ETH_ADDRESS)]: 'assets/tokens/eth.png',
+  '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'assets/tokens/usdc.png',
+  '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': 'assets/tokens/weth.png',
+  '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599': 'assets/tokens/wbtc.png',
+  '0x514910771af9ca656af840dff83e8264ecf986ca': 'assets/tokens/link.png',
+  '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984': 'assets/tokens/uni.png',
+  '0x7fc66500c84a76ad7e9c93437bfc5ac33e2dde9': 'assets/tokens/aave.png',
+  '0x5a98fcbea516cf06857215779fd812ca3bef1b32': 'assets/tokens/ldo.png',
+  '0x6b175474e89094c44da98b954eedeac495271d0f': 'assets/tokens/dai.png',
+};
+
+const LOCAL_MAIN_TOKEN_ICON_BY_SYMBOL: Record<string, string> = {
+  SETHX: 'assets/tokens/sethx.png',
+};
+
+function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function sameTokenIndex(a: TokenIndex, b: TokenIndex): boolean {
+  return sameStringArray(a.main, b.main)
+    && sameStringArray(a.whitelist, b.whitelist)
+    && sameStringArray(a.other, b.other);
+}
+
+function sameMetaMap(a: Record<string, Meta>, b: Record<string, Meta>): boolean {
+  if (a === b) return true;
+  const aKeys = Object.keys(a).sort();
+  const bKeys = Object.keys(b).sort();
+  if (!sameStringArray(aKeys, bKeys)) return false;
+  for (const key of aKeys) {
+    const av = a[key];
+    const bv = b[key];
+    if (!bv) return false;
+    if (av.symbol !== bv.symbol || av.name !== bv.name || av.decimals !== bv.decimals) return false;
+  }
+  return true;
+}
 
 function n(v: unknown): string {
   return String(v ?? '')
@@ -78,7 +124,11 @@ export class TokenService {
     loader: async () => this._loadTokenIndex(),
   });
 
-  private readonly _stableIndex = stableResourceValue(() => this._indexRes.value(), { main: [] as string[], whitelist: [] as string[], other: [] as string[] });
+  private readonly _stableIndex = stableResourceValue(
+    () => this._indexRes.value(),
+    { main: [] as string[], whitelist: [] as string[], other: [] as string[] },
+    { equal: sameTokenIndex },
+  );
   private readonly _index = computed(() => this._stableIndex());
 
   private readonly _metaRes = resource<
@@ -124,15 +174,21 @@ export class TokenService {
     },
   });
 
-  private readonly _stableMeta = stableResourceValue(() => this._metaRes.value(), {} as Record<string, Meta>);
+  private readonly _stableMeta = stableResourceValue(
+    () => this._metaRes.value(),
+    {} as Record<string, Meta>,
+    { equal: sameMetaMap },
+  );
   private readonly _meta = computed(() => this._stableMeta());
 
   constructor() {
     effect(() => {
-      this.trigger.vaultTick();
+      // Token discovery is intentionally domain-scoped. Block, vault, and price
+      // refreshes must not rebuild token arrays every block; they make the
+      // token lists flicker even when the set of tokens is unchanged.
+      // Token discovery refreshes on wallet changes, explicit token-domain
+      // events, and manual refresh paths that call refreshTokens().
       this.trigger.tokensTick();
-      this.trigger.pricesTick();
-
       this.refreshTokens();
     });
   }
@@ -157,7 +213,7 @@ export class TokenService {
     () => this._indexRes.error() ?? this._metaRes.error() ?? null,
   );
 
-  readonly list = computed<TokenInfo[]>(() => {
+  readonly list = stableComputed<TokenInfo[]>(() => {
     const idx = this._index();
     const meta = this._meta();
 
@@ -166,15 +222,15 @@ export class TokenService {
     return ordered.map((addr) => this._toTokenInfo(addr, idx, meta));
   });
 
-  readonly main = computed(() =>
+  readonly main = stableComputed(() =>
     this.list().filter((t) => t.category === 'main'),
   );
 
-  readonly whitelist = computed(() =>
+  readonly whitelist = stableComputed(() =>
     this.list().filter((t) => t.category === 'whitelist'),
   );
 
-  readonly other = computed(() =>
+  readonly other = stableComputed(() =>
     this.list().filter((t) => t.category === 'other'),
   );
 
@@ -237,7 +293,7 @@ export class TokenService {
       symbol: m.symbol,
       name: m.name,
       decimals: m.decimals,
-      icon: this._getIcon(m.symbol, key),
+      icon: this._getIcon(m.symbol, key, category),
       category,
     };
   }
@@ -358,19 +414,31 @@ export class TokenService {
     return trusted;
   }
 
-  private _getEthIcon(): string {
-    return 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png';
-  }
+  private _getIcon(
+    symbol: string,
+    address: string,
+    category: TokenInfo['category'],
+  ): string | undefined {
+    // Only trusted protocol/main tokens and explicit whitelisted token addresses
+    // get bundled icons. Unknown/other tokens intentionally show the neutral
+    // symbol fallback so spoofed symbols cannot inherit trusted icons.
+    if (category === 'other') return undefined;
 
-  private _getIcon(symbol: string, address: string): string | undefined {
-    const known = this._mainTokens().find(
-      (t) => n(t.symbol) === n(symbol) || n(t.address) === n(address),
+    const key = normalizeAddressOrNative(address);
+    const knownMainToken = this._mainTokens().find(
+      (t) => normalizeAddressOrNative(t.address) === key,
     );
 
-    if (known?.icon) return known.icon;
+    if (knownMainToken?.icon) return knownMainToken.icon;
 
-    if (address === n(ETH_ADDRESS)) return this._getEthIcon();
+    const addressIcon = LOCAL_TOKEN_ICON_BY_ADDRESS[key];
+    if (addressIcon) return addressIcon;
 
-    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${address}/logo.png`;
+    if (category === 'main') {
+      const symbolIcon = LOCAL_MAIN_TOKEN_ICON_BY_SYMBOL[String(symbol ?? '').toUpperCase()];
+      if (symbolIcon) return symbolIcon;
+    }
+
+    return undefined;
   }
 }

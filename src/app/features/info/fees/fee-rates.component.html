@@ -60,7 +60,7 @@
         <div>Executable after</div>
       </div>
 
-      <div *ngFor="let row of feeContexts()" class="border-t border-trade-border bg-background/40 px-4 py-4 first:border-t-0 xl:grid xl:grid-cols-[minmax(120px,0.9fr)_minmax(170px,1.2fr)_minmax(260px,2fr)_minmax(120px,0.8fr)_minmax(110px,0.8fr)] xl:items-center xl:gap-4">
+      <div *ngFor="let row of feeContexts(); trackBy: trackFeeContext" class="border-t border-trade-border bg-background/40 px-4 py-4 first:border-t-0 xl:grid xl:grid-cols-[minmax(120px,0.9fr)_minmax(170px,1.2fr)_minmax(260px,2fr)_minmax(120px,0.8fr)_minmax(110px,0.8fr)] xl:items-center xl:gap-4">
         <div class="mb-3 xl:mb-0">
           <div class="text-[10px] uppercase tracking-[0.16em] text-text-subtle xl:hidden">Contract</div>
           <div class="font-semibold text-white">{{ row.contract }}</div>
@@ -106,7 +106,7 @@
     </div>
 
     <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-      <div *ngFor="let token of acceptedTokens()" class="rounded border border-trade-border bg-background/60 p-3 text-xs">
+      <div *ngFor="let token of acceptedTokens(); trackBy: trackToken" class="rounded border border-trade-border bg-background/60 p-3 text-xs">
         <div class="font-semibold text-white">Accepted token</div>
         <code class="mt-1 block break-all text-accent">{{ token }}</code>
       </div>

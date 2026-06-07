@@ -143,18 +143,83 @@ for (const file of artifactFiles) {
   }
 }
 
-const entries = Object.entries(deployment.addresses)
-  .map(([addressKey, address]) => ({
-    addressKey,
-    contractName: addressKeyToContractName[addressKey],
-    address,
-  }))
-  .filter(
-    (x) =>
-      x.contractName &&
-      typeof x.address === "string" &&
-      /^0x[0-9a-fA-F]{40}$/.test(x.address),
-  );
+function isAddress(value) {
+  return typeof value === "string" && /^0x[0-9a-fA-F]{40}$/.test(value);
+}
+
+function toKey(value) {
+  return String(value)
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_([a-zA-Z0-9])/g, (_m, c) => c.toUpperCase())
+    .replace(/^([a-z])/, (_m, c) => c.toUpperCase());
+}
+
+function oracleContractName(entry) {
+  if (entry?.feedType === "ASSET_ETH") return "ChainlinkDirectEthPairOracle";
+  if (entry?.feedType === "ASSET_USD") return "ChainlinkCrossRateEthOracle";
+
+  // Fallback for older fixed/custom oracle entries.
+  return entry?.contractName ?? entry?.artifact ?? "ChainlinkEthPairOracleBase";
+}
+
+function collectDeploymentEntries(deployment) {
+  const result = [];
+
+  for (const [addressKey, address] of Object.entries(
+    deployment.addresses ?? {},
+  )) {
+    const contractName = addressKeyToContractName[addressKey];
+
+    if (!contractName || !isAddress(address)) continue;
+
+    result.push({
+      addressKey,
+      instanceKey: contractName,
+      contractName,
+      address,
+      label: addressKey,
+      source: "deployment.addresses",
+    });
+  }
+
+  const chainlinkEthOracles =
+    deployment?.oracle?.chainlinkEthOracles &&
+    typeof deployment.oracle.chainlinkEthOracles === "object"
+      ? deployment.oracle.chainlinkEthOracles
+      : {};
+
+  for (const [pairName, entry] of Object.entries(chainlinkEthOracles)) {
+    if (!entry || typeof entry !== "object") continue;
+    if (!isAddress(entry.oracle)) continue;
+
+    const pairKey = toKey(pairName);
+    const instanceKey = `${pairKey}Oracle`;
+    const contractName = oracleContractName(entry);
+
+    result.push({
+      addressKey: `oracle.chainlinkEthOracles.${pairName}.oracle`,
+      instanceKey,
+      contractName,
+      address: entry.oracle,
+      label: pairName,
+      source: "deployment.oracle.chainlinkEthOracles",
+      metadata: {
+        pairName,
+        symbol: entry.symbol ?? null,
+        tokenSymbol: entry.tokenSymbol ?? null,
+        feedType: entry.feedType ?? null,
+        feed: entry.feed ?? null,
+        ethUsdFeed: entry.ethUsdFeed ?? null,
+        token: entry.token ?? null,
+      },
+    });
+  }
+
+  return result;
+}
+
+const entries = collectDeploymentEntries(deployment);
 
 const usable = [];
 for (const entry of entries) {
@@ -178,6 +243,10 @@ const contractsDir = path.resolve(outRoot);
 const generatedDir = path.join(contractsDir, "generated");
 fs.mkdirSync(generatedDir, { recursive: true });
 
+const uniqueContractNames = Array.from(
+  new Set(usable.map((x) => x.contractName)),
+).sort();
+
 function writeFile(relativePath, content) {
   fs.writeFileSync(
     path.join(contractsDir, relativePath),
@@ -195,19 +264,29 @@ writeFile(
     "",
     `export const DEPLOYED_ADDRESSES = ${JSON.stringify(deployment.addresses, null, 2)} as const;`,
     "",
+    `export const DEPLOYED_CONTRACTS = ${JSON.stringify(
+      entries.map(({ artifact, ...entry }) => entry),
+      null,
+      2,
+    )} as const;`,
+    "",
   ].join("\n"),
 );
 
 writeFile(
   "generated/addresses.ts",
   [
-    "import { DEPLOYED_ADDRESSES } from './deployed-addresses';",
+    "import { DEPLOYED_CONTRACTS } from './deployed-addresses';",
     "",
     "export const CONTRACT_ADDRESSES = {",
-    ...usable.map(
-      (x) => `  ${x.contractName}: DEPLOYED_ADDRESSES.${x.addressKey},`,
-    ),
+    ...usable.map((x) => `  ${x.instanceKey}: ${JSON.stringify(x.address)},`),
     "} as const;",
+    "",
+    "export type DeployedContractKey = keyof typeof CONTRACT_ADDRESSES;",
+    "",
+    "export const DEPLOYED_CONTRACT_BY_KEY = Object.fromEntries(",
+    "  DEPLOYED_CONTRACTS.map((contract) => [contract.instanceKey, contract]),",
+    ") as Record<DeployedContractKey, (typeof DEPLOYED_CONTRACTS)[number]>;",
     "",
   ].join("\n"),
 );
@@ -216,13 +295,13 @@ writeFile(
   "contract-names.ts",
   [
     "export type ContractName =",
-    ...usable.map(
-      (x, index) => `  ${index === 0 ? "" : "| "}'${x.contractName}'`,
+    ...uniqueContractNames.map(
+      (name, index) => `  ${index === 0 ? "" : "| "}'${name}'`,
     ),
     ";",
     "",
     "export const CONTRACT_NAMES = [",
-    ...usable.map((x) => `  '${x.contractName}',`),
+    ...uniqueContractNames.map((name) => `  '${name}',`),
     "] as const satisfies readonly ContractName[];",
     "",
   ].join("\n"),
@@ -238,11 +317,11 @@ writeFile(
     "export const EXPECTED_CONTRACT_VERSION = '1.0.0';",
     "",
     "export const EXPECTED_CONTRACT_IDS = {",
-    ...usable.map((x) => {
-      const expectedId = CODE_ONLY_CONTRACTS.has(x.contractName)
+    ...uniqueContractNames.map((contractName) => {
+      const expectedId = CODE_ONLY_CONTRACTS.has(contractName)
         ? "null"
-        : `'${x.contractName}@1.0.0'`;
-      return `  ${x.contractName}: ${expectedId},`;
+        : `'${contractName}@1.0.0'`;
+      return `  ${contractName}: ${expectedId},`;
     }),
     "} as const satisfies Record<ContractName, string | null>;",
     "",
@@ -288,14 +367,21 @@ writeFile(
 );
 
 // 🟢 Fixed: Complete full-length output configuration for writing individual contract files
-usable.forEach((x) => {
+for (const contractName of uniqueContractNames) {
+  const artifact = artifactByContractName.get(contractName);
+
+  if (!artifact) {
+    console.warn(`[contracts] Missing artifact for ${contractName}`);
+    continue;
+  }
+
   writeFile(
-    `generated/${x.contractName}.ts`,
+    `generated/${contractName}.ts`,
     [
-      `export const ABI = ${JSON.stringify(x.artifact.abi, null, 2)} as const;`,
+      `export const ABI = ${JSON.stringify(artifact.abi, null, 2)} as const;`,
     ].join("\n"),
   );
-});
+}
 
 // 🟢 Fixed: Complete full-length exporter logic block for app wide initialization scripts
 writeFile(
@@ -305,9 +391,8 @@ writeFile(
     "export * from './contract-identities';",
     "import { CONTRACT_ADDRESSES } from './generated/addresses';",
     "export { CONTRACT_ADDRESSES };",
-    ...usable.map(
-      (x) =>
-        `export { ABI as ${x.contractName}ABI } from './generated/${x.contractName}';`,
+    ...uniqueContractNames.map(
+      (name) => `export { ABI as ${name}ABI } from './generated/${name}';`,
     ),
   ].join("\n"),
 );

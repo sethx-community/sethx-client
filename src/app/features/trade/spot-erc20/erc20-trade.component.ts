@@ -31,8 +31,21 @@ import {
 import { AccountsChainService } from '../../../services/onchain/accounts.service';
 import { ETH_ADDRESS } from '../../../services/shared/main.tokens';
 import { formatDecimal, formatUnitsHuman } from '../../../core/format/number-format';
+import { stableComputed } from '../../../core/signals/stable-resource';
 
 const NATIVE_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+type TokenHoldingRow = {
+  key: string;
+  token: TokenInfo;
+  symbol: string;
+  icon: string | null;
+  isWhitelisted: boolean;
+  total: string;
+  locked: string;
+  available: string;
+  estimatedEthValue: string;
+};
 
 @Component({
   selector: 'app-erc20-trade',
@@ -86,7 +99,9 @@ export class Erc20TradeComponent {
   readonly whitelistTokens = this.tokens.whitelist;
   readonly otherTokens = this.tokens.other;
 
-  readonly isLoading = computed(() => this.portfolioStatus() === 'pending');
+  readonly isLoading = computed(
+    () => this.portfolioStatus() === 'pending' && !this.lastRefreshedAt(),
+  );
 
   readonly selectedAccountLabel = computed(() => {
     const account = this.settings.selectedAccountId();
@@ -115,19 +130,31 @@ export class Erc20TradeComponent {
     }).length;
   });
 
-  readonly ownedMainTokens = computed(() =>
+  readonly ownedMainTokens = stableComputed(() =>
     this.mainTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
   );
 
-  readonly ownedWhitelistTokens = computed(() =>
+  readonly ownedWhitelistTokens = stableComputed(() =>
     this.whitelistTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
   );
 
-  readonly ownedOtherTokens = computed(() =>
+  readonly ownedOtherTokens = stableComputed(() =>
     this.otherTokens().filter((token) => this.hasOwnedTokenBalance(token.address)),
   );
 
-  readonly tokenHoldingsMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly ownedMainTokenRows = stableComputed<TokenHoldingRow[]>(() =>
+    this.ownedMainTokens().map((token) => this.toTokenHoldingRow(token)),
+  );
+
+  readonly ownedWhitelistTokenRows = stableComputed<TokenHoldingRow[]>(() =>
+    this.ownedWhitelistTokens().map((token) => this.toTokenHoldingRow(token)),
+  );
+
+  readonly ownedOtherTokenRows = stableComputed<TokenHoldingRow[]>(() =>
+    this.ownedOtherTokens().map((token) => this.toTokenHoldingRow(token)),
+  );
+
+  readonly tokenHoldingsMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Owned tokens', value: this.myTokenCount() },
     { label: 'Trusted tokens', value: this.ownedWhitelistTokens().length },
     { label: 'Account', value: this.selectedAccountLabel(), tone: 'muted' },
@@ -136,7 +163,7 @@ export class Erc20TradeComponent {
 
   readonly tokenPrices = (addr: string) => this.prices.tokenPrices(addr);
 
-  readonly selectedBookMetrics = computed<SpotSummaryMetric[]>(() => {
+  readonly selectedBookMetrics = stableComputed<SpotSummaryMetric[]>(() => {
     const book = this.ob.selectedBook();
     return [
       {
@@ -168,7 +195,7 @@ export class Erc20TradeComponent {
     ];
   });
 
-  readonly booksMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly booksMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'Markets', value: this.ob.visibleBooks().length },
     { label: 'My Tokens', value: this.myTokenCount() },
     { label: 'My orders', value: this.ob.myOrders().length },
@@ -179,7 +206,7 @@ export class Erc20TradeComponent {
     },
   ]);
 
-  readonly myOrdersMetrics = computed<SpotSummaryMetric[]>(() => [
+  readonly myOrdersMetrics = stableComputed<SpotSummaryMetric[]>(() => [
     { label: 'My orders', value: this.ob.myOrders().length },
     { label: 'Account', value: this.selectedAccountLabel(), tone: 'muted' },
     {
@@ -207,7 +234,7 @@ export class Erc20TradeComponent {
     });
   }
 
-  readonly bookDetailItems = computed<MarketDetailItem[]>(() => {
+  readonly bookDetailItems = stableComputed<MarketDetailItem[]>(() => {
     const b = this.pinnedBook() ?? this.hoveredBook();
     return b ? this.bookDetailItemsFor(b) : [];
   });
@@ -391,7 +418,7 @@ export class Erc20TradeComponent {
     return `${this.ob.tokenLabel(order.baseToken)}/${this.ob.tokenLabel(order.quoteToken)}`;
   }
 
-  selectedOrderDetailItems(): MarketDetailItem[] {
+  readonly selectedOrderDetailItems = stableComputed<MarketDetailItem[]>(() => {
     const selected = this.selectedSpotOrder();
     if (!selected) return [];
     const order = selected.order as SpotOrder;
@@ -402,7 +429,7 @@ export class Erc20TradeComponent {
       side,
       selected.isMine,
     );
-  }
+  });
 
   private orderDetailItems(
     order: SpotOrder,
@@ -456,6 +483,26 @@ export class Erc20TradeComponent {
     return a;
   }
 
+  trackTokenHoldingRow(_index: number, row: TokenHoldingRow): string {
+    return row.key;
+  }
+
+  private toTokenHoldingRow(token: TokenInfo): TokenHoldingRow {
+    const key = this.normKey(token.address);
+    const decimals = token.decimals ?? 18;
+    return {
+      key,
+      token,
+      symbol: token.symbol,
+      icon: token.icon ?? null,
+      isWhitelisted: this.isWhitelistedToken(token.address),
+      total: this.getFormattedTokenAmount(token.address, decimals),
+      locked: this.getFormattedLockedAmount(token.address, decimals),
+      available: this.getFormattedAvailableAmount(token.address, decimals),
+      estimatedEthValue: this.getEstimatedEthValue(token.address),
+    };
+  }
+
   private tokenBalanceEntry(tokenAddress: string): any | null {
     const balances = this.accountBalances() ?? {};
     return balances[this.normKey(tokenAddress)] ?? null;
@@ -487,6 +534,9 @@ export class Erc20TradeComponent {
   }
 
   refreshBalances(): void {
+    // Manual refresh is allowed to re-discover token metadata. Background
+    // block refreshes only refresh balances/prices and keep token arrays stable.
+    this.tokens.refreshTokens();
     this.portfolio.refreshPortfolio();
   }
 
@@ -585,6 +635,8 @@ export class Erc20TradeComponent {
 
   trackLadderRow = (_: number, r: LadderPairRow) =>
     `${r.bid?.orderId?.toString?.() ?? 'x'}_${r.ask?.orderId?.toString?.() ?? 'y'}`;
+
+  trackOrder = (_: number, order: SpotOrder) => order.orderId.toString();
 
   trackBook = (_: number, b: { key: string }) => b.key;
 }

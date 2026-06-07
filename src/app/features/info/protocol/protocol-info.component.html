@@ -62,7 +62,7 @@
         <p class="sethx-page-copy mt-1">Configured modules exposed by this client.</p>
       </div>
       <div class="grid gap-3 md:grid-cols-2">
-        <div *ngFor="let product of products()" class="rounded border border-trade-border bg-background/60 p-3">
+        <div *ngFor="let product of products(); trackBy: trackProduct" class="rounded border border-trade-border bg-background/60 p-3">
           <div class="text-sm font-semibold text-white">{{ product.label }}</div>
           <p class="mt-1 text-xs leading-relaxed text-text-muted">{{ product.summary }}</p>
         </div>
@@ -75,7 +75,7 @@
         <p class="sethx-page-copy mt-1">Read-only status for tracked assets in the protocol vault.</p>
       </div>
       <div class="space-y-2">
-        <div *ngFor="let row of live().vaultQuantities" class="grid grid-cols-[0.7fr_1fr_0.9fr] gap-3 rounded border border-trade-border bg-background/60 p-3 text-xs">
+        <div *ngFor="let row of live().vaultQuantities; trackBy: trackVaultQuantity" class="grid grid-cols-[0.7fr_1fr_0.9fr] gap-3 rounded border border-trade-border bg-background/60 p-3 text-xs">
           <span class="font-semibold text-white">{{ row.symbol }}</span>
           <span class="text-text-muted">{{ row.name }}</span>
           <span class="text-right text-white">{{ formatToken(row.balance, row.decimals) }}</span>

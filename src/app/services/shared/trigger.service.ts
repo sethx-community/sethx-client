@@ -168,11 +168,11 @@ export class TriggerService {
     const clean = String(url ?? "").toLowerCase();
     if (clean.includes("accounts")) return ["wallet", "accounts"];
     if (clean.includes("assets"))
-      return ["portfolio", "vault", "tokens", "prices"];
+      return ["portfolio", "vault", "prices"];
     if (clean.includes("erc20trade"))
-      return ["orderbook", "portfolio", "tokens", "prices"];
+      return ["orderbook", "portfolio", "prices"];
     if (clean.includes("nftspottrade"))
-      return ["orderbook", "portfolio", "tokens"];
+      return ["orderbook", "portfolio"];
     if (clean.includes("futurestrade"))
       return ["futures", "portfolio", "prices"];
     if (
@@ -185,8 +185,8 @@ export class TriggerService {
       return ["lending", "portfolio", "vault", "prices"];
     if (clean.includes("treasury"))
       return ["treasury", "accounts", "portfolio"];
-    if (clean.includes("protocol")) return ["protocol", "accounts", "tokens"];
-    if (clean.includes("fees")) return ["fees", "tokens", "prices"];
+    if (clean.includes("protocol")) return ["protocol", "accounts"];
+    if (clean.includes("fees")) return ["fees", "prices"];
     if (clean.includes("warnings"))
       return ["warnings", "options", "lending", "portfolio", "prices"];
     return ["wallet", "accounts", "portfolio"];

@@ -1,5 +1,5 @@
 import { Injectable, inject, computed, signal, resource, effect } from '@angular/core';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../core/signals/stable-resource';
 import { VaultContractService } from './contracts/vault-contract.service';
 import { VaultChainService } from './vault.service';
 import { ErrorService } from '../shared/error.service';
@@ -187,7 +187,10 @@ export class PortfolioService {
   private readonly _stableAllBalances = stableResourceValue(
     () => this._allBalancesResource.value(),
     {} as Record<string, Record<string, { balance: bigint; locked: bigint }>>,
-    { resetKey: () => `${this._accountsKey()}|${this._erc20TokensKey()}` },
+    {
+      resetKey: () => `${this._accountsKey()}|${this._erc20TokensKey()}`,
+      equal: structuralEqual,
+    },
   );
 
   readonly allBalances = computed(() => this._stableAllBalances());
@@ -198,7 +201,7 @@ export class PortfolioService {
     () => this._allBalancesResource.error() ?? null,
   );
 
-  readonly accountBalances = computed(() => {
+  readonly accountBalances = stableComputed(() => {
     const accountKey = this.normKey(this.activeAccount());
     const data = this.allBalances();
     return accountKey ? (data[accountKey] ?? {}) : {};

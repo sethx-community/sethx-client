@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
+import { stableComputed } from '../../../core/signals/stable-resource';
 
 import { WARNING_EXPIRY_ORANGE_WINDOW_DAYS, WARNING_STATUS_LABELS } from '../../../constants/warnings.constants';
 import { WarningCenterService, WarningRow } from '../../../services/shared/warnings/warning-center.service';
@@ -14,7 +15,7 @@ export class WarningsComponent {
   readonly warningsCenter = inject(WarningCenterService);
   readonly orangeWindowDays = WARNING_EXPIRY_ORANGE_WINDOW_DAYS;
 
-  warnings(): WarningRow[] { return this.warningsCenter.warnings(); }
+  readonly warnings = stableComputed<WarningRow[]>(() => this.warningsCenter.warnings());
   redCount(): number { return this.warningsCenter.redCount(); }
   orangeCount(): number { return this.warningsCenter.orangeCount(); }
   loading(): boolean { return this.warningsCenter.loading(); }

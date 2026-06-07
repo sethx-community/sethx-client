@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
-import { stableResourceValue } from '../../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../../core/signals/stable-resource';
 import { ethers } from 'ethers';
 import { ETH_ADDRESS } from '../main.tokens';
 import { SpotOrder } from '../../onchain/contracts/token-spot-orderbook-read.service';
@@ -283,23 +283,23 @@ export class OrderBookStore {
   private readonly _stableBookOrders = stableResourceValue(
     () => this._ordersRes.value(),
     [] as SpotOrder[],
-    { resetKey: () => this.selectedBookKey() },
+    { resetKey: () => this.selectedBookKey(), equal: structuralEqual },
   );
   private readonly _stableMyOrders = stableResourceValue(
     () => this._myOrdersRes.value(),
     [] as SpotOrder[],
-    { resetKey: () => this.activeAccount() },
+    { resetKey: () => this.activeAccount(), equal: structuralEqual },
   );
 
-  readonly books = computed(() => this._stableBooks());
+  readonly books = stableComputed(() => this._stableBooks());
   readonly booksStatus = computed(() => this._booksRes.status());
   readonly booksError = computed(() => this._booksRes.error() ?? null);
 
-  readonly bookOrders = computed(() => this._stableBookOrders());
+  readonly bookOrders = stableComputed(() => this._stableBookOrders());
   readonly ordersStatus = computed(() => this._ordersRes.status());
   readonly ordersError = computed(() => this._ordersRes.error() ?? null);
 
-  readonly myOrders = computed(() => this._stableMyOrders());
+  readonly myOrders = stableComputed(() => this._stableMyOrders());
   readonly myOrdersStatus = computed(() => this._myOrdersRes.status());
   readonly myOrdersError = computed(() => this._myOrdersRes.error() ?? null);
 
@@ -311,7 +311,7 @@ export class OrderBookStore {
   });
 
   // ---------- derived ----------
-  readonly visibleOrders = computed(() => {
+  readonly visibleOrders = stableComputed(() => {
     const acct = this.activeAccount();
     const mineOnly = this.myOrdersOnly();
 
@@ -355,7 +355,7 @@ export class OrderBookStore {
   }
 
   // ---------- ladder UI ----------
-  readonly ladderBids = computed<LadderRow[]>(() => {
+  readonly ladderBids = stableComputed<LadderRow[]>(() => {
     const acct = this.activeAccount();
     const list = this.visibleOrders()
       .filter((o) => o.side === 0)
@@ -370,7 +370,7 @@ export class OrderBookStore {
     }));
   });
 
-  readonly ladderAsks = computed<LadderRow[]>(() => {
+  readonly ladderAsks = stableComputed<LadderRow[]>(() => {
     const acct = this.activeAccount();
     const list = this.visibleOrders()
       .filter((o) => o.side === 1)
@@ -385,7 +385,7 @@ export class OrderBookStore {
     }));
   });
 
-  readonly ladderPairs = computed<LadderPairRow[]>(() => {
+  readonly ladderPairs = stableComputed<LadderPairRow[]>(() => {
     const bids = this.ladderBids();
     const asks = this.ladderAsks();
     const n = Math.max(bids.length, asks.length);
@@ -395,12 +395,12 @@ export class OrderBookStore {
     return out;
   });
 
-  readonly focusRows = computed(() => {
+  readonly focusRows = stableComputed(() => {
     const f = Math.max(1, Number(this.ladderFocus() || 5));
     return this.ladderPairs().slice(0, f);
   });
 
-  readonly restRows = computed(() => {
+  readonly restRows = stableComputed(() => {
     const f = Math.max(1, Number(this.ladderFocus() || 5));
     return this.ladderPairs().slice(f);
   });
@@ -423,7 +423,7 @@ export class OrderBookStore {
 
   readonly supportsMyTotals = computed(() => true); // paged mode has myTotals
 
-  readonly visibleBooks = computed(() => {
+  readonly visibleBooks = stableComputed(() => {
     const q = this.bookSearch().trim().toLowerCase();
     const onlyMine = this.booksWithMyOrdersOnly();
     const key = this.bookSortKey();

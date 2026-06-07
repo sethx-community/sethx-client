@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal, resource } from '@angular/core';
 import { ethers } from 'ethers';
 import { formatUnitsHuman, formatTokenAmount, formatDecimal } from '../../../core/format/number-format';
+import { stableComputed, stableResourceValue, structuralEqual } from '../../../core/signals/stable-resource';
 
 import { TriggerService } from '../trigger.service';
 import { TradeSettingsService } from '../trade-settings.service';
@@ -194,9 +195,11 @@ export class FuturesOrderBookStore {
     },
   });
 
-  readonly activeMarkets = computed(() => this._marketsRes.value() ?? []);
+  private readonly _stableMarkets = stableResourceValue(() => this._marketsRes.value(), [] as ActiveFuturesMarketRow[], { equal: structuralEqual });
 
-  readonly filteredMarkets = computed(() => {
+  readonly activeMarkets = stableComputed(() => this._stableMarkets());
+
+  readonly filteredMarkets = stableComputed(() => {
     const q = this.marketSearch().trim().toLowerCase();
     const onlyMine = this.marketsWithMyOrdersOnly();
     const myMarkets = new Set(this.myOrders().map((o) => String(o.marketKey ?? '').toLowerCase()));
@@ -215,7 +218,7 @@ export class FuturesOrderBookStore {
     return list;
   });
 
-  readonly visibleMarkets = computed(() => this.filteredMarkets());
+  readonly visibleMarkets = stableComputed(() => this.filteredMarkets());
 
   selectMarket(marketKey: string) {
     this.selectedMarketKey.set(String(marketKey ?? '').toLowerCase());
@@ -275,11 +278,11 @@ export class FuturesOrderBookStore {
     },
   });
 
-  readonly buyOrders = computed(() => {
+  readonly buyOrders = stableComputed(() => {
     const rows = this._bookRes.value()?.buy ?? [];
     return this.myOrdersOnly() ? rows.filter((o) => norm(o.user) === this.activeAccount()) : rows;
   });
-  readonly sellOrders = computed(() => {
+  readonly sellOrders = stableComputed(() => {
     const rows = this._bookRes.value()?.sell ?? [];
     return this.myOrdersOnly() ? rows.filter((o) => norm(o.user) === this.activeAccount()) : rows;
   });
@@ -335,7 +338,9 @@ export class FuturesOrderBookStore {
     },
   });
 
-  readonly myOrders = computed(() => this._myOrdersRes.value() ?? []);
+  private readonly _stableMyOrders = stableResourceValue(() => this._myOrdersRes.value(), [] as FuturesMyOrderRow[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+
+  readonly myOrders = stableComputed(() => this._stableMyOrders());
 
 
   // ============================================================
@@ -436,7 +441,9 @@ export class FuturesOrderBookStore {
     },
   });
 
-  readonly myPositions = computed(() => this._posRes.value() ?? []);
+  private readonly _stableMyPositions = stableResourceValue(() => this._posRes.value(), [] as FuturesPositionRow[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
+
+  readonly myPositions = stableComputed(() => this._stableMyPositions());
 
   selectPosition(marketKey: string) {
     this.selectedPositionMarketKey.set(String(marketKey ?? '').toLowerCase());
