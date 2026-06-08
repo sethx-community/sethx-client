@@ -42,8 +42,6 @@ export type ProtocolFeeConfig = {
 };
 
 export type ProtocolComplianceConfig = {
-  geoEndpoint: string;
-  blockedCountries: string[];
   noRampReason: string;
 };
 
@@ -215,8 +213,6 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     },
   },
   compliance: {
-    geoEndpoint: '/api/geo',
-    blockedCountries: ['KP', 'IR', 'SY'],
     noRampReason:
       'The MVP does not sell crypto or provide a fiat ramp because that may require additional permits, banking relationships, and compliance operations.',
   },

@@ -24,6 +24,11 @@ export type GraphExchangeMatch = {
   timestamp: string;
 };
 
+export type RecentGraphBlockRange = {
+  fromBlock: number;
+  toBlock: number;
+};
+
 export type RecentGraphActivity = {
   id: string;
   kind: 'oracle' | 'trade';
@@ -37,8 +42,23 @@ export type RecentGraphActivity = {
   explorerLabel: string;
 };
 
+export type RecentGraphActivityProgress = {
+  currentWindow?: RecentGraphBlockRange;
+  scannedRange?: RecentGraphBlockRange;
+  scannedWindows: number;
+  activities: RecentGraphActivity[];
+};
+
+export type RecentGraphActivityOptions = {
+  lookbackSeconds?: number;
+  onProgress?: (progress: RecentGraphActivityProgress) => void;
+};
+
 export type RecentGraphActivityResult = {
   status: SethxGraphStatus;
   error?: string;
   activities: RecentGraphActivity[];
+  scannedRange?: RecentGraphBlockRange;
+  scannedWindows?: number;
+  lookbackSeconds?: number;
 };

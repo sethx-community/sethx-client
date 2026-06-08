@@ -21,9 +21,4 @@ export class ProtocolConfigService {
   contractAddress(name: string): string | null {
     return this._config().contracts[name] ?? null;
   }
-
-  isBlockedCountry(countryCode: string | null): boolean {
-    if (!countryCode) return false;
-    return this._config().compliance.blockedCountries.includes(countryCode.toUpperCase());
-  }
 }

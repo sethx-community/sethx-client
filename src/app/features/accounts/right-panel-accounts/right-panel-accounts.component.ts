@@ -47,8 +47,8 @@ export class RightPanelAccountsComponent {
     },
     {
       label: 'Write access',
-      value: this.canWrite() ? 'Allowed' : 'Blocked by region policy',
-      tone: this.canWrite() ? 'good' : 'warn',
+      value: 'Allowed',
+      tone: 'good',
     },
   ]);
 
