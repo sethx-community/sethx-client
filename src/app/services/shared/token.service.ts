@@ -6,6 +6,7 @@ import { VaultContractService } from '../onchain/contracts/vault-contract.servic
 import { ERC20ContractService } from '../onchain/contracts/erc20-contract.service';
 import { ETH_ADDRESS, TokenRegistryService } from './main.tokens';
 import { WHITELISTED_TOKENS } from '../../constants/token-whitelist';
+import { GENERATED_TOKEN_ICON_BY_ADDRESS, GENERATED_WHITELISTED_TOKENS } from '../../constants/generated-token-whitelist';
 import { ProtocolConfigService } from './config/protocol-config.service';
 import { TriggerService } from '../shared/trigger.service';
 import { toStatus, type Status } from '../../core/tokens/resource-status';
@@ -33,6 +34,7 @@ const ORACLE_CONTEXT = {
 
 
 const LOCAL_TOKEN_ICON_BY_ADDRESS: Record<string, string> = {
+  ...GENERATED_TOKEN_ICON_BY_ADDRESS,
   [n(ETH_ADDRESS)]: 'assets/tokens/eth.png',
   '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'assets/tokens/usdc.png',
   '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': 'assets/tokens/weth.png',
@@ -377,7 +379,7 @@ export class TokenService {
   }
 
   private _configuredWhitelistTokens() {
-    return WHITELISTED_TOKENS;
+    return [...WHITELISTED_TOKENS, ...GENERATED_WHITELISTED_TOKENS];
   }
 
   private async _loadTrustedTokens(candidates: string[]): Promise<string[]> {

@@ -1,0 +1,1645 @@
+{
+  "generatedAt": "2026-06-09T00:37:12.069Z",
+  "source": "./token-whitelist.json",
+  "tokens": [
+    {
+      "symbol": "WETH",
+      "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "note": "Activity Tier · 30d volume $13.21B · 30d trades 6,171,469",
+      "icon": "assets/tokens/weth-c02aaa.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+        "bytes": 2984
+      }
+    },
+    {
+      "symbol": "USDC",
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "note": "Activity Tier · 30d volume $26.44B · 30d trades 3,423,101",
+      "icon": "assets/tokens/usdc-a0b869.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+        "bytes": 9276
+      }
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      "note": "Activity Tier · 30d volume $23.78B · 30d trades 2,737,309",
+      "icon": "assets/tokens/usdt-dac17f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+        "bytes": 21909
+      }
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+      "note": "Activity Tier · 30d volume $3.32B · 30d trades 497,070",
+      "icon": "assets/tokens/wbtc-2260fa.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+        "bytes": 33856
+      }
+    },
+    {
+      "symbol": "ASTEROID",
+      "address": "0xf280B16EF293D8e534e370794ef26bF312694126",
+      "note": "Activity Tier · 30d volume $220.42M · 30d trades 210,547",
+      "icon": "assets/tokens/asteroid-f280b1.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xf280B16EF293D8e534e370794ef26bF312694126/logo.png",
+        "bytes": 46886
+      }
+    },
+    {
+      "symbol": "SATO",
+      "address": "0x829f4B62EEBE12Af653b4dD4fFc480966F7d7f09",
+      "note": "Both Tiers · 30d volume $76.64M · 30d trades 172,294",
+      "icon": "assets/tokens/sato-829f4b.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x829f4B62EEBE12Af653b4dD4fFc480966F7d7f09/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "note": "Activity Tier · 30d volume $747.17M · 30d trades 153,172",
+      "icon": "assets/tokens/dai-6b1754.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+        "bytes": 11815
+      }
+    },
+    {
+      "symbol": "CRVUSD",
+      "address": "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E",
+      "note": "Activity Tier · 30d volume $917.17M · 30d trades 85,243",
+      "icon": "assets/tokens/crvusd-f939e0.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E/logo.png",
+        "bytes": 68780
+      }
+    },
+    {
+      "symbol": "LINK",
+      "address": "0x514910771AF9Ca656af840dff83E8264EcF986CA",
+      "note": "Activity Tier · 30d volume $215.86M · 30d trades 83,302",
+      "icon": "assets/tokens/link-514910.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png",
+        "bytes": 21377
+      }
+    },
+    {
+      "symbol": "UPEG",
+      "address": "0x44b28991B167582F18BA0259e0173176ca125505",
+      "note": "Both Tiers · 30d volume $37.47M · 30d trades 81,706",
+      "icon": "assets/tokens/upeg-44b289.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x44b28991B167582F18BA0259e0173176ca125505/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CTM",
+      "address": "0xc8Fb80fCc03f699C70ff0CC08C09106288888888",
+      "note": "Both Tiers · 30d volume $22.11M · 30d trades 77,019",
+      "icon": "assets/tokens/ctm-c8fb80.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xc8Fb80fCc03f699C70ff0CC08C09106288888888/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "XAUT",
+      "address": "0x68749665FF8D2d112Fa859AA293F07A622782F38",
+      "note": "Activity Tier · 30d volume $452.30M · 30d trades 76,645",
+      "icon": "assets/tokens/xaut-687496.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x68749665FF8D2d112Fa859AA293F07A622782F38/logo.png",
+        "bytes": 49837
+      }
+    },
+    {
+      "symbol": "AAVE",
+      "address": "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
+      "note": "Both Tiers · 30d volume $94.79M · 30d trades 75,721",
+      "icon": "assets/tokens/aave-7fc665.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png",
+        "bytes": 3143
+      }
+    },
+    {
+      "symbol": "PAXG",
+      "address": "0x45804880De22913dAFE09f4980848ECE6EcbAf78",
+      "note": "Activity Tier · 30d volume $293.36M · 30d trades 73,663",
+      "icon": "assets/tokens/paxg-458048.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x45804880De22913dAFE09f4980848ECE6EcbAf78/logo.png",
+        "bytes": 5847
+      }
+    },
+    {
+      "symbol": "USDE",
+      "address": "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
+      "note": "Activity Tier · 30d volume $1.40B · 30d trades 71,893",
+      "icon": "assets/tokens/usde-4c9edd.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4c9EDD5852cd905f086C759E8383e09bff1E68B3/logo.png",
+        "bytes": 25811
+      }
+    },
+    {
+      "symbol": "AI",
+      "address": "0x4d7078DDd6cCFED2F85dB5B7D3Ff16828d378d48",
+      "note": "Both Tiers · 30d volume $11.63M · 30d trades 69,274",
+      "icon": "assets/tokens/ai-4d7078.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4d7078DDd6cCFED2F85dB5B7D3Ff16828d378d48/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "DOGEUS",
+      "address": "0x759F8B83db57033aed95545694F6AdA480b6e987",
+      "note": "Both Tiers · 30d volume $16.79M · 30d trades 61,365",
+      "icon": "assets/tokens/dogeus-759f8b.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x759F8B83db57033aed95545694F6AdA480b6e987/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "UNI",
+      "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+      "note": "Both Tiers · 30d volume $52.16M · 30d trades 60,242",
+      "icon": "assets/tokens/uni-1f9840.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png",
+        "bytes": 29535
+      }
+    },
+    {
+      "symbol": "CBBTC",
+      "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "note": "Activity Tier · 30d volume $1.05B · 30d trades 57,707",
+      "icon": "assets/tokens/cbbtc-cbb7c0.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CRV",
+      "address": "0xD533a949740bb3306d119CC777fa900bA034cd52",
+      "note": "Both Tiers · 30d volume $25.02M · 30d trades 56,206",
+      "icon": "assets/tokens/crv-d533a9.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xD533a949740bb3306d119CC777fa900bA034cd52/logo.png",
+        "bytes": 16821
+      }
+    },
+    {
+      "symbol": "LO0P",
+      "address": "0x20Ea861B3aceC90d3a15b4755D9A1cf1F161496e",
+      "note": "Both Tiers · 30d volume $24.09M · 30d trades 49,611",
+      "icon": "assets/tokens/lo0p-20ea86.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x20Ea861B3aceC90d3a15b4755D9A1cf1F161496e/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "AWF",
+      "address": "0x12a77658112Cf42914cB614D13653ed5852DA1e5",
+      "note": "Both Tiers · 30d volume $28.86M · 30d trades 47,762",
+      "icon": "assets/tokens/awf-12a776.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x12a77658112Cf42914cB614D13653ed5852DA1e5/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "ONDO",
+      "address": "0xfAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3",
+      "note": "Both Tiers · 30d volume $32.76M · 30d trades 47,447",
+      "icon": "assets/tokens/ondo-faba6f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xfAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3/logo.png",
+        "bytes": 34347
+      }
+    },
+    {
+      "symbol": "WSTETH",
+      "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+      "note": "Activity Tier · 30d volume $373.90M · 30d trades 44,600",
+      "icon": "assets/tokens/wsteth-7f39c5.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0/logo.png",
+        "bytes": 41583
+      }
+    },
+    {
+      "symbol": "ELEVATE",
+      "address": "0x888888888887715FB9D9F84175Af9e6cCE46807e",
+      "note": "Activity Tier · 30d volume $772.87K · 30d trades 44,512",
+      "icon": "assets/tokens/elevate-888888.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x888888888887715FB9D9F84175Af9e6cCE46807e/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "USDS",
+      "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+      "note": "Activity Tier · 30d volume $1.70B · 30d trades 42,821",
+      "icon": "assets/tokens/usds-dc035d.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdC035D45d973E3EC169d2276DDab16f1e407384F/logo.png",
+        "bytes": 22064
+      }
+    },
+    {
+      "symbol": "PRISM",
+      "address": "0xbd3AB5859f244CC9F51Ee0Ca755c5cf663D80040",
+      "note": "Both Tiers · 30d volume $14.81M · 30d trades 42,062",
+      "icon": "assets/tokens/prism-bd3ab5.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xbd3AB5859f244CC9F51Ee0Ca755c5cf663D80040/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "KITE",
+      "address": "0x904567252D8F48555b7447c67dCA23F0372E16be",
+      "note": "Both Tiers · 30d volume $15.39M · 30d trades 39,983",
+      "icon": "assets/tokens/kite-904567.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x904567252D8F48555b7447c67dCA23F0372E16be/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "RAIL",
+      "address": "0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D",
+      "note": "Both Tiers · 30d volume $41.63M · 30d trades 39,817",
+      "icon": "assets/tokens/rail-e76c6c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D/logo.png",
+        "bytes": 50044
+      }
+    },
+    {
+      "symbol": "BNT",
+      "address": "0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C",
+      "note": "Activity Tier · 30d volume $7.11M · 30d trades 39,605",
+      "icon": "assets/tokens/bnt-1f573d.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C/logo.png",
+        "bytes": 25035
+      }
+    },
+    {
+      "symbol": "ENA",
+      "address": "0x57e114B691Db790C35207b2e685D4A43181e6061",
+      "note": "Both Tiers · 30d volume $20.59M · 30d trades 38,277",
+      "icon": "assets/tokens/ena-57e114.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x57e114B691Db790C35207b2e685D4A43181e6061/logo.png",
+        "bytes": 10820
+      }
+    },
+    {
+      "symbol": "LIT",
+      "address": "0x232CE3bd40fCd6f80f3d55A522d03f25Df784Ee2",
+      "note": "Both Tiers · 30d volume $27.08M · 30d trades 37,952",
+      "icon": "assets/tokens/lit-232ce3.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x232CE3bd40fCd6f80f3d55A522d03f25Df784Ee2/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "ADI",
+      "address": "0x8B1484d57abBE239bB280661377363b03c89CaEa",
+      "note": "Both Tiers · 30d volume $13.77M · 30d trades 37,927",
+      "icon": "assets/tokens/adi-8b1484.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x8B1484d57abBE239bB280661377363b03c89CaEa/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SHIT",
+      "address": "0xaF1E52927d724Fd34773Bd53adA57f4C2B742069",
+      "note": "Both Tiers · 30d volume $12.72M · 30d trades 37,386",
+      "icon": "assets/tokens/shit-af1e52.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xaF1E52927d724Fd34773Bd53adA57f4C2B742069/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "INJ",
+      "address": "0xe28b3B32B6c345A34Ff64674606124Dd5Aceca30",
+      "note": "Activity Tier · 30d volume $5.19M · 30d trades 36,178",
+      "icon": "assets/tokens/inj-e28b3b.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xe28b3B32B6c345A34Ff64674606124Dd5Aceca30/logo.png",
+        "bytes": 12362
+      }
+    },
+    {
+      "symbol": "ZAMA",
+      "address": "0xA12CC123ba206d4031D1c7f6223D1C2Ec249f4f3",
+      "note": "Both Tiers · 30d volume $22.50M · 30d trades 35,750",
+      "icon": "assets/tokens/zama-a12cc1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA12CC123ba206d4031D1c7f6223D1C2Ec249f4f3/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "STARMAN",
+      "address": "0x12419a0427c2A27a61C1Cb4a49F5FAD24fd4E671",
+      "note": "Both Tiers · 30d volume $12.01M · 30d trades 35,645",
+      "icon": "assets/tokens/starman-12419a.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x12419a0427c2A27a61C1Cb4a49F5FAD24fd4E671/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SAT1",
+      "address": "0x8f66337a0c2A02202fd91Dd596c411CF977c6060",
+      "note": "Activity Tier · 30d volume $142.76M · 30d trades 35,322",
+      "icon": "assets/tokens/sat1-8f6633.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x8f66337a0c2A02202fd91Dd596c411CF977c6060/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SLOP",
+      "address": "0x999B49c0d1612E619A4A4f6280733184da025108",
+      "note": "Both Tiers · 30d volume $9.71M · 30d trades 35,254",
+      "icon": "assets/tokens/slop-999b49.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x999B49c0d1612E619A4A4f6280733184da025108/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "AZTEC",
+      "address": "0xA27EC0006e59f245217Ff08CD52A7E8b169E62D2",
+      "note": "Both Tiers · 30d volume $57.20M · 30d trades 34,997",
+      "icon": "assets/tokens/aztec-a27ec0.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA27EC0006e59f245217Ff08CD52A7E8b169E62D2/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "HASH",
+      "address": "0xAC7b5d06fa1e77D08aea40d46cB7C5923A87A0cc",
+      "note": "Activity Tier · 30d volume $5.65M · 30d trades 34,139",
+      "icon": "assets/tokens/hash-ac7b5d.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xAC7b5d06fa1e77D08aea40d46cB7C5923A87A0cc/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SPCX",
+      "address": "0xCB891c8f1e3a4D04229E4D871dc27124411D8952",
+      "note": "Both Tiers · 30d volume $13.11M · 30d trades 33,900",
+      "icon": "assets/tokens/spcx-cb891c.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xCB891c8f1e3a4D04229E4D871dc27124411D8952/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "DEXE",
+      "address": "0xde4EE8057785A7e8e800Db58F9784845A5C2Cbd6",
+      "note": "Activity Tier · 30d volume $7.36M · 30d trades 33,811",
+      "icon": "assets/tokens/dexe-de4ee8.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xde4EE8057785A7e8e800Db58F9784845A5C2Cbd6/logo.png",
+        "bytes": 4793
+      }
+    },
+    {
+      "symbol": "SKY",
+      "address": "0x56072C95FAA701256059aa122697B133aDEd9279",
+      "note": "Both Tiers · 30d volume $46.89M · 30d trades 32,979",
+      "icon": "assets/tokens/sky-56072c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x56072C95FAA701256059aa122697B133aDEd9279/logo.png",
+        "bytes": 29915
+      }
+    },
+    {
+      "symbol": "ASSET",
+      "address": "0x99E980265Bf36516C442be982df1772a6cCb3233",
+      "note": "Activity Tier · 30d volume $3.21M · 30d trades 32,159",
+      "icon": "assets/tokens/asset-99e980.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x99E980265Bf36516C442be982df1772a6cCb3233/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "TRAC",
+      "address": "0xaA7a9CA87d3694B5755f213B5D04094b8d0F0A6F",
+      "note": "Both Tiers · 30d volume $23.95M · 30d trades 32,044",
+      "icon": "assets/tokens/trac-aa7a9c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xaA7a9CA87d3694B5755f213B5D04094b8d0F0A6F/logo.png",
+        "bytes": 5236
+      }
+    },
+    {
+      "symbol": "LDO",
+      "address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
+      "note": "Both Tiers · 30d volume $53.17M · 30d trades 31,310",
+      "icon": "assets/tokens/ldo-5a98fc.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32/logo.png",
+        "bytes": 11001
+      }
+    },
+    {
+      "symbol": "ASTEROID",
+      "address": "0xAFF2565091E7207191dBe340B8528D02FA78d044",
+      "note": "Both Tiers · 30d volume $13.49M · 30d trades 30,514",
+      "icon": "assets/tokens/asteroid-aff256.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xAFF2565091E7207191dBe340B8528D02FA78d044/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "POLS",
+      "address": "0x83e6f1E41cdd28eAcEB20Cb649155049Fac3D5Aa",
+      "note": "Activity Tier · 30d volume $5.12M · 30d trades 29,283",
+      "icon": "assets/tokens/pols-83e6f1.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x83e6f1E41cdd28eAcEB20Cb649155049Fac3D5Aa/logo.png",
+        "bytes": 8748
+      }
+    },
+    {
+      "symbol": "RNDR",
+      "address": "0x6De037ef9aD2725EB40118Bb1702EBb27e4Aeb24",
+      "note": "Both Tiers · 30d volume $9.87M · 30d trades 29,133",
+      "icon": "assets/tokens/rndr-6de037.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6De037ef9aD2725EB40118Bb1702EBb27e4Aeb24/logo.png",
+        "bytes": 26321
+      }
+    },
+    {
+      "symbol": "SERV",
+      "address": "0x40e3d1A4B2C47d9AA61261F5606136ef73E28042",
+      "note": "Both Tiers · 30d volume $24.56M · 30d trades 29,130",
+      "icon": "assets/tokens/serv-40e3d1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x40e3d1A4B2C47d9AA61261F5606136ef73E28042/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "XYO",
+      "address": "0x55296f69f40Ea6d20E478533C15A6B08B654E758",
+      "note": "Both Tiers · 30d volume $10.14M · 30d trades 29,004",
+      "icon": "assets/tokens/xyo-55296f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x55296f69f40Ea6d20E478533C15A6B08B654E758/logo.png",
+        "bytes": 59547
+      }
+    },
+    {
+      "symbol": "SPX",
+      "address": "0xE0f63A424a4439cBE457D80E4f4b51aD25b2c56C",
+      "note": "Both Tiers · 30d volume $33.63M · 30d trades 28,586",
+      "icon": "assets/tokens/spx-e0f63a.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xE0f63A424a4439cBE457D80E4f4b51aD25b2c56C/logo.png",
+        "bytes": 77001
+      }
+    },
+    {
+      "symbol": "NIL",
+      "address": "0x7Cf9a80db3B29eE8efE3710AadB7b95270572d47",
+      "note": "Activity Tier · 30d volume $6.03M · 30d trades 27,300",
+      "icon": "assets/tokens/nil-7cf9a8.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Cf9a80db3B29eE8efE3710AadB7b95270572d47/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "ADS",
+      "address": "0xcfcEcFe2bD2FED07A9145222E8a7ad9Cf1Ccd22A",
+      "note": "Both Tiers · 30d volume $12.25M · 30d trades 26,738",
+      "icon": "assets/tokens/ads-cfcecf.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xcfcEcFe2bD2FED07A9145222E8a7ad9Cf1Ccd22A/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "GHO",
+      "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+      "note": "Activity Tier · 30d volume $346.02M · 30d trades 26,697",
+      "icon": "assets/tokens/gho-40d16f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f/logo.png",
+        "bytes": 18483
+      }
+    },
+    {
+      "symbol": "PENDLE",
+      "address": "0x808507121B80c02388fAd14726482e061B8da827",
+      "note": "Both Tiers · 30d volume $12.23M · 30d trades 26,598",
+      "icon": "assets/tokens/pendle-808507.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x808507121B80c02388fAd14726482e061B8da827/logo.png",
+        "bytes": 6241
+      }
+    },
+    {
+      "symbol": "SPCX",
+      "address": "0xa17f383786Cf2241AffE41B130d8C373fDb34574",
+      "note": "Both Tiers · 30d volume $11.30M · 30d trades 26,006",
+      "icon": "assets/tokens/spcx-a17f38.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xa17f383786Cf2241AffE41B130d8C373fDb34574/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "WLD",
+      "address": "0x163f8C2467924be0ae7B5347228CABF260318753",
+      "note": "Both Tiers · 30d volume $7.88M · 30d trades 25,762",
+      "icon": "assets/tokens/wld-163f8c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x163f8C2467924be0ae7B5347228CABF260318753/logo.png",
+        "bytes": 8285
+      }
+    },
+    {
+      "symbol": "WOJAK",
+      "address": "0x8De39B057CC6522230AB19C0205080a8663331Ef",
+      "note": "Both Tiers · 30d volume $13.96M · 30d trades 24,965",
+      "icon": "assets/tokens/wojak-8de39b.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x8De39B057CC6522230AB19C0205080a8663331Ef/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "GAGA",
+      "address": "0xB29Dc1703fAcd2967BB8AdE2E392385644C6dCA9",
+      "note": "Activity Tier · 30d volume $1.13M · 30d trades 24,817",
+      "icon": "assets/tokens/gaga-b29dc1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xB29Dc1703fAcd2967BB8AdE2E392385644C6dCA9/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "ASTX",
+      "address": "0x0000000000ca73A6df4C58b84C5B4b847FE8Ff39",
+      "note": "Activity Tier · 30d volume $57.54K · 30d trades 24,696",
+      "icon": "assets/tokens/astx-000000.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x0000000000ca73A6df4C58b84C5B4b847FE8Ff39/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "H",
+      "address": "0xcf5104D094e3864CfCBDa43B82e1cEFD26A016eB",
+      "note": "Both Tiers · 30d volume $56.40M · 30d trades 24,566",
+      "icon": "assets/tokens/h-cf5104.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xcf5104D094e3864CfCBDa43B82e1cEFD26A016eB/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "WOCT",
+      "address": "0x4647e1fE715c9e23959022C2416C71867F5a6E80",
+      "note": "Both Tiers · 30d volume $20.44M · 30d trades 24,555",
+      "icon": "assets/tokens/woct-4647e1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4647e1fE715c9e23959022C2416C71867F5a6E80/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "WTAO",
+      "address": "0x77E06c9eCCf2E797fd462A92B6D7642EF85b0A44",
+      "note": "Both Tiers · 30d volume $46.16M · 30d trades 24,148",
+      "icon": "assets/tokens/wtao-77e06c.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x77E06c9eCCf2E797fd462A92B6D7642EF85b0A44/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "NEAR",
+      "address": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
+      "note": "Activity Tier · 30d volume $6.83M · 30d trades 24,025",
+      "icon": "assets/tokens/near-85f17c.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "MUSD",
+      "address": "0xacA92E438df0B2401fF60dA7E4337B687a2435DA",
+      "note": "Activity Tier · 30d volume $103.82M · 30d trades 23,892",
+      "icon": "assets/tokens/musd-aca92e.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xacA92E438df0B2401fF60dA7E4337B687a2435DA/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "KISHU",
+      "address": "0xA2b4C0Af19cC16a6CfAcCe81F192B024d625817D",
+      "note": "Activity Tier · 30d volume $4.45M · 30d trades 23,589",
+      "icon": "assets/tokens/kishu-a2b4c0.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA2b4C0Af19cC16a6CfAcCe81F192B024d625817D/logo.png",
+        "bytes": 36426
+      }
+    },
+    {
+      "symbol": "ELIEN",
+      "address": "0xC7e4254a72169fdf7a2E080462724f2F642dAF7e",
+      "note": "Both Tiers · 30d volume $7.92M · 30d trades 23,010",
+      "icon": "assets/tokens/elien-c7e425.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC7e4254a72169fdf7a2E080462724f2F642dAF7e/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "FARM",
+      "address": "0xa0246c9032bC3A600820415aE600c6388619A14D",
+      "note": "Activity Tier · 30d volume $2.20M · 30d trades 22,551",
+      "icon": "assets/tokens/farm-a0246c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xa0246c9032bC3A600820415aE600c6388619A14D/logo.png",
+        "bytes": 24790
+      }
+    },
+    {
+      "symbol": "USD1",
+      "address": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
+      "note": "Both Tiers · 30d volume $29.76M · 30d trades 22,211",
+      "icon": "assets/tokens/usd1-8d0d00.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d/logo.png",
+        "bytes": 45978
+      }
+    },
+    {
+      "symbol": "INX",
+      "address": "0xdeF1b2D939EdC0E4d35806c59b3166F790175afe",
+      "note": "Both Tiers · 30d volume $20.20M · 30d trades 22,168",
+      "icon": "assets/tokens/inx-def1b2.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdeF1b2D939EdC0E4d35806c59b3166F790175afe/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "FET",
+      "address": "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85",
+      "note": "Activity Tier · 30d volume $5.79M · 30d trades 22,034",
+      "icon": "assets/tokens/fet-aea46a.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85/logo.png",
+        "bytes": 14549
+      }
+    },
+    {
+      "symbol": "APXUSD",
+      "address": "0x98A878b1Cd98131B271883B390f68D2c90674665",
+      "note": "Activity Tier · 30d volume $720.40M · 30d trades 21,605",
+      "icon": "assets/tokens/apxusd-98a878.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x98A878b1Cd98131B271883B390f68D2c90674665/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "FUEL",
+      "address": "0x0cEbB99d04967aD397F5c4d568993e43DC12BabA",
+      "note": "Activity Tier · 30d volume $21.87K · 30d trades 20,786",
+      "icon": "assets/tokens/fuel-0cebb9.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x0cEbB99d04967aD397F5c4d568993e43DC12BabA/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "ICP",
+      "address": "0x00f3C42833C3170159af4E92dbb451Fb3F708917",
+      "note": "Both Tiers · 30d volume $9.03M · 30d trades 20,774",
+      "icon": "assets/tokens/icp-00f3c4.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x00f3C42833C3170159af4E92dbb451Fb3F708917/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "RINO",
+      "address": "0x616254B3c79639f89E756495ac687735B27b5E17",
+      "note": "Activity Tier · 30d volume $1.38M · 30d trades 20,729",
+      "icon": "assets/tokens/rino-616254.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x616254B3c79639f89E756495ac687735B27b5E17/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "EURC",
+      "address": "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c",
+      "note": "Both Tiers · 30d volume $98.04M · 30d trades 20,324",
+      "icon": "assets/tokens/eurc-1abaea.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c/logo.png",
+        "bytes": 22303
+      }
+    },
+    {
+      "symbol": "OPN",
+      "address": "0x7977BF3e7e0c954D12cdcA3E013ADAf57E0B06E0",
+      "note": "Both Tiers · 30d volume $11.95M · 30d trades 20,084",
+      "icon": "assets/tokens/opn-7977bf.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7977BF3e7e0c954D12cdcA3E013ADAf57E0B06E0/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SUSDS",
+      "address": "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD",
+      "note": "Activity Tier · 30d volume $999.15M · 30d trades 19,906",
+      "icon": "assets/tokens/susds-a3931d.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "FLOOD",
+      "address": "0xFF003FBe8b8d5e7f271a9CB9f2780003DAed2AA8",
+      "note": "Both Tiers · 30d volume $20.11M · 30d trades 19,379",
+      "icon": "assets/tokens/flood-ff003f.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xFF003FBe8b8d5e7f271a9CB9f2780003DAed2AA8/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "PYUSD",
+      "address": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+      "note": "Activity Tier · 30d volume $1.43B · 30d trades 19,379",
+      "icon": "assets/tokens/pyusd-6c3ea9.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6c3ea9036406852006290770BEdFcAbA0e23A0e8/logo.png",
+        "bytes": 16772
+      }
+    },
+    {
+      "symbol": "HEX",
+      "address": "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39",
+      "note": "Activity Tier · 30d volume $5.90M · 30d trades 19,136",
+      "icon": "assets/tokens/hex-2b591e.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39/logo.png",
+        "bytes": 12557
+      }
+    },
+    {
+      "symbol": "KNX",
+      "address": "0xf19304e6bFE0A18D2a0171758aA433921F192897",
+      "note": "Both Tiers · 30d volume $8.98M · 30d trades 19,126",
+      "icon": "assets/tokens/knx-f19304.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xf19304e6bFE0A18D2a0171758aA433921F192897/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "FRAX",
+      "address": "0x853d955aCEf822Db058eb8505911ED77F175b99e",
+      "note": "Both Tiers · 30d volume $61.86M · 30d trades 19,100",
+      "icon": "assets/tokens/frax-853d95.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x853d955aCEf822Db058eb8505911ED77F175b99e/logo.png",
+        "bytes": 19208
+      }
+    },
+    {
+      "symbol": "SUSDE",
+      "address": "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
+      "note": "Activity Tier · 30d volume $307.24M · 30d trades 18,347",
+      "icon": "assets/tokens/susde-9d39a5.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x9D39A5DE30e57443BfF2A8307A4256c8797A3497/logo.png",
+        "bytes": 45289
+      }
+    },
+    {
+      "symbol": "LO0P",
+      "address": "0x00000000000050806673B532D7486ac114c1De3F",
+      "note": "Both Tiers · 30d volume $7.56M · 30d trades 17,460",
+      "icon": "assets/tokens/lo0p-000000.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x00000000000050806673B532D7486ac114c1De3F/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "VITA",
+      "address": "0x3AfD2f72675E7D5cA6ea7b8fd17DD03E548f6B1D",
+      "note": "Activity Tier · 30d volume $2.22M · 30d trades 17,398",
+      "icon": "assets/tokens/vita-3afd2f.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x3AfD2f72675E7D5cA6ea7b8fd17DD03E548f6B1D/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "TBTC",
+      "address": "0x18084fbA666a33d37592fA2633fD49a74DD93a88",
+      "note": "Activity Tier · 30d volume $265.84M · 30d trades 17,341",
+      "icon": "assets/tokens/tbtc-18084f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x18084fbA666a33d37592fA2633fD49a74DD93a88/logo.png",
+        "bytes": 24489
+      }
+    },
+    {
+      "symbol": "PEPE",
+      "address": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+      "note": "Both Tiers · 30d volume $18.17M · 30d trades 16,984",
+      "icon": "assets/tokens/pepe-698250.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6982508145454Ce325dDbE47a25d4ec3d2311933/logo.png",
+        "bytes": 59097
+      }
+    },
+    {
+      "symbol": "TEL",
+      "address": "0x467Bccd9d29f223BcE8043b84E8C8B282827790F",
+      "note": "Activity Tier · 30d volume $6.92M · 30d trades 16,801",
+      "icon": "assets/tokens/tel-467bcc.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x467Bccd9d29f223BcE8043b84E8C8B282827790F/logo.png",
+        "bytes": 28922
+      }
+    },
+    {
+      "symbol": "RALLY",
+      "address": "0x19640000000ba88d36206BeB10D0e86011C8d08c",
+      "note": "Activity Tier · 30d volume $1.85M · 30d trades 16,511",
+      "icon": "assets/tokens/rally-196400.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x19640000000ba88d36206BeB10D0e86011C8d08c/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "EIGEN",
+      "address": "0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83",
+      "note": "Activity Tier · 30d volume $3.99M · 30d trades 16,266",
+      "icon": "assets/tokens/eigen-ec53bf.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83/logo.png",
+        "bytes": 5789
+      }
+    },
+    {
+      "symbol": "BIO",
+      "address": "0xcb1592591996765Ec0eFc1f92599A19767ee5ffA",
+      "note": "Activity Tier · 30d volume $2.12M · 30d trades 16,258",
+      "icon": "assets/tokens/bio-cb1592.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xcb1592591996765Ec0eFc1f92599A19767ee5ffA/logo.png",
+        "bytes": 11172
+      }
+    },
+    {
+      "symbol": "FRXUSD",
+      "address": "0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29",
+      "note": "Activity Tier · 30d volume $129.18M · 30d trades 15,572",
+      "icon": "assets/tokens/frxusd-cacd6f.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "QNT",
+      "address": "0x4a220E6096B25EADb88358cb44068A3248254675",
+      "note": "Activity Tier · 30d volume $5.00M · 30d trades 15,406",
+      "icon": "assets/tokens/qnt-4a220e.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4a220E6096B25EADb88358cb44068A3248254675/logo.png",
+        "bytes": 10015
+      }
+    },
+    {
+      "symbol": "MORPHO",
+      "address": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+      "note": "Both Tiers · 30d volume $19.66M · 30d trades 15,399",
+      "icon": "assets/tokens/morpho-58d97b.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x58D97B57BB95320F9a05dC918Aef65434969c2B2/logo.png",
+        "bytes": 13216
+      }
+    },
+    {
+      "symbol": "DUSK",
+      "address": "0x940a2dB1B7008B6C776d4faaCa729d6d4A4AA551",
+      "note": "Activity Tier · 30d volume $4.49M · 30d trades 15,323",
+      "icon": "assets/tokens/dusk-940a2d.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x940a2dB1B7008B6C776d4faaCa729d6d4A4AA551/logo.png",
+        "bytes": 2694
+      }
+    },
+    {
+      "symbol": "SUSHI",
+      "address": "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2",
+      "note": "Activity Tier · 30d volume $2.09M · 30d trades 15,158",
+      "icon": "assets/tokens/sushi-6b3595.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B3595068778DD592e39A122f4f5a5cF09C90fE2/logo.png",
+        "bytes": 49328
+      }
+    },
+    {
+      "symbol": "MEH",
+      "address": "0x1f38d22F4eC3479C8268C85476b9418716bdB115",
+      "note": "Activity Tier · 30d volume $244.96K · 30d trades 14,639",
+      "icon": "assets/tokens/meh-1f38d2.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f38d22F4eC3479C8268C85476b9418716bdB115/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SEI",
+      "address": "0xbdF43ecAdC5ceF51B7D1772F722E40596BC1788B",
+      "note": "Volume Tier · 30d volume $52.35M · 30d trades 14,236",
+      "icon": "assets/tokens/sei-bdf43e.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xbdF43ecAdC5ceF51B7D1772F722E40596BC1788B/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CVX",
+      "address": "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B",
+      "note": "Volume Tier · 30d volume $8.65M · 30d trades 11,936",
+      "icon": "assets/tokens/cvx-4e3fbd.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B/logo.png",
+        "bytes": 6129
+      }
+    },
+    {
+      "symbol": "EUSD",
+      "address": "0xA0d69E286B938e21CBf7E51D71F6A4c8918f482F",
+      "note": "Volume Tier · 30d volume $8.02M · 30d trades 11,877",
+      "icon": "assets/tokens/eusd-a0d69e.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0d69E286B938e21CBf7E51D71F6A4c8918f482F/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "BOLD",
+      "address": "0x6440f144b7e50D6a8439336510312d2F54beB01D",
+      "note": "Volume Tier · 30d volume $41.43M · 30d trades 10,891",
+      "icon": "assets/tokens/bold-6440f1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6440f144b7e50D6a8439336510312d2F54beB01D/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "USDR",
+      "address": "0x7B43E3875440B44613DC3bC08E7763e6Da63C8f8",
+      "note": "Volume Tier · 30d volume $14.30M · 30d trades 10,828",
+      "icon": "assets/tokens/usdr-7b43e3.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7B43E3875440B44613DC3bC08E7763e6Da63C8f8/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SPACEPUP",
+      "address": "0x81DE3A992822Ab817Bc709aC0a1e48dbAe9bcf5D",
+      "note": "Volume Tier · 30d volume $8.14M · 30d trades 9,777",
+      "icon": "assets/tokens/spacepup-81de3a.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x81DE3A992822Ab817Bc709aC0a1e48dbAe9bcf5D/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "RAD",
+      "address": "0x31c8EAcBFFdD875c74b94b077895Bd78CF1E64A3",
+      "note": "Volume Tier · 30d volume $9.54M · 30d trades 9,669",
+      "icon": "assets/tokens/rad-31c8ea.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x31c8EAcBFFdD875c74b94b077895Bd78CF1E64A3/logo.png",
+        "bytes": 9316
+      }
+    },
+    {
+      "symbol": "MOG",
+      "address": "0xaaeE1A9723aaDB7afA2810263653A34bA2C21C7a",
+      "note": "Volume Tier · 30d volume $8.51M · 30d trades 9,453",
+      "icon": "assets/tokens/mog-aaee1a.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xaaeE1A9723aaDB7afA2810263653A34bA2C21C7a/logo.png",
+        "bytes": 37896
+      }
+    },
+    {
+      "symbol": "ETH+",
+      "address": "0xE72B141DF173b999AE7c1aDcbF60Cc9833Ce56a8",
+      "note": "Volume Tier · 30d volume $11.14M · 30d trades 9,369",
+      "icon": "assets/tokens/eth-e72b14.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xE72B141DF173b999AE7c1aDcbF60Cc9833Ce56a8/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "WEI",
+      "address": "0xbf22c716169B057e07EFdF7A57Aac881259127A5",
+      "note": "Volume Tier · 30d volume $10.82M · 30d trades 8,777",
+      "icon": "assets/tokens/wei-bf22c7.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xbf22c716169B057e07EFdF7A57Aac881259127A5/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "MNT",
+      "address": "0x3c3a81e81dc49A522A592e7622A7E711c06bf354",
+      "note": "Volume Tier · 30d volume $9.24M · 30d trades 7,644",
+      "icon": "assets/tokens/mnt-3c3a81.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x3c3a81e81dc49A522A592e7622A7E711c06bf354/logo.png",
+        "bytes": 14499
+      }
+    },
+    {
+      "symbol": "FRXETH",
+      "address": "0x5E8422345238F34275888049021821E8E08CAa1f",
+      "note": "Volume Tier · 30d volume $23.39M · 30d trades 6,904",
+      "icon": "assets/tokens/frxeth-5e8422.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x5E8422345238F34275888049021821E8E08CAa1f/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "RLB",
+      "address": "0x046EeE2cc3188071C02BfC1745A6b17c656e3f3d",
+      "note": "Volume Tier · 30d volume $8.64M · 30d trades 6,749",
+      "icon": "assets/tokens/rlb-046eee.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x046EeE2cc3188071C02BfC1745A6b17c656e3f3d/logo.png",
+        "bytes": 42300
+      }
+    },
+    {
+      "symbol": "OUSD",
+      "address": "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86",
+      "note": "Volume Tier · 30d volume $11.40M · 30d trades 6,206",
+      "icon": "assets/tokens/ousd-2a8e1e.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86/logo.png",
+        "bytes": 71271
+      }
+    },
+    {
+      "symbol": "RETH",
+      "address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+      "note": "Volume Tier · 30d volume $42.10M · 30d trades 5,834",
+      "icon": "assets/tokens/reth-ae7873.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xae78736Cd615f374D3085123A210448E74Fc6393/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SYBTC",
+      "address": "0x01a8b61E7b03891a736B5DF865E0EF9C511850ad",
+      "note": "Volume Tier · 30d volume $34.75M · 30d trades 3,646",
+      "icon": "assets/tokens/sybtc-01a8b6.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x01a8b61E7b03891a736B5DF865E0EF9C511850ad/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SUSDAT",
+      "address": "0xD166337499E176bbC38a1FBd113Ab144e5bd2Df7",
+      "note": "Volume Tier · 30d volume $55.06M · 30d trades 3,361",
+      "icon": "assets/tokens/susdat-d16633.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xD166337499E176bbC38a1FBd113Ab144e5bd2Df7/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "LEASH",
+      "address": "0x27C70Cd1946795B66be9d954418546998b546634",
+      "note": "Volume Tier · 30d volume $49.93M · 30d trades 3,205",
+      "icon": "assets/tokens/leash-27c70c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x27C70Cd1946795B66be9d954418546998b546634/logo.png",
+        "bytes": 45310
+      }
+    },
+    {
+      "symbol": "MSUSD",
+      "address": "0xab5eB14c09D416F0aC63661E57EDB7AEcDb9BEfA",
+      "note": "Volume Tier · 30d volume $37.13M · 30d trades 3,186",
+      "icon": "assets/tokens/msusd-ab5eb1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xab5eB14c09D416F0aC63661E57EDB7AEcDb9BEfA/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CRVFRAX",
+      "address": "0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC",
+      "note": "Volume Tier · 30d volume $23.40M · 30d trades 3,151",
+      "icon": "assets/tokens/crvfrax-3175df.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "EURCV",
+      "address": "0x5F7827FDeb7c20b443265Fc2F40845B715385Ff2",
+      "note": "Volume Tier · 30d volume $19.42M · 30d trades 2,839",
+      "icon": "assets/tokens/eurcv-5f7827.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x5F7827FDeb7c20b443265Fc2F40845B715385Ff2/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SCRVUSD",
+      "address": "0x0655977FEb2f289A4aB78af67BAB0d17aAb84367",
+      "note": "Volume Tier · 30d volume $31.56M · 30d trades 2,774",
+      "icon": "assets/tokens/scrvusd-065597.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x0655977FEb2f289A4aB78af67BAB0d17aAb84367/logo.png",
+        "bytes": 68652
+      }
+    },
+    {
+      "symbol": "REUSD",
+      "address": "0x5086bf358635B81D8C47C66d1C8b9E567Db70c72",
+      "note": "Volume Tier · 30d volume $83.82M · 30d trades 2,586",
+      "icon": "assets/tokens/reusd-5086bf.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x5086bf358635B81D8C47C66d1C8b9E567Db70c72/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "TOKEN",
+      "address": "0xDA0000d4000015A526378bB6faFc650Cea5966F8",
+      "note": "Volume Tier · 30d volume $22.33M · 30d trades 2,343",
+      "icon": "assets/tokens/token-da0000.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xDA0000d4000015A526378bB6faFc650Cea5966F8/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "LBTC",
+      "address": "0x8236a87084f8B84306f72007F36F2618A5634494",
+      "note": "Volume Tier · 30d volume $45.93M · 30d trades 2,330",
+      "icon": "assets/tokens/lbtc-8236a8.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x8236a87084f8B84306f72007F36F2618A5634494/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "MSETH",
+      "address": "0x64351fC9810aDAd17A690E4e1717Df5e7e085160",
+      "note": "Volume Tier · 30d volume $75.02M · 30d trades 2,204",
+      "icon": "assets/tokens/mseth-64351f.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x64351fC9810aDAd17A690E4e1717Df5e7e085160/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "USD0",
+      "address": "0x73A15FeD60Bf67631dC6cd7Bc5B6e8da8190aCF5",
+      "note": "Volume Tier · 30d volume $11.11M · 30d trades 1,926",
+      "icon": "assets/tokens/usd0-73a15f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x73A15FeD60Bf67631dC6cd7Bc5B6e8da8190aCF5/logo.png",
+        "bytes": 69758
+      }
+    },
+    {
+      "symbol": "LCX",
+      "address": "0x037A54AaB062628C9Bbae1FDB1583c195585fe41",
+      "note": "Volume Tier · 30d volume $8.48M · 30d trades 1,897",
+      "icon": "assets/tokens/lcx-037a54.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x037A54AaB062628C9Bbae1FDB1583c195585fe41/logo.png",
+        "bytes": 2358
+      }
+    },
+    {
+      "symbol": "USDF",
+      "address": "0xFa2B947eEc368f42195f24F36d2aF29f7c24CeC2",
+      "note": "Volume Tier · 30d volume $9.70M · 30d trades 1,600",
+      "icon": "assets/tokens/usdf-fa2b94.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xFa2B947eEc368f42195f24F36d2aF29f7c24CeC2/logo.png",
+        "bytes": 13001
+      }
+    },
+    {
+      "symbol": "MSUSD",
+      "address": "0x4ba01f22827018b4772CD326C7627FB4956A7C00",
+      "note": "Volume Tier · 30d volume $42.29M · 30d trades 1,266",
+      "icon": "assets/tokens/msusd-4ba01f.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x4ba01f22827018b4772CD326C7627FB4956A7C00/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "REUSD",
+      "address": "0x57aB1E0003F623289CD798B1824Be09a793e4Bec",
+      "note": "Volume Tier · 30d volume $16.73M · 30d trades 1,076",
+      "icon": "assets/tokens/reusd-57ab1e.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x57aB1E0003F623289CD798B1824Be09a793e4Bec/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CELL",
+      "address": "0x26c8AFBBFE1EBaca03C2bB082E69D0476Bffe099",
+      "note": "Volume Tier · 30d volume $12.41M · 30d trades 1,063",
+      "icon": "assets/tokens/cell-26c8af.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x26c8AFBBFE1EBaca03C2bB082E69D0476Bffe099/logo.png",
+        "bytes": 52103
+      }
+    },
+    {
+      "symbol": "SYRUPUSDC",
+      "address": "0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b",
+      "note": "Volume Tier · 30d volume $24.33M · 30d trades 1,048",
+      "icon": "assets/tokens/syrupusdc-80ac24.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "RSETH",
+      "address": "0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7",
+      "note": "Volume Tier · 30d volume $14.19M · 30d trades 1,041",
+      "icon": "assets/tokens/rseth-a1290d.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "NUSD",
+      "address": "0xE556ABa6fe6036275Ec1f87eda296BE72C811BCE",
+      "note": "Volume Tier · 30d volume $43.37M · 30d trades 968",
+      "icon": "assets/tokens/nusd-e556ab.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xE556ABa6fe6036275Ec1f87eda296BE72C811BCE/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "KBTC",
+      "address": "0x73E0C0d45E048D25Fc26Fa3159b0aA04BfA4Db98",
+      "note": "Volume Tier · 30d volume $32.79M · 30d trades 829",
+      "icon": "assets/tokens/kbtc-73e0c0.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x73E0C0d45E048D25Fc26Fa3159b0aA04BfA4Db98/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "EBTC",
+      "address": "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642",
+      "note": "Volume Tier · 30d volume $10.01M · 30d trades 589",
+      "icon": "assets/tokens/ebtc-657e8c.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x657e8C867D8B37dCC18fA4Caead9C45EB088C642/logo.png",
+        "bytes": 64373
+      }
+    },
+    {
+      "symbol": "OSETH",
+      "address": "0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38",
+      "note": "Volume Tier · 30d volume $8.49M · 30d trades 582",
+      "icon": "assets/tokens/oseth-f1c9ac.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "BTC.B",
+      "address": "0xB0F70C0bD6FD87dbEb7C10dC692a2a6106817072",
+      "note": "Volume Tier · 30d volume $9.29M · 30d trades 522",
+      "icon": "assets/tokens/btc-b-b0f70c.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xB0F70C0bD6FD87dbEb7C10dC692a2a6106817072/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "SDAI",
+      "address": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
+      "note": "Volume Tier · 30d volume $19.85M · 30d trades 489",
+      "icon": "assets/tokens/sdai-83f20f.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x83F20F44975D03b1b09e64809B757c47f942BEeA/logo.png",
+        "bytes": 42767
+      }
+    },
+    {
+      "symbol": "AI",
+      "address": "0x2598c30330D5771AE9F983979209486aE26dE875",
+      "note": "Volume Tier · 30d volume $9.42M · 30d trades 362",
+      "icon": "assets/tokens/ai-2598c3.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2598c30330D5771AE9F983979209486aE26dE875/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "EZETH",
+      "address": "0xbf5495Efe5DB9ce00f80364C8B423567e58d2110",
+      "note": "Volume Tier · 30d volume $8.76M · 30d trades 356",
+      "icon": "assets/tokens/ezeth-bf5495.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xbf5495Efe5DB9ce00f80364C8B423567e58d2110/logo.png",
+        "bytes": 7976
+      }
+    },
+    {
+      "symbol": "SYRUPUSDT",
+      "address": "0x356B8d89c1e1239Cbbb9dE4815c39A1474d5BA7D",
+      "note": "Volume Tier · 30d volume $11.47M · 30d trades 155",
+      "icon": "assets/tokens/syrupusdt-356b8d.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x356B8d89c1e1239Cbbb9dE4815c39A1474d5BA7D/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "STUSDS",
+      "address": "0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9",
+      "note": "Volume Tier · 30d volume $11.60M · 30d trades 144",
+      "icon": "assets/tokens/stusds-99cd4e.png",
+      "iconStatus": {
+        "status": "downloaded",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9/logo.png",
+        "bytes": 19811
+      }
+    },
+    {
+      "symbol": "USDM",
+      "address": "0xbbAec992fc2d637151dAF40451f160bF85f3C8C1",
+      "note": "Volume Tier · 30d volume $11.77M · 30d trades 112",
+      "icon": "assets/tokens/usdm-bbaec9.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xbbAec992fc2d637151dAF40451f160bF85f3C8C1/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "GLO",
+      "address": "0x70c5f366dB60A2a0C59C4C24754803Ee47Ed7284",
+      "note": "Volume Tier · 30d volume $52.94M · 30d trades 79",
+      "icon": "assets/tokens/glo-70c5f3.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x70c5f366dB60A2a0C59C4C24754803Ee47Ed7284/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "CRD",
+      "address": "0x2a05c149C47A4a7c840cD3cf575C7f6bf08989dF",
+      "note": "Volume Tier · 30d volume $20.10M · 30d trades 7",
+      "icon": "assets/tokens/crd-2a05c1.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2a05c149C47A4a7c840cD3cf575C7f6bf08989dF/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "VUE",
+      "address": "0xe768315e79d3C1925644dbAB11448286d2B191c5",
+      "note": "Volume Tier · 30d volume $40.03M · 30d trades 6",
+      "icon": "assets/tokens/vue-e76831.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xe768315e79d3C1925644dbAB11448286d2B191c5/logo.png",
+        "error": "404 Not Found"
+      }
+    },
+    {
+      "symbol": "DFED",
+      "address": "0x57f7229Fd3a611542C73BBD4A5FFbB41B0cD6776",
+      "note": "Volume Tier · 30d volume $11.97M · 30d trades 2",
+      "icon": "assets/tokens/dfed-57f722.png",
+      "iconStatus": {
+        "status": "missing",
+        "url": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x57f7229Fd3a611542C73BBD4A5FFbB41B0cD6776/logo.png",
+        "error": "404 Not Found"
+      }
+    }
+  ]
+}
