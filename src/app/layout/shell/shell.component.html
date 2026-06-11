@@ -85,8 +85,8 @@
                 '/',
                 {
                   outlets: {
-                    primary: ['erc20trade'],
-                    'right-panel': ['erc20tradeRightPanel'],
+                    primary: ['token-spot'],
+                    'right-panel': ['tokenSpotRightPanel'],
                   },
                 },
               ]"
@@ -97,125 +97,125 @@
             </a>
             <a
               [routerLink]="
-                treasuryNavDisabled('nftspottrade')
+                treasuryNavDisabled('nft-spot')
                   ? null
                   : [
                       '/',
                       {
                         outlets: {
-                          primary: ['nftspottrade'],
-                          'right-panel': ['nftspottradeRightPanel'],
+                          primary: ['nft-spot'],
+                          'right-panel': ['nftSpotRightPanel'],
                         },
                       },
                     ]
               "
               routerLinkActive="active"
               [class.sethx-nav-link-disabled]="
-                treasuryNavDisabled('nftspottrade')
+                treasuryNavDisabled('nft-spot')
               "
-              [attr.aria-disabled]="treasuryNavDisabled('nftspottrade')"
-              [attr.title]="treasuryDisabledTitle('nftspottrade')"
-              (click)="onUnsupportedTreasuryNav($event, 'nftspottrade')"
+              [attr.aria-disabled]="treasuryNavDisabled('nft-spot')"
+              [attr.title]="treasuryDisabledTitle('nft-spot')"
+              (click)="onUnsupportedTreasuryNav($event, 'nft-spot')"
               class="sethx-nav-link"
             >
               NFT Spot
             </a>
             <a
               [routerLink]="
-                treasuryNavDisabled('futurestrade')
+                treasuryNavDisabled('futures')
                   ? null
                   : [
                       '/',
                       {
                         outlets: {
-                          primary: ['futurestrade'],
-                          'right-panel': ['futurestradeRightPanel'],
+                          primary: ['futures'],
+                          'right-panel': ['futuresRightPanel'],
                         },
                       },
                     ]
               "
               routerLinkActive="active"
               [class.sethx-nav-link-disabled]="
-                treasuryNavDisabled('futurestrade')
+                treasuryNavDisabled('futures')
               "
-              [attr.aria-disabled]="treasuryNavDisabled('futurestrade')"
-              [attr.title]="treasuryDisabledTitle('futurestrade')"
-              (click)="onUnsupportedTreasuryNav($event, 'futurestrade')"
+              [attr.aria-disabled]="treasuryNavDisabled('futures')"
+              [attr.title]="treasuryDisabledTitle('futures')"
+              (click)="onUnsupportedTreasuryNav($event, 'futures')"
               class="sethx-nav-link"
             >
               Futures
             </a>
             <a
               [routerLink]="
-                treasuryNavDisabled('optionstrade')
+                treasuryNavDisabled('options')
                   ? null
                   : [
                       '/',
                       {
                         outlets: {
-                          primary: ['optionstrade'],
-                          'right-panel': ['optionstradeRightPanel'],
+                          primary: ['options'],
+                          'right-panel': ['optionsRightPanel'],
                         },
                       },
                     ]
               "
               routerLinkActive="active"
               [class.sethx-nav-link-disabled]="
-                treasuryNavDisabled('optionstrade')
+                treasuryNavDisabled('options')
               "
-              [attr.aria-disabled]="treasuryNavDisabled('optionstrade')"
-              [attr.title]="treasuryDisabledTitle('optionstrade')"
-              (click)="onUnsupportedTreasuryNav($event, 'optionstrade')"
+              [attr.aria-disabled]="treasuryNavDisabled('options')"
+              [attr.title]="treasuryDisabledTitle('options')"
+              (click)="onUnsupportedTreasuryNav($event, 'options')"
               class="sethx-nav-link"
             >
               Options
             </a>
             <a
               [routerLink]="
-                treasuryNavDisabled('binaryoptionstrade')
+                treasuryNavDisabled('binary-options')
                   ? null
                   : [
                       '/',
                       {
                         outlets: {
-                          primary: ['binaryoptionstrade'],
-                          'right-panel': ['binaryoptionstradeRightPanel'],
+                          primary: ['binary-options'],
+                          'right-panel': ['binaryOptionsRightPanel'],
                         },
                       },
                     ]
               "
               routerLinkActive="active"
               [class.sethx-nav-link-disabled]="
-                treasuryNavDisabled('binaryoptionstrade')
+                treasuryNavDisabled('binary-options')
               "
-              [attr.aria-disabled]="treasuryNavDisabled('binaryoptionstrade')"
-              [attr.title]="treasuryDisabledTitle('binaryoptionstrade')"
-              (click)="onUnsupportedTreasuryNav($event, 'binaryoptionstrade')"
+              [attr.aria-disabled]="treasuryNavDisabled('binary-options')"
+              [attr.title]="treasuryDisabledTitle('binary-options')"
+              (click)="onUnsupportedTreasuryNav($event, 'binary-options')"
               class="sethx-nav-link"
             >
               Binary Options
             </a>
             <a
               [routerLink]="
-                treasuryNavDisabled('marginoptionstrade')
+                treasuryNavDisabled('margin-options')
                   ? null
                   : [
                       '/',
                       {
                         outlets: {
-                          primary: ['marginoptionstrade'],
-                          'right-panel': ['marginoptionstradeRightPanel'],
+                          primary: ['margin-options'],
+                          'right-panel': ['marginOptionsRightPanel'],
                         },
                       },
                     ]
               "
               routerLinkActive="active"
               [class.sethx-nav-link-disabled]="
-                treasuryNavDisabled('marginoptionstrade')
+                treasuryNavDisabled('margin-options')
               "
-              [attr.aria-disabled]="treasuryNavDisabled('marginoptionstrade')"
-              [attr.title]="treasuryDisabledTitle('marginoptionstrade')"
-              (click)="onUnsupportedTreasuryNav($event, 'marginoptionstrade')"
+              [attr.aria-disabled]="treasuryNavDisabled('margin-options')"
+              [attr.title]="treasuryDisabledTitle('margin-options')"
+              (click)="onUnsupportedTreasuryNav($event, 'margin-options')"
               class="sethx-nav-link"
             >
               Margin Options
@@ -225,8 +225,8 @@
                 '/',
                 {
                   outlets: {
-                    primary: ['lending-ob'],
-                    'right-panel': ['lendingObRightPanel'],
+                    primary: ['lending'],
+                    'right-panel': ['lendingRightPanel'],
                   },
                 },
               ]"

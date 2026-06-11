@@ -79,7 +79,9 @@ export class FeeService {
     loader: async () => (await this.fees.getAcceptedPaymentTokens()) ?? [],
   });
 
-  private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[]);
+  private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[], {
+    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
+  });
   readonly acceptedPaymentTokens = stableComputed(() => this._stableAcceptedPaymentTokens());
   readonly acceptedPaymentTokensStatus = computed(() =>
     this._acceptedTokensRes.status(),

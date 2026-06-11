@@ -250,11 +250,11 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
   }
 
   readonly unsupportedTreasuryOrderbookSegments = [
-    "optionstrade",
-    "futurestrade",
-    "nftspottrade",
-    "binaryoptionstrade",
-    "marginoptionstrade",
+    "options",
+    "futures",
+    "nft-spot",
+    "binary-options",
+    "margin-options",
   ];
 
   treasuryNavDisabled(segment: string): boolean {

@@ -165,40 +165,36 @@ export class TriggerService {
   }
 
   domainsForUrl(url: string): RefreshDomain[] {
-    const clean = String(url ?? "").toLowerCase();
+    const path = this.normalizedPrimaryPath(url);
 
-    // Keep this route map aligned with ProtocolConfig routes. Several pages
-    // were renamed from the old *Trade routes to /app/<product>; if the route
-    // is missed here, the block/manual refresh button bumps the wrong domains
-    // and list resources can look stale or briefly empty.
-    if (clean.includes("accounts")) return ["wallet", "accounts"];
-    if (clean.includes("tokens")) return ["tokens", "portfolio", "prices"];
-    if (clean.includes("assets")) return ["portfolio", "vault", "prices"];
-    if (clean.includes("token-spot") || clean.includes("erc20trade"))
-      return ["orderbook", "portfolio", "prices"];
-    if (clean.includes("nft-spot") || clean.includes("nftspottrade"))
-      return ["orderbook", "portfolio"];
-    if (clean.includes("futures") || clean.includes("futurestrade"))
-      return ["futures", "portfolio", "prices", "warnings"];
-    if (
-      clean.includes("options") ||
-      clean.includes("binary-options") ||
-      clean.includes("margin-options") ||
-      clean.includes("optionstrade") ||
-      clean.includes("binaryoptionstrade") ||
-      clean.includes("marginoptionstrade")
-    )
+    if (path === "accounts") return ["wallet", "accounts"];
+    if (path === "tokens") return ["tokens", "portfolio", "prices"];
+    if (path === "assets") return ["portfolio", "vault", "prices"];
+    if (path === "token-spot") return ["orderbook", "portfolio", "prices"];
+    if (path === "nft-spot") return ["orderbook", "portfolio"];
+    if (path === "futures") return ["futures", "portfolio", "prices", "warnings"];
+    if (path === "options" || path === "binary-options" || path === "margin-options") {
       return ["options", "portfolio", "prices", "warnings"];
-    if (clean.includes("lending") || clean.includes("lending-ob"))
-      return ["lending", "portfolio", "vault", "prices", "warnings"];
-    if (clean.includes("treasury"))
-      return ["treasury", "accounts", "portfolio", "warnings"];
-    if (clean.includes("oracles")) return ["protocol", "prices", "warnings"];
-    if (clean.includes("fees")) return ["fees", "prices"];
-    if (clean.includes("warnings"))
+    }
+    if (path === "lending") return ["lending", "portfolio", "vault", "prices", "warnings"];
+    if (path === "treasury") return ["treasury", "accounts", "portfolio", "warnings"];
+    if (path === "oracles") return ["protocol", "prices", "warnings"];
+    if (path === "fees") return ["fees", "prices"];
+    if (path === "warnings") {
       return ["warnings", "protocol", "options", "futures", "lending", "portfolio", "prices"];
-    if (clean.includes("protocol")) return ["protocol", "accounts", "warnings"];
+    }
+    if (path === "protocol") return ["protocol", "accounts", "warnings"];
     return ["wallet", "accounts", "portfolio"];
+  }
+
+  private normalizedPrimaryPath(url: string): string {
+    const clean = String(url ?? "").toLowerCase().split("?")[0].split("#")[0];
+    const primaryOutlet = clean.match(/primary:([^/)]+)/)?.[1];
+    const segments = clean.replace(/^\/+/, "").split(/[(/]/).filter(Boolean);
+    const firstPath = segments[0] === "app" ? (segments[1] ?? "") : (segments[0] ?? "");
+    const path = primaryOutlet || firstPath;
+
+    return path;
   }
 
   private allBackgroundDomains(): RefreshDomain[] {

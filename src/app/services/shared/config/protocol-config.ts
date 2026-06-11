@@ -117,23 +117,23 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'accounts',
       label: 'Accounts',
-      route: '/app/accounts',
+      route: '/accounts',
       availability: 'wallet',
       enabled: true,
       summary: 'Create and manage protocol accounts and vault access.',
     },
     {
       key: 'tokens',
-      label: 'Tokens',
-      route: '/app/tokens',
+      label: 'Assets',
+      route: '/assets',
       availability: 'wallet',
       enabled: true,
-      summary: 'View supported assets and token balances.',
+      summary: 'View supported assets, token balances, and vault balances.',
     },
     {
       key: 'tokenSpot',
       label: 'Token Spot',
-      route: '/app/token-spot',
+      route: '/token-spot',
       availability: 'wallet',
       enabled: true,
       summary: 'Token spot order book trading.',
@@ -141,7 +141,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'nftSpot',
       label: 'NFT Spot',
-      route: '/app/nft-spot',
+      route: '/nft-spot',
       availability: 'wallet',
       enabled: true,
       summary: 'NFT spot order book trading.',
@@ -149,7 +149,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'futures',
       label: 'Futures',
-      route: '/app/futures',
+      route: '/futures',
       availability: 'wallet',
       enabled: true,
       summary: 'Futures contracts and order book trading.',
@@ -157,7 +157,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'options',
       label: 'Options',
-      route: '/app/options',
+      route: '/options',
       availability: 'wallet',
       enabled: true,
       summary: 'Options contracts and order book trading.',
@@ -165,7 +165,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'binaryOptions',
       label: 'Binary Options',
-      route: '/app/binary-options',
+      route: '/binary-options',
       availability: 'wallet',
       enabled: true,
       summary: 'Binary option products.',
@@ -173,7 +173,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'marginOptions',
       label: 'Margin Options',
-      route: '/app/margin-options',
+      route: '/margin-options',
       availability: 'wallet',
       enabled: true,
       summary: 'Margin option products.',
@@ -181,7 +181,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'lending',
       label: 'Lending',
-      route: '/app/lending',
+      route: '/lending',
       availability: 'wallet',
       enabled: true,
       summary: 'Lending and borrowing order book.',
@@ -189,7 +189,7 @@ export const PROTOCOL_CONFIG: ProtocolConfig = {
     {
       key: 'treasury',
       label: 'Treasury',
-      route: '/app/treasury',
+      route: '/treasury',
       availability: 'role',
       enabled: true,
       summary: 'Treasury balances, permissions, and role-gated actions.',

@@ -83,7 +83,9 @@ export class FeeRatesComponent {
     },
   });
 
-  private readonly _stableFeeContexts = stableResourceValue(() => this._feeContextsRes.value(), [] as FeeContextRead[]);
+  private readonly _stableFeeContexts = stableResourceValue(() => this._feeContextsRes.value(), [] as FeeContextRead[], {
+    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
+  });
   readonly feeContexts = stableComputed(() => this._stableFeeContexts());
   readonly feeContextStatus = computed(() => this._feeContextsRes.status());
   readonly configuredCount = computed(

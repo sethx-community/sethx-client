@@ -37,9 +37,15 @@ export class VaultChainService {
   });
 
   // PUBLIC computeds
-  private readonly _stableErc20Tokens = stableResourceValue(() => this._erc20TokensRes.value(), [] as string[]);
-  private readonly _stableErc721Tokens = stableResourceValue(() => { const value = this._erc721TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[]);
-  private readonly _stableErc1155Tokens = stableResourceValue(() => { const value = this._erc1155TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[]);
+  private readonly _stableErc20Tokens = stableResourceValue(() => this._erc20TokensRes.value(), [] as string[], {
+    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
+  });
+  private readonly _stableErc721Tokens = stableResourceValue(() => { const value = this._erc721TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[], {
+    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
+  });
+  private readonly _stableErc1155Tokens = stableResourceValue(() => { const value = this._erc1155TokensRes.value(); return value === undefined ? undefined : (value ?? []); }, [] as string[], {
+    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
+  });
 
   readonly erc20Tokens = stableComputed(() => this._stableErc20Tokens());
   readonly erc20Status = computed<Status>(() =>
