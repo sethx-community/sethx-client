@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import {
   WARNING_EXPIRY_ORANGE_WINDOW_SECONDS,
   WARNING_LTV_RED_FRACTION_BPS,
@@ -16,7 +16,8 @@ import { TradeSettingsService } from '../trade-settings.service';
 import { TriggerService } from '../trigger.service';
 import { FuturesOrderBookStore } from '../futures-orderbook/futures-orderbook.store';
 import { FuturesMaintenanceService } from '../../onchain/contracts/futures-maintenance.service';
-import { ProtocolDataService } from '../data/protocol-data.service';
+import { ProtocolDataService, type ProtocolOracleInfo } from '../data/protocol-data.service';
+import { structuralEqual } from '../../../core/signals/stable-resource';
 
 export type WarningRow = {
   level: WarningStatus;
@@ -44,6 +45,8 @@ export class WarningCenterService {
   private readonly _loading = signal(false);
   private readonly _lastUpdatedAt = signal<number | null>(null);
   private refreshNonce = 0;
+  private refreshInFlight: Promise<void> | null = null;
+  private refreshQueued = false;
 
   readonly warnings = this._warnings.asReadonly();
   readonly loading = this._loading.asReadonly();
@@ -63,6 +66,26 @@ export class WarningCenterService {
   }
 
   async refresh(): Promise<void> {
+    if (this.refreshInFlight) {
+      this.refreshQueued = true;
+      return this.refreshInFlight;
+    }
+
+    const run = async () => {
+      do {
+        this.refreshQueued = false;
+        await this.refreshOnce();
+      } while (this.refreshQueued);
+    };
+
+    this.refreshInFlight = run().finally(() => {
+      this.refreshInFlight = null;
+    });
+
+    return this.refreshInFlight;
+  }
+
+  private async refreshOnce(): Promise<void> {
     const nonce = ++this.refreshNonce;
     const account = this.account();
     const now = BigInt(Math.floor(Date.now() / 1000));
@@ -70,19 +93,25 @@ export class WarningCenterService {
 
     this._loading.set(true);
     try {
+      const oracleInfo = await this.protocolData.refreshOracleInfo();
+      if (!oracleInfo && this.protocolData.liveOverview().oracleReadStatus !== 'loaded') return;
+
       this.addOptionWarnings(rows, now);
       this.addMarginOptionWarnings(rows, now);
       this.addBinaryOptionWarnings(rows, now);
-      this.addOracleWarnings(rows, now);
+      this.addOracleWarnings(rows, now, oracleInfo ?? this.protocolData.liveOverview().oracleInfo);
       if (account) {
         const snapshot = await this.lending.loadAccountSnapshot(account).catch(() => ({ debts: [], pendingDebts: [], bonds: [], orders: [] }));
         this.addLendingExpiryWarnings(rows, now, snapshot);
         await this.addLendingLtvWarnings(rows, account, snapshot);
         await this.addFuturesWarnings(rows, account, now);
       }
-      rows.sort((a, b) => Number(a.due - b.due));
+      const committedRows = this.dedupeWarnings(rows).sort((a, b) => Number(a.due - b.due));
       if (nonce === this.refreshNonce) {
-        this._warnings.set(rows);
+        const currentRows = untracked(() => this._warnings());
+        if (!structuralEqual(currentRows, committedRows)) {
+          this._warnings.set(committedRows);
+        }
         this._lastUpdatedAt.set(Date.now());
       }
     } finally {
@@ -91,51 +120,68 @@ export class WarningCenterService {
   }
 
 
-  private addOracleWarnings(rows: WarningRow[], now: bigint): void {
-    const oracleInfo = this.protocolData.liveOverview().oracleInfo ?? [];
+  private addOracleWarnings(rows: WarningRow[], now: bigint, oracleInfo: readonly ProtocolOracleInfo[]): void {
     for (const oracle of oracleInfo) {
       const label = oracle.label || oracle.pair || oracle.oracle;
+      const reasons: string[] = [];
+      let level: WarningStatus | null = null;
+      let due = 0n;
+      let action = 'Fetch price and sync oracle data from Info → Oracles.';
+
       if (oracle.statusLabel && oracle.statusLabel !== 'OK') {
-        rows.push({
-          level: oracle.statusLabel === 'PENDING' ? 'orange' : 'red',
-          type: 'Oracle',
-          title: 'Oracle not OK',
-          detail: `${label}: ${oracle.statusLabel}.`,
-          due: 0n,
-          action: 'Fetch price and sync oracle data from Info → Oracles.',
-        });
+        reasons.push(`${oracle.statusLabel} status`);
+        level = oracle.statusLabel === 'PENDING' ? this.highestLevel(level, 'orange') : this.highestLevel(level, 'red');
       }
+
       const fetched = oracle.lastFetchTimestamp ?? 0n;
       if (fetched <= 0n) {
-        rows.push({
-          level: 'orange',
-          type: 'Oracle',
-          title: 'Oracle has not been fetched',
-          detail: `${label}: no successful fetch timestamp is available.`,
-          due: 0n,
-          action: 'Fetch price and sync oracle data from Info → Oracles.',
-        });
+        reasons.push('no successful fetch timestamp');
+        level = this.highestLevel(level, 'orange');
       } else if (now > fetched + WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS) {
-        rows.push({
-          level: 'red',
-          type: 'Oracle',
-          title: 'Oracle fetch is very old',
-          detail: `${label}: last fetched ${this.formatAge(now - fetched)} ago.`,
-          due: 0n,
-          action: 'Fetch price and sync oracle data immediately.',
-        });
+        reasons.push(`last fetched ${this.formatAge(now - fetched)} ago`);
+        level = this.highestLevel(level, 'red');
+        due = fetched + WARNING_ORACLE_FETCH_RED_WINDOW_SECONDS;
+        action = 'Fetch price and sync oracle data immediately.';
       } else if (now > fetched + WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS) {
-        rows.push({
-          level: 'orange',
-          type: 'Oracle',
-          title: 'Oracle fetch is old',
-          detail: `${label}: last fetched ${this.formatAge(now - fetched)} ago.`,
-          due: 0n,
-          action: 'Fetch price and sync oracle data from Info → Oracles.',
-        });
+        reasons.push(`last fetched ${this.formatAge(now - fetched)} ago`);
+        level = this.highestLevel(level, 'orange');
+        due = fetched + WARNING_ORACLE_FETCH_ORANGE_WINDOW_SECONDS;
       }
+
+      if (!level) continue;
+
+      rows.push({
+        level,
+        type: 'Oracle',
+        title: level === 'red' ? 'Oracle needs attention' : 'Oracle needs review',
+        detail: `${label}: ${reasons.join('; ')}.`,
+        due,
+        action,
+      });
     }
   }
+
+  private highestLevel(current: WarningStatus | null, next: WarningStatus): WarningStatus {
+    if (current === 'red' || next === 'red') return 'red';
+    return 'orange';
+  }
+
+  private dedupeWarnings(rows: WarningRow[]): WarningRow[] {
+    const byKey = new Map<string, WarningRow>();
+    for (const row of rows) {
+      const key = row.type === 'Oracle'
+        ? `${row.type}:${row.detail.split(':')[0].toLowerCase()}`
+        : `${row.type}:${row.title}:${row.detail}:${row.due.toString()}`;
+      const previous = byKey.get(key);
+      if (!previous) {
+        byKey.set(key, row);
+        continue;
+      }
+      if (previous.level !== 'red' && row.level === 'red') byKey.set(key, row);
+    }
+    return Array.from(byKey.values());
+  }
+
 
   private formatAge(secondsRaw: bigint): string {
     const seconds = Number(secondsRaw);

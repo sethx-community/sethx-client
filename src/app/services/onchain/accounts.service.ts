@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { stableComputed, stableResourceValue } from '../../core/signals/stable-resource';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
-import { Contract, JsonRpcProvider, ZeroAddress } from 'ethers';
+import { Contract, ZeroAddress } from 'ethers';
 import { AccountRegistryContractService } from './contracts/account-registry-contract.service';
 import { AccountFactoryContractService } from './contracts/accountFactory-contract.service';
 import { LendingAccountFactoryContractService } from './contracts/lending-account-factory-contract.service';
@@ -17,8 +17,6 @@ import { TransactionAccessService } from '../shared/compliance/transaction-acces
 import { ProtocolConfigService } from '../shared/config/protocol-config.service';
 import { toStatus, type Status } from '../../core/tokens/resource-status';
 import { norm } from '../../core/tokens/token-normalize';
-import { CURRENT_NETWORK } from '../../constants/network.config';
-import { NETWORKS } from '../../constants/networks';
 import { getContractAddress } from '../../contracts/contract-registry';
 import { TreasuryModeService } from '../shared/treasury-mode.service';
 
@@ -363,15 +361,10 @@ export class AccountsChainService {
     account: string,
     requireSigner = false,
   ): Promise<Contract> {
-    let provider = await this.wallet.getEthersProvider();
+    const provider = await this.wallet.getEthersProvider();
 
     if (!provider || typeof provider.getSigner !== 'function') {
-      const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-      provider = new JsonRpcProvider(rpcUrl) as any;
-    }
-
-    if (!provider) {
-      throw new Error('No provider available');
+      throw new Error('Wallet provider is not connected.');
     }
 
     const signer = await provider.getSigner().catch(() => null);

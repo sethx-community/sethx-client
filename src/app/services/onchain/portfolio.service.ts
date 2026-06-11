@@ -83,7 +83,7 @@ export class PortfolioService {
     return fallback || null;
   });
 
-  readonly portfolioAccounts = computed(() => {
+  readonly portfolioAccounts = stableComputed(() => {
     const found = new Map<string, string>();
     for (const account of this.accountsSvc.accounts() ?? []) {
       const key = this.normKey(account);
@@ -193,7 +193,7 @@ export class PortfolioService {
     },
   );
 
-  readonly allBalances = computed(() => this._stableAllBalances());
+  readonly allBalances = stableComputed(() => this._stableAllBalances());
   readonly readStatus = computed<Status>(() =>
     toStatus(this._allBalancesResource.status()),
   );

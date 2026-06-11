@@ -18,6 +18,5 @@ export const environment: SethxClientEnvironment = {
   releaseUrl: "https://github.com/sethx-community/sethx-client/releases",
 
   reownProjectId: "a06102eecc532a455cd608c2934914c2",
-  sethxGraphUrl:
-    "https://api.studio.thegraph.com/query/1754710/sethx-graph/version/latest",
+  sethxGraphUrl: "https://graph.sethx.com/graph",
 };

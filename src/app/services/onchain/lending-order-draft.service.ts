@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ethers, JsonRpcProvider } from 'ethers';
+import { ethers } from 'ethers';
 
 import type {
   ConfirmationField,
@@ -8,8 +8,6 @@ import type {
 import { ETH_ADDRESS } from '../shared/main.tokens';
 import { TriggerService } from '../shared/trigger.service';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
-import { CURRENT_NETWORK } from '../../constants/network.config';
-import { NETWORKS } from '../../constants/networks';
 import { parseExpirySelection, resolveExpiryForContract } from '../../shared/expiry/expiry-settings';
 import { TradeSettingsService } from '../shared/trade-settings.service';
 import { TransactionReceiptService } from '../../shared/transaction-receipt';
@@ -303,11 +301,8 @@ export class LendingOrderDraftService {
 
   private async latestChainTimestamp(): Promise<bigint | null> {
     try {
-      let provider: any = this.wallet.provider?.() ?? null;
-      if (!provider) {
-        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-        provider = new JsonRpcProvider(rpcUrl);
-      }
+      const provider: any = this.wallet.provider?.() ?? null;
+      if (!provider) return null;
       const block = await provider.getBlock('latest');
       const ts = block?.timestamp;
       return typeof ts === 'number' && Number.isFinite(ts) && ts > 0 ? BigInt(ts) : null;

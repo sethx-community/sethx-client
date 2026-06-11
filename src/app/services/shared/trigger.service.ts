@@ -166,29 +166,38 @@ export class TriggerService {
 
   domainsForUrl(url: string): RefreshDomain[] {
     const clean = String(url ?? "").toLowerCase();
+
+    // Keep this route map aligned with ProtocolConfig routes. Several pages
+    // were renamed from the old *Trade routes to /app/<product>; if the route
+    // is missed here, the block/manual refresh button bumps the wrong domains
+    // and list resources can look stale or briefly empty.
     if (clean.includes("accounts")) return ["wallet", "accounts"];
-    if (clean.includes("assets"))
-      return ["portfolio", "vault", "prices"];
-    if (clean.includes("erc20trade"))
+    if (clean.includes("tokens")) return ["tokens", "portfolio", "prices"];
+    if (clean.includes("assets")) return ["portfolio", "vault", "prices"];
+    if (clean.includes("token-spot") || clean.includes("erc20trade"))
       return ["orderbook", "portfolio", "prices"];
-    if (clean.includes("nftspottrade"))
+    if (clean.includes("nft-spot") || clean.includes("nftspottrade"))
       return ["orderbook", "portfolio"];
-    if (clean.includes("futurestrade"))
-      return ["futures", "portfolio", "prices"];
+    if (clean.includes("futures") || clean.includes("futurestrade"))
+      return ["futures", "portfolio", "prices", "warnings"];
     if (
+      clean.includes("options") ||
+      clean.includes("binary-options") ||
+      clean.includes("margin-options") ||
       clean.includes("optionstrade") ||
       clean.includes("binaryoptionstrade") ||
       clean.includes("marginoptionstrade")
     )
-      return ["options", "portfolio", "prices"];
-    if (clean.includes("lending-ob"))
-      return ["lending", "portfolio", "vault", "prices"];
+      return ["options", "portfolio", "prices", "warnings"];
+    if (clean.includes("lending") || clean.includes("lending-ob"))
+      return ["lending", "portfolio", "vault", "prices", "warnings"];
     if (clean.includes("treasury"))
-      return ["treasury", "accounts", "portfolio"];
-    if (clean.includes("protocol")) return ["protocol", "accounts"];
+      return ["treasury", "accounts", "portfolio", "warnings"];
+    if (clean.includes("oracles")) return ["protocol", "prices", "warnings"];
     if (clean.includes("fees")) return ["fees", "prices"];
     if (clean.includes("warnings"))
-      return ["warnings", "options", "lending", "portfolio", "prices"];
+      return ["warnings", "protocol", "options", "futures", "lending", "portfolio", "prices"];
+    if (clean.includes("protocol")) return ["protocol", "accounts", "warnings"];
     return ["wallet", "accounts", "portfolio"];
   }
 

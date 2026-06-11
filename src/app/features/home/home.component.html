@@ -57,19 +57,23 @@
         (click)="refreshRecentActivity()"
       >
         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-        <span>Refresh feed</span>
+        <span>Refresh</span>
       </button>
     </div>
 
     <div *ngIf="!graphConfigured()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
-      Set the RPC endpoint in the environment to enable recent protocol activity.
+      Set the graph endpoint in the environment to enable recent protocol activity.
     </div>
 
     <div *ngIf="activityError()" class="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
       {{ activityError() }}
     </div>
 
-    <div *ngIf="graphConfigured() && !activityLoading() && recentActivities().length === 0 && !activityError()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
+    <div *ngIf="graphConfigured() && activityLoading() && recentActivities().length === 0 && !activityError()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
+      <p>Loading recent protocol activity…</p>
+    </div>
+
+    <div *ngIf="graphConfigured() && activityRequested() && !activityLoading() && recentActivities().length === 0 && !activityError()" class="rounded-xl border border-trade-border bg-panel/60 p-4 text-sm text-text-muted">
       <p>No protocol activity found in the last 24 hours.</p>
     </div>
 

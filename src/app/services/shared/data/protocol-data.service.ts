@@ -12,6 +12,7 @@ import { GovernanceContractService } from '../../onchain/contracts/governance-co
 import { GovernanceDataService } from './governance-data.service';
 import { TreasuryDataService } from './treasury-data.service';
 import { SethxTokenAbi } from '../../../contracts/generated';
+import { structuralEqual } from '../../../core/signals/stable-resource';
 import { ETH_ADDRESS } from '../../../constants/main.tokens';
 
 export type ProtocolKnowledge = {
@@ -139,7 +140,8 @@ export class ProtocolDataService {
     status: 'pending',
   });
   private readonly _oracleInfo = signal<ProtocolOracleInfo[]>([]);
-  private readonly _oracleReadStatus = signal('pending');
+  private readonly _oracleReadStatus = signal<'pending' | 'refreshing' | 'loaded'>('pending');
+  private oracleRefreshPromise: Promise<ProtocolOracleInfo[] | null> | null = null;
 
   readonly knowledge = computed<ProtocolKnowledge>(() => {
     const config = this.protocolConfig.config();
@@ -196,12 +198,44 @@ export class ProtocolDataService {
     void this.loadProtocolPageReads();
   }
 
+  async refreshOracleInfo(): Promise<ProtocolOracleInfo[] | null> {
+    if (this.oracleRefreshPromise) return this.oracleRefreshPromise;
+
+    this._oracleReadStatus.set(this._oracleInfo().length ? 'refreshing' : 'pending');
+
+    const task = this.readOracleInfoSnapshot()
+      .then((rows) => {
+        if (!this.oracleInfoEqualIgnoringClientCheck(this._oracleInfo(), rows)) this._oracleInfo.set(rows);
+        this._oracleReadStatus.set('loaded');
+        return rows;
+      })
+      .catch(() => {
+        this._oracleReadStatus.set(this._oracleInfo().length ? 'loaded' : 'pending');
+        return null;
+      })
+      .finally(() => {
+        this.oracleRefreshPromise = null;
+      });
+
+    this.oracleRefreshPromise = task;
+    return task;
+  }
+
+  private oracleInfoEqualIgnoringClientCheck(previous: ProtocolOracleInfo[], next: ProtocolOracleInfo[]): boolean {
+    const strip = (rows: ProtocolOracleInfo[]) => rows.map((row) => {
+      const comparable = { ...row } as Partial<ProtocolOracleInfo>;
+      delete comparable.clientCheckedAt;
+      return comparable;
+    });
+    return structuralEqual(strip(previous), strip(next));
+  }
+
   private async loadProtocolPageReads(): Promise<void> {
     await Promise.allSettled([
       this.loadVaultQuantities(),
       this.loadAcceptedFeeTokenInfo(),
       this.loadProtocolTokenStats(),
-      this.loadOracleInfo(),
+      this.refreshOracleInfo(),
     ]);
   }
 
@@ -268,57 +302,54 @@ export class ProtocolDataService {
     }
   }
 
-  private async loadOracleInfo(): Promise<void> {
-    this._oracleReadStatus.set('pending');
+  private async readOracleInfoSnapshot(): Promise<ProtocolOracleInfo[]> {
     const clientCheckedAt = Date.now();
-    try {
-      const oracles = await this.priceManager.getApprovedOracles();
-      const contextNames = ['General', 'Trade value', 'Futures settlement', 'Collateral evaluation', 'Options settlement', 'Fee conversion'];
-      const runner = await this.governanceContracts.runner();
-      const rows = await Promise.all(oracles.map(async (oracle) => {
-        const detail = new Contract(oracle, PRICE_ORACLE_DETAIL_ABI, runner);
-        const [metadata, status, contextChecks, oracleMetadata, lastPrice, decimals, fetchFormula, feed, feedDecimals, maxStaleness] = await Promise.all([
-          this.priceManager.getOracleMetadata(oracle).catch(() => ({ token: '', label: '', description: '' })),
-          this.priceManager.getOracleStatus(oracle).catch(() => null),
-          Promise.all(contextNames.map(async (label, context) => {
-            const list = await this.priceManager.getApprovedOraclesForContext(context).catch(() => [] as string[]);
-            return list.some((x) => x.toLowerCase() === oracle.toLowerCase()) ? label : '';
-          })),
-          detail['metadata']().catch(() => null),
-          detail['getLastPrice']().catch(() => null),
-          detail['decimals']().catch(() => null),
-          detail['fetchFormula']().catch(() => ''),
-          detail['feed']().catch(() => ''),
-          detail['feedDecimals']().catch(() => null),
-          detail['maxStaleness']().catch(() => null),
-        ]);
-        return {
-          oracle,
-          token: metadata.token,
-          label: metadata.label || this.shortAddress(oracle),
-          description: metadata.description || 'Approved oracle',
-          status,
-          statusLabel: this.oracleStatusLabel(status),
-          contexts: contextChecks.filter(Boolean),
-          pair: String(oracleMetadata?.pair ?? oracleMetadata?.[0] ?? ''),
-          source: String(oracleMetadata?.source ?? oracleMetadata?.[1] ?? ''),
-          notes: String(oracleMetadata?.notes ?? oracleMetadata?.[2] ?? ''),
-          price: lastPrice == null ? null : BigInt(lastPrice?.price ?? lastPrice?.[0] ?? 0),
-          priceTimestamp: lastPrice == null ? null : BigInt(lastPrice?.timestamp ?? lastPrice?.[1] ?? 0),
-          lastFetchTimestamp: lastPrice == null ? null : BigInt(lastPrice?.lastFetchTimestamp ?? lastPrice?.[2] ?? 0),
-          decimals: decimals == null ? null : Number(decimals),
-          feed: String(feed || ''),
-          feedDecimals: feedDecimals == null ? null : Number(feedDecimals),
-          maxStaleness: maxStaleness == null ? null : BigInt(maxStaleness),
-          fetchFormula: String(fetchFormula || ''),
-          clientCheckedAt,
-        } as ProtocolOracleInfo;
-      }));
-      this._oracleInfo.set(rows);
-      this._oracleReadStatus.set('loaded');
-    } catch {
-      this._oracleReadStatus.set(this._oracleInfo().length ? 'loaded' : 'pending');
-    }
+    const oracles = await this.priceManager.getApprovedOracles();
+    const contextNames = ['General', 'Trade value', 'Futures settlement', 'Collateral evaluation', 'Options settlement', 'Fee conversion'];
+    const runner = await this.governanceContracts.runner();
+    const contextEntries = await Promise.all(contextNames.map(async (label, context) => {
+      const list = await this.priceManager.getApprovedOraclesForContext(context).catch(() => [] as string[]);
+      const approved = new Set(list.map((x) => String(x ?? '').toLowerCase()));
+      return { label, approved };
+    }));
+
+    return Promise.all(oracles.map(async (oracle) => {
+      const lowerOracle = oracle.toLowerCase();
+      const detail = new Contract(oracle, PRICE_ORACLE_DETAIL_ABI, runner);
+      const [metadata, status, oracleMetadata, lastPrice, decimals, fetchFormula, feed, feedDecimals, maxStaleness] = await Promise.all([
+        this.priceManager.getOracleMetadata(oracle),
+        this.priceManager.getOracleStatus(oracle),
+        detail['metadata']().catch(() => null),
+        detail['getLastPrice']().catch(() => null),
+        detail['decimals']().catch(() => null),
+        detail['fetchFormula']().catch(() => ''),
+        detail['feed']().catch(() => ''),
+        detail['feedDecimals']().catch(() => null),
+        detail['maxStaleness']().catch(() => null),
+      ]);
+
+      return {
+        oracle,
+        token: metadata.token,
+        label: metadata.label || this.shortAddress(oracle),
+        description: metadata.description || 'Approved oracle',
+        status,
+        statusLabel: this.oracleStatusLabel(status),
+        contexts: contextEntries.filter((entry) => entry.approved.has(lowerOracle)).map((entry) => entry.label),
+        pair: String(oracleMetadata?.pair ?? oracleMetadata?.[0] ?? ''),
+        source: String(oracleMetadata?.source ?? oracleMetadata?.[1] ?? ''),
+        notes: String(oracleMetadata?.notes ?? oracleMetadata?.[2] ?? ''),
+        price: lastPrice == null ? null : BigInt(lastPrice?.price ?? lastPrice?.[0] ?? 0),
+        priceTimestamp: lastPrice == null ? null : BigInt(lastPrice?.timestamp ?? lastPrice?.[1] ?? 0),
+        lastFetchTimestamp: lastPrice == null ? null : BigInt(lastPrice?.lastFetchTimestamp ?? lastPrice?.[2] ?? 0),
+        decimals: decimals == null ? null : Number(decimals),
+        feed: String(feed || ''),
+        feedDecimals: feedDecimals == null ? null : Number(feedDecimals),
+        maxStaleness: maxStaleness == null ? null : BigInt(maxStaleness),
+        fetchFormula: String(fetchFormula || ''),
+        clientCheckedAt,
+      } as ProtocolOracleInfo;
+    }));
   }
 
   private isNativeAsset(address: string): boolean {

@@ -7,7 +7,7 @@ import {
   effect,
 } from '@angular/core';
 import { ethers } from 'ethers';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue } from '../../core/signals/stable-resource';
 import { TokenService, TokenInfo } from './token.service';
 import { ETH_ADDRESS } from './main.tokens';
 import { PriceManagerContractService } from '../onchain/contracts/pricemanager-contract.service';
@@ -207,7 +207,7 @@ export class TokenPriceService {
     });
   }
 
-  readonly allTokenPrices = computed(() => {
+  readonly allTokenPrices = stableComputed(() => {
     const tokens = this.tokenService.list() ?? [];
     const oracleMap = this.oraclePrices();
     const onchainMap = this.onchainPrices();

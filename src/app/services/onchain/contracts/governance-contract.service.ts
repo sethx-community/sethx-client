@@ -1,10 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Contract, JsonRpcProvider, ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
 
 import { SethxTokenAbi } from '../../../contracts/generated';
 import { getContractAddress } from '../../../contracts/contract-registry';
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
 
 const GOVERNOR_ABI = [
@@ -142,8 +140,7 @@ export class GovernanceContractService {
       const signer = await provider.getSigner?.().catch(() => null);
       return signer ?? provider;
     }
-    const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-    return new JsonRpcProvider(rpcUrl);
+    throw new Error('Wallet provider is not connected.');
   }
 
   formatToken(value: bigint): string { return ethers.formatUnits(value, 18); }

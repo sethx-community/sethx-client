@@ -1,6 +1,84 @@
 <button
-  (click)="!address() ? connect() : disconnect()"
-  class="bg-frame text-black px-4 py-1 rounded hover:bg-gold-shiny transition"
+  type="button"
+  (click)="onPrimaryAction()"
+  [class]="buttonClass"
+  [disabled]="wallet.status() === 'pending' || isDetectingProviders || isConnectingProvider"
 >
-  {{ !address() ? "Connect Wallet" : "Disconnect" }}
+  {{ buttonLabel }}
 </button>
+
+@if (providerModalOpen) {
+  <div class="sethx-modal-overlay sethx-wallet-provider-overlay" role="presentation" (click)="closeProviderModal()">
+    <section
+      class="sethx-wallet-provider-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wallet-provider-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="sethx-wallet-provider-header">
+        <div>
+          <p class="sethx-wallet-provider-eyebrow">Wallet connection</p>
+          <h2 id="wallet-provider-title">Choose a browser wallet</h2>
+        </div>
+        <button type="button" class="sethx-wallet-provider-close" (click)="closeProviderModal()" aria-label="Close wallet chooser">×</button>
+      </div>
+
+      <p class="sethx-wallet-provider-copy">
+        Select one of the wallets exposed by this browser to connect to the SETHX Client.
+      </p>
+
+      @if (providers.length > 0) {
+        <div class="sethx-wallet-provider-list" role="list">
+          <button
+            type="button"
+            class="sethx-wallet-provider-option"
+            *ngFor="let provider of providers; trackBy: trackProvider"
+            [class.selected]="selectedProviderId === provider.id"
+            (click)="selectProvider(provider.id)"
+            role="listitem"
+          >
+            <img *ngIf="provider.icon" [src]="provider.icon" [alt]="provider.name + ' icon'" />
+            <span *ngIf="!provider.icon" class="sethx-wallet-provider-fallback-icon">◆</span>
+            <span>
+              <strong>{{ provider.name }}</strong>
+              <small>{{ provider.source === 'eip6963' ? 'Detected wallet' : 'Injected wallet' }}</small>
+            </span>
+          </button>
+        </div>
+      }
+
+      @if (providers.length === 0 && !isDetectingProviders) {
+        <div class="sethx-wallet-install-box">
+          <p class="sethx-wallet-provider-status-title">No browser wallet detected</p>
+          <p>
+            Install or open an Ethereum browser wallet such as MetaMask, Rabby, Trust Wallet,
+            Coinbase Wallet, or another injected wallet, then refresh providers.
+          </p>
+        </div>
+      }
+
+      @if (isDetectingProviders) {
+        <p class="sethx-wallet-provider-message">Scanning exposed browser wallets...</p>
+      }
+
+      @if (providerMessage || wallet.lastError()) {
+        <p class="sethx-wallet-provider-message is-error">{{ providerMessage || wallet.lastError() }}</p>
+      }
+
+      <div class="sethx-wallet-provider-actions">
+        <button type="button" class="sethx-wallet-provider-secondary" (click)="refreshProviders()" [disabled]="isDetectingProviders">
+          Refresh providers
+        </button>
+        <button
+          type="button"
+          class="sethx-wallet-provider-primary"
+          (click)="connectSelectedProvider()"
+          [disabled]="isConnectingProvider || providers.length === 0"
+        >
+          {{ isConnectingProvider ? 'Connecting...' : 'Connect selected wallet' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

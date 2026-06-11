@@ -1,16 +1,12 @@
 @if (flow.isOpen()) {
-  <div class="fixed inset-0 z-50">
-    <div class="absolute inset-0 bg-black/60" (click)="flow.close()"></div>
-
-    <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div class="sethx-modal-shell shadow-xl">
-        <ng-container
-          *ngComponentOutlet="
-            flow.state().component;
-            inputs: { data: flow.state().data, onClose: onClose }
-          "
-        ></ng-container>
-      </div>
+  <div class="sethx-modal-overlay" role="presentation" (click)="flow.close()">
+    <div class="sethx-modal-shell sethx-order-modal-shell shadow-xl" (click)="$event.stopPropagation()">
+      <ng-container
+        *ngComponentOutlet="
+          flow.state().component;
+          inputs: { data: flow.state().data, onClose: onClose }
+        "
+      ></ng-container>
     </div>
   </div>
 }

@@ -6,7 +6,7 @@ import {
   signal,
   effect,
 } from '@angular/core';
-import { stableResourceValue } from '../../core/signals/stable-resource';
+import { stableComputed, stableResourceValue } from '../../core/signals/stable-resource';
 import {
   FeeManagerContractService,
   FeeOutput,
@@ -80,7 +80,7 @@ export class FeeService {
   });
 
   private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[]);
-  readonly acceptedPaymentTokens = computed(() => this._stableAcceptedPaymentTokens());
+  readonly acceptedPaymentTokens = stableComputed(() => this._stableAcceptedPaymentTokens());
   readonly acceptedPaymentTokensStatus = computed(() =>
     this._acceptedTokensRes.status(),
   );

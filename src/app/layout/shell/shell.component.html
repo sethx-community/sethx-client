@@ -284,10 +284,10 @@
             >
               <span>Warnings</span>
               <span
-                *ngIf="warnings.totalCount() > 0"
+                *ngIf="warningTotalCount() > 0"
                 class="inline-flex min-w-[1.25rem] h-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
               >
-                {{ warnings.totalCount() }}
+                {{ warningTotalCount() }}
               </span>
             </a>
 
@@ -509,42 +509,5 @@
   <app-client-landing></app-client-landing>
 </ng-template>
 
-<!-- ========================================================================= -->
-<!-- 3. PRODUCTION-GRADE SLIDEOUT/POPUP MODAL COMPONENT WINDOW OVERLAY ELEMENT -->
-<!-- ========================================================================= -->
-<div
-  *ngIf="isOracleBuddyOpen"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity duration-200"
->
-  <div
-    class="relative w-full max-w-2xl bg-background border border-trade-border shadow-2xl rounded-xl overflow-hidden animate-fade-in"
-  >
-    <!-- Modal Header Control Row -->
-    <div
-      class="flex items-center justify-between p-3 bg-background border-b border-trade-border"
-    >
-      <span
-        class="text-[10px] font-bold uppercase tracking-[0.22em] text-text-subtle pl-2"
-      >
-        Sethx Buddy Client Companion
-      </span>
-      <button
-        (click)="closeBuddy()"
-        class="text-textlight hover:text-white bg-trade-border/30 hover:bg-trade-border/60 transition-all text-xs font-semibold px-2.5 py-1 rounded cursor-pointer"
-      >
-        ✕ Close
-      </button>
-    </div>
-
-    <!-- Wrapped Safe Iframe content viewport rendering straight from DomSanitizer properties -->
-    <div class="w-full bg-background">
-      <iframe
-        [src]="safeChatbotUrl"
-        style="width: 100%; height: 650px"
-        frameborder="0"
-        allow="microphone"
-        title="Sethx AI Assistant Frame"
-      ></iframe>
-    </div>
-  </div>
-</div>
+<app-buddy [isOracleBuddyOpen]="isOracleBuddyOpen" (close)="closeBuddy()">
+</app-buddy>

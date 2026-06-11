@@ -1,9 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { JsonRpcProvider } from 'ethers';
 
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 
 export type ExpirySelectionMode = 'default' | 'preset' | 'custom' | 'manual';
 
@@ -147,9 +144,8 @@ export class ExpirySettingsService {
   }
 
   private async getChainTimestamp(): Promise<bigint> {
-    const walletProvider = this.wallet.provider?.() ?? null;
-    const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-    const provider = walletProvider ?? new JsonRpcProvider(rpcUrl);
+    const provider = this.wallet.provider?.() ?? null;
+    if (!provider) throw new Error('Wallet provider is not connected.');
     const block = await provider.getBlock('latest');
     const timestamp = BigInt(Number(block?.timestamp ?? 0));
     if (timestamp <= 0n) throw new Error('Could not read connected chain time.');

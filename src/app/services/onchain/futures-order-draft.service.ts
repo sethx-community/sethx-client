@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ethers, JsonRpcProvider } from 'ethers';
+import { ethers } from 'ethers';
 
 import type {
   ConfirmationField,
@@ -13,8 +13,6 @@ import { FeeService } from '../shared/fee.service';
 import { FuturesOrderBookActionsService } from '../shared/futures-orderbook/futures-orderbook-actions.service';
 import { FuturesContractReadService } from './contracts/futures-contract-read.service';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
-import { CURRENT_NETWORK } from '../../constants/network.config';
-import { NETWORKS } from '../../constants/networks';
 import { TransactionReceiptService } from '../../shared/transaction-receipt';
 import {
   expiryPreviewLabel as sharedExpiryPreviewLabel,
@@ -650,11 +648,8 @@ export class FuturesOrderDraftService {
   }
   private async latestChainTimestamp(): Promise<bigint | null> {
     try {
-      let provider: any = await this.wallet.getEthersProvider();
-      if (!provider) {
-        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-        provider = new JsonRpcProvider(rpcUrl);
-      }
+      const provider: any = await this.wallet.getEthersProvider();
+      if (!provider) return null;
 
       const block = await provider.getBlock('latest');
       const ts = block?.timestamp;

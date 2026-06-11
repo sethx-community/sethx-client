@@ -18,14 +18,11 @@
       </p>
 
       <div class="landing-actions">
-        <button
-          type="button"
-          class="landing-primary-action"
-          [disabled]="wallet.status() === 'pending'"
-          (click)="connect()"
-        >
-          {{ wallet.status() === 'pending' ? 'Connecting...' : 'Connect wallet' }}
-        </button>
+        <app-wallet-connect
+          buttonClass="landing-primary-action"
+          connectLabel="Connect wallet"
+          disconnectLabel="Disconnect"
+        ></app-wallet-connect>
         <span class="landing-network-note">Required network: {{ requiredNetworkName }}</span>
       </div>
 

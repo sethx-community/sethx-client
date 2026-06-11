@@ -1,0 +1,96 @@
+<div *ngIf="isOracleBuddyOpen" class="buddy-overlay">
+  <section class="buddy-shell" aria-label="Sethx Buddy">
+    <header class="buddy-header">
+      <div class="buddy-brand">
+        <img src="assets/sethx-logo-clean.png" alt="Sethx" class="buddy-logo" />
+        <div>
+          <p class="buddy-kicker">Sethx Buddy</p>
+          <h2>Client companion</h2>
+        </div>
+      </div>
+
+      <div class="buddy-header-actions">
+        <button type="button" class="buddy-action" (click)="newChat()" [disabled]="isTyping">
+          New chat
+        </button>
+        <button
+          type="button"
+          class="buddy-action"
+          (click)="clearCurrentChat()"
+          [disabled]="isTyping || messages.length === 0"
+        >
+          Clear chat
+        </button>
+        <button type="button" class="buddy-close" (click)="closeBuddy()">Close</button>
+      </div>
+    </header>
+
+    <div class="buddy-body">
+      <aside class="buddy-sidebar" *ngIf="chats.length > 1">
+        <button
+          type="button"
+          class="buddy-chat-tab"
+          *ngFor="let chat of chats"
+          [class.active]="chat.id === activeChatId"
+          (click)="selectChat(chat.id)"
+          [disabled]="isTyping"
+        >
+          <span class="buddy-chat-title">{{ chat.title }}</span>
+          <span class="buddy-chat-meta">{{ chat.messages.length }} messages</span>
+          <span
+            class="buddy-chat-delete"
+            role="button"
+            tabindex="0"
+            title="Delete chat"
+            (click)="deleteChat(chat.id, $event)"
+          >
+            ×
+          </span>
+        </button>
+      </aside>
+
+      <main class="buddy-main">
+        <div #scrollContainer class="buddy-messages">
+          <div *ngIf="messages.length === 0" class="buddy-empty">
+            <img src="assets/sethx-logo-clean.png" alt="Sethx" class="buddy-empty-logo" />
+            <h3>Ask Sethx Buddy</h3>
+            <p>
+              Ask about the client flow, protocol concepts, governance, support, or recent indexed activity.
+            </p>
+          </div>
+
+          <div
+            *ngFor="let msg of messages"
+            class="buddy-row"
+            [class.user]="msg.role === 'user'"
+            [class.assistant]="msg.role === 'assistant'"
+          >
+            <div class="buddy-bubble">
+              <p>{{ msg.text }}</p>
+            </div>
+            <span class="buddy-label">{{ msg.role === 'user' ? 'You' : 'Sethx Buddy' }}</span>
+          </div>
+
+          <div *ngIf="isTyping" class="buddy-row assistant">
+            <div class="buddy-bubble buddy-typing" aria-label="Sethx Buddy is typing">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="buddy-label">Sethx Buddy</span>
+          </div>
+        </div>
+
+        <form class="buddy-input-bar" (ngSubmit)="sendMessage()">
+          <input
+            type="text"
+            [(ngModel)]="userInput"
+            name="chatInput"
+            [disabled]="isTyping"
+            placeholder="Ask Sethx Buddy..."
+            autocomplete="off"
+          />
+          <button type="submit" [disabled]="!userInput.trim() || isTyping">Send</button>
+        </form>
+      </main>
+    </div>
+  </section>
+</div>

@@ -1,9 +1,5 @@
 import { Injectable, computed, inject, resource } from '@angular/core';
 import { stableResourceValue } from '../../core/signals/stable-resource';
-import { JsonRpcProvider } from 'ethers';
-
-import { CURRENT_NETWORK } from '../../constants/network.config';
-import { NETWORKS } from '../../constants/networks';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 import { TriggerService } from './trigger.service';
 
@@ -31,9 +27,9 @@ export class MarketTimeService {
     }),
     loader: async () => {
       const walletProvider = this.wallet.provider?.() ?? null;
-      const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-      const provider = walletProvider ?? new JsonRpcProvider(rpcUrl);
-      const block = await provider.getBlock('latest');
+      if (!walletProvider) return Math.floor(Date.now() / 1000);
+
+      const block = await walletProvider.getBlock('latest');
       const timestamp = toNumber(block?.timestamp);
       return timestamp > 0 ? timestamp : Math.floor(Date.now() / 1000);
     },

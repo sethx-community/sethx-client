@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ethers, isAddress, JsonRpcProvider } from 'ethers';
+import { ethers, isAddress } from 'ethers';
 import { formatUnitsHuman, formatTokenAmount } from '../../core/format/number-format';
 import { stableComputed } from '../../core/signals/stable-resource';
 
@@ -14,8 +14,6 @@ import { OrderBookActionsService } from '../shared/orderbook/orderbook-actions.s
 import { ETH_ADDRESS } from '../shared/main.tokens';
 import { buildOrderFlowRequirementRows } from '../../shared/order-flow';
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
-import { CURRENT_NETWORK } from '../../constants/network.config';
-import { NETWORKS } from '../../constants/networks';
 import {
   TokenSpotOrderBookReadService,
   SpotOrder,
@@ -833,11 +831,8 @@ export class SpotOrderDraftService {
 
   private async latestChainTimestamp(): Promise<bigint | null> {
     try {
-      let provider: any = this.wallet.provider?.() ?? null;
-      if (!provider) {
-        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-        provider = new JsonRpcProvider(rpcUrl);
-      }
+      const provider: any = this.wallet.provider?.() ?? null;
+      if (!provider) return null;
 
       const block = await provider.getBlock('latest');
       const ts = block?.timestamp;

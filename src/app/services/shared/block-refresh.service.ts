@@ -37,12 +37,19 @@ export class BlockRefreshService implements OnDestroy {
     this.scheduleFallbackRefresh();
   }
 
-  ngOnDestroy(): void {
+  stop(): void {
+    this.started = false;
+    this.refreshRunning = false;
+    this.pendingRefresh = false;
     this.clearFallbackRefresh();
     if (this.provider) {
       void this.provider.destroy().catch(() => undefined);
       this.provider = null;
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stop();
   }
 
   private websocketRpcUrl(): string {

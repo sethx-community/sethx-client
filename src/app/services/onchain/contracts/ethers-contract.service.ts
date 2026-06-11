@@ -3,10 +3,7 @@ import {
   ContractTransactionReceipt,
   ContractTransactionResponse,
   ethers,
-  JsonRpcProvider,
 } from 'ethers';
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 
 export abstract class EthersContractService<T extends Contract = Contract> {
   protected abstract readonly abi: ethers.InterfaceAbi;
@@ -17,29 +14,29 @@ export abstract class EthersContractService<T extends Contract = Contract> {
     protected readonly errorService: { show(msg: string): void },
   ) {}
 
-  /** Generic provider/signer instance (read OR write) */
+  /** Generic provider/signer instance (read OR write).
+   *
+   * Public RPC fallback is intentionally disabled here. Startup services can be
+   * instantiated before a wallet exists; falling back to the shared PublicNode
+   * endpoint from those constructors/resources creates large bursts of anonymous
+   * RPC traffic and quickly causes 429 rate-limit errors. Reads should use the
+   * connected wallet provider, or an explicitly user-triggered public-RPC helper.
+   */
   async withProvider(address?: string): Promise<T> {
-    try {
-      let provider = await this.walletService.getEthersProvider();
+    const provider = await this.walletService.getEthersProvider();
 
-      if (!provider || typeof provider.getSigner !== 'function') {
-        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-        provider = new JsonRpcProvider(rpcUrl);
-      }
-
-      await provider.getBlockNumber();
-
-      const signer = await provider.getSigner?.().catch(() => null);
-      const runner = signer ?? provider;
-
-      return new Contract(
-        address ?? this.assertDefaultAddress(),
-        this.abi,
-        runner,
-      ) as T;
-    } catch (err) {
-      throw err;
+    if (!provider) {
+      throw new Error('Wallet provider is not connected.');
     }
+
+    const signer = await provider.getSigner?.().catch(() => null);
+    const runner = signer ?? provider;
+
+    return new Contract(
+      address ?? this.assertDefaultAddress(),
+      this.abi,
+      runner,
+    ) as T;
   }
 
   /** Typed read call */

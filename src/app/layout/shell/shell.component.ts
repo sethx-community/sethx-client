@@ -7,6 +7,8 @@ import {
   effect,
   inject,
   signal,
+  computed,
+  Injector,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
@@ -27,6 +29,7 @@ import { TriggerService } from "../../services/shared/trigger.service";
 import { WarningCenterService } from "../../services/shared/warnings/warning-center.service";
 import { BlockRefreshService } from "../../services/shared/block-refresh.service";
 import { ClientLandingComponent } from "../../features/landing/client-landing.component";
+import { BuddyComponent } from "../../features/dify/buddy";
 
 import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 
@@ -39,6 +42,7 @@ import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
     RouterLink,
     RouterLinkActive,
     ClientLandingComponent,
+    BuddyComponent,
   ],
   templateUrl: "./shell.component.html",
 })
@@ -50,8 +54,12 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   readonly theme = inject(ThemeService);
   readonly triggers = inject(TriggerService);
-  readonly warnings = inject(WarningCenterService);
+  private readonly injector = inject(Injector);
   private readonly blockRefresh = inject(BlockRefreshService);
+  private readonly _warnings = signal<WarningCenterService | null>(null);
+  readonly warningTotalCount = computed(
+    () => this._warnings()?.totalCount() ?? 0,
+  );
 
   // ******** sethx-buddy *************
   private readonly sanitizer = inject(DomSanitizer);
@@ -95,7 +103,11 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.currentUrl.set(event.urlAfterRedirects);
-        this.triggers.refreshActiveRoute(event.urlAfterRedirects);
+        if (this.walletAddress()) {
+          this.triggers.refreshActiveRoute(event.urlAfterRedirects);
+          if (this.isWarningsRoute(event.urlAfterRedirects))
+            this.ensureWarnings(true);
+        }
         this.queueScrollStateUpdate();
       }
     });
@@ -103,9 +115,15 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const address = this.walletAddress();
       if (!address) {
+        this.blockRefresh.stop();
         this.treasuryMode.reset();
+        this._warnings.set(null);
         return;
       }
+
+      this.blockRefresh.start();
+      this.triggers.refreshActiveRoute(this.currentUrl());
+      this.ensureWarnings(true);
       if (this.hasTreasuryAccess()) void this.treasuryMode.refresh(true);
       else this.treasuryMode.reset();
     });
@@ -118,7 +136,20 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
   refreshCurrentPage(): void {
     this.refreshPulse.set(true);
     this.triggers.refreshActiveRoute(this.currentUrl(), true);
+    if (this.walletAddress() && this.isWarningsRoute(this.currentUrl())) {
+      this.ensureWarnings(true);
+    }
     window.setTimeout(() => this.refreshPulse.set(false), 650);
+  }
+
+  private ensureWarnings(forceRefresh = false): void {
+    const center = this._warnings() ?? this.injector.get(WarningCenterService);
+    if (!this._warnings()) this._warnings.set(center);
+    if (forceRefresh) void center.refresh();
+  }
+
+  private isWarningsRoute(url: string): boolean {
+    return url.includes("/warnings") || url.includes("warnings");
   }
 
   ngAfterViewInit(): void {
@@ -130,10 +161,10 @@ export class ShellComponent implements AfterViewInit, OnDestroy {
     if (this.rightPanelScrollRef?.nativeElement)
       this.resizeObserver.observe(this.rightPanelScrollRef.nativeElement);
     this.queueScrollStateUpdate();
-    this.blockRefresh.start();
   }
 
   ngOnDestroy(): void {
+    this.blockRefresh.stop();
     this.resizeObserver?.disconnect();
     if (this.scrollStateFrame !== null)
       cancelAnimationFrame(this.scrollStateFrame);

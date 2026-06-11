@@ -1,11 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Contract, JsonRpcProvider, ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
 
 import { FuturesContractABI, TreasuryFuturesMaintenanceModuleABI } from '../../../contracts';
 import { CONTRACT_ADDRESSES } from '../../../contracts/generated/addresses';
 import { getContractAddress } from '../../../contracts/contract-registry';
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
 import { TradeSettingsService } from '../../shared/trade-settings.service';
 import { TreasuryModeService } from '../../shared/treasury-mode.service';
@@ -55,15 +53,13 @@ export class FuturesMaintenanceService {
       const signer = await provider.getSigner?.().catch(() => null);
       return signer ?? provider;
     }
-    const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-    return new JsonRpcProvider(rpcUrl);
+    throw new Error('Wallet provider is not connected.');
   }
 
   private async readRunner(): Promise<any> {
     const provider = await this.wallet.getEthersProvider();
     if (provider) return provider;
-    const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-    return new JsonRpcProvider(rpcUrl);
+    throw new Error('Wallet provider is not connected.');
   }
 
   private async withTx<T>(label: string, fn: () => Promise<T>): Promise<T> {

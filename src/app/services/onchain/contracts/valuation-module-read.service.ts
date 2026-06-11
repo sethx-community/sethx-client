@@ -1,8 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ethers } from 'ethers';
 
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 import { CONTRACT_ABIS } from '../../../contracts/generated';
 import { getContractAddress } from '../../../contracts/contract-registry';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
@@ -236,15 +234,14 @@ export class ValuationModuleReadService {
     };
   }
 
-  private async provider(): Promise<ethers.BrowserProvider | ethers.JsonRpcProvider> {
+  private async provider(): Promise<ethers.BrowserProvider> {
     const walletProvider = await this.wallet.getEthersProvider().catch(() => null);
     if (walletProvider) return walletProvider;
 
-    const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-    return new ethers.JsonRpcProvider(rpcUrl);
+    throw new Error('Wallet provider is not connected.');
   }
 
-  private valuationContract(provider: ethers.BrowserProvider | ethers.JsonRpcProvider): ethers.Contract {
+  private valuationContract(provider: ethers.BrowserProvider): ethers.Contract {
     return new ethers.Contract(
       this.valuationAddress,
       CONTRACT_ABIS.ValuationModule,
@@ -253,7 +250,7 @@ export class ValuationModuleReadService {
   }
 
   private async getLendingRiskModuleCheck(
-    provider: ethers.BrowserProvider | ethers.JsonRpcProvider,
+    provider: ethers.BrowserProvider,
   ): Promise<LendingRiskModuleCheck> {
     const expectedAddress = this.expectedRiskModuleAddress;
 

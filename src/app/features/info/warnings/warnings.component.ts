@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { stableComputed } from '../../../core/signals/stable-resource';
 
 import { WARNING_EXPIRY_ORANGE_WINDOW_DAYS, WARNING_STATUS_LABELS } from '../../../constants/warnings.constants';
@@ -11,11 +11,16 @@ import { WarningCenterService, WarningRow } from '../../../services/shared/warni
   imports: [CommonModule],
   templateUrl: './warnings.component.html',
 })
-export class WarningsComponent {
+export class WarningsComponent implements OnInit {
   readonly warningsCenter = inject(WarningCenterService);
   readonly orangeWindowDays = WARNING_EXPIRY_ORANGE_WINDOW_DAYS;
 
   readonly warnings = stableComputed<WarningRow[]>(() => this.warningsCenter.warnings());
+
+  ngOnInit(): void {
+    void this.warningsCenter.refresh();
+  }
+
   redCount(): number { return this.warningsCenter.redCount(); }
   orangeCount(): number { return this.warningsCenter.orangeCount(); }
   loading(): boolean { return this.warningsCenter.loading(); }

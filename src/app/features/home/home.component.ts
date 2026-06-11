@@ -34,6 +34,7 @@ export class HomeComponent {
   private activityRefreshRunning = false;
   private pendingActivityUpdate = false;
   private initialActivityLoaded = false;
+  readonly activityRequested = signal(false);
 
   readonly activityPageCount = computed(() => Math.max(1, Math.ceil(this.recentActivities().length / this.activityPageSize)));
   readonly visibleActivities = stableComputed(() => {
@@ -53,7 +54,10 @@ export class HomeComponent {
       queueMicrotask(() => void this.refreshRecentActivity({ incremental: true, showLoading: false }));
     });
 
-    void this.refreshRecentActivity();
+    // Home is only shown after a wallet is connected. Load the last-day feed
+    // automatically here, while keeping graph requests constrained to
+    // 10-block windows for the free-tier proxy.
+    queueMicrotask(() => void this.refreshRecentActivity());
   }
 
   short(value: string | null | undefined): string {
@@ -75,6 +79,7 @@ export class HomeComponent {
   }
 
   async refreshRecentActivity(options: { incremental?: boolean; showLoading?: boolean } = {}): Promise<void> {
+    this.activityRequested.set(true);
     const incremental = options.incremental === true;
     const showLoading = options.showLoading ?? !incremental;
 

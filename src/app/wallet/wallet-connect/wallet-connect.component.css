@@ -1,0 +1,196 @@
+:host {
+  display: inline-flex;
+}
+
+.sethx-wallet-provider-card {
+  width: min(27rem, 100%);
+  padding: 1rem;
+  color: var(--color-textlight);
+  background:
+    linear-gradient(145deg, rgba(191, 167, 107, 0.14), transparent 34%),
+    rgba(8, 25, 46, 0.9);
+  border: 1px solid rgba(191, 167, 107, 0.28);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.3);
+}
+
+.sethx-wallet-provider-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.sethx-wallet-provider-eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--color-frame);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sethx-wallet-provider-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.sethx-wallet-provider-copy,
+.sethx-wallet-provider-message,
+.sethx-wallet-install-box p {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.sethx-wallet-provider-copy {
+  margin: 0 0 1rem;
+}
+
+.sethx-wallet-provider-close,
+.sethx-wallet-provider-secondary,
+.sethx-wallet-provider-primary,
+.sethx-wallet-provider-option {
+  font: inherit;
+}
+
+.sethx-wallet-provider-close {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid rgba(191, 167, 107, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.sethx-wallet-provider-close:hover {
+  color: var(--color-frame);
+}
+
+.sethx-wallet-provider-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+}
+
+.sethx-wallet-provider-option {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  text-align: left;
+  color: var(--color-textlight);
+  border: 1px solid rgba(191, 167, 107, 0.22);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+
+.sethx-wallet-provider-option:hover,
+.sethx-wallet-provider-option.selected {
+  border-color: rgba(191, 167, 107, 0.52);
+  background: rgba(191, 167, 107, 0.1);
+}
+
+.sethx-wallet-provider-option img,
+.sethx-wallet-provider-fallback-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+}
+
+.sethx-wallet-provider-option img {
+  object-fit: contain;
+}
+
+.sethx-wallet-provider-fallback-icon {
+  display: grid;
+  place-items: center;
+  color: var(--color-frame);
+  background: rgba(191, 167, 107, 0.12);
+}
+
+.sethx-wallet-provider-option strong,
+.sethx-wallet-provider-option small {
+  display: block;
+}
+
+.sethx-wallet-provider-option small {
+  margin-top: 0.12rem;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.sethx-wallet-install-box {
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px dashed rgba(191, 167, 107, 0.3);
+  border-radius: 0.95rem;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.sethx-wallet-provider-status-title {
+  margin: 0 0 0.25rem;
+  color: #fff !important;
+  font-size: 0.78rem !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sethx-wallet-provider-message {
+  margin: 0 0 1rem;
+}
+
+.sethx-wallet-provider-message.is-error {
+  color: var(--color-down);
+}
+
+.sethx-wallet-provider-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.sethx-wallet-provider-secondary,
+.sethx-wallet-provider-primary {
+  width: 100%;
+  border-radius: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sethx-wallet-provider-primary {
+  border: 1px solid rgba(191, 167, 107, 0.58);
+  background: linear-gradient(135deg, var(--color-frame), color-mix(in srgb, var(--color-frame) 72%, #ffffff 28%));
+  color: #15100a;
+  box-shadow: 0 0.75rem 2rem rgba(191, 167, 107, 0.16);
+}
+
+.sethx-wallet-provider-secondary {
+  border: 1px solid rgba(191, 167, 107, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-textlight);
+}
+
+.sethx-wallet-provider-primary:disabled,
+.sethx-wallet-provider-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (min-width: 520px) {
+  .sethx-wallet-provider-actions {
+    grid-template-columns: 1fr 1.25fr;
+  }
+}

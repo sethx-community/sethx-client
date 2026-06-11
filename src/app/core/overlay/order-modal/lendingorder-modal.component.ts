@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ethers, JsonRpcProvider } from 'ethers';
+import { ethers } from 'ethers';
 
 import { ExpiryPickerComponent } from '../../../shared/expiry-picker/expiry-picker.component';
 import { parseExpirySelection, resolveExpiryForContract } from '../../../shared/expiry/expiry-settings';
@@ -22,8 +22,6 @@ import {
 } from '../../../services/onchain/contracts/valuation-module-read.service';
 import { TradeSettingsService } from '../../../services/shared/trade-settings.service';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
-import { CURRENT_NETWORK } from '../../../constants/network.config';
-import { NETWORKS } from '../../../constants/networks';
 import { TriggerService } from '../../../services/shared/trigger.service';
 import { PortfolioService } from '../../../services/onchain/portfolio.service';
 import { norm } from '../../../core/tokens/token-normalize';
@@ -787,11 +785,8 @@ export class LendingOrderModalComponent implements OnInit {
 
   private async latestChainTimestamp(): Promise<bigint | null> {
     try {
-      let provider: any = this.wallet.provider?.() ?? null;
-      if (!provider) {
-        const rpcUrl = NETWORKS[CURRENT_NETWORK].rpcUrls.default.http[0];
-        provider = new JsonRpcProvider(rpcUrl);
-      }
+      const provider: any = this.wallet.provider?.() ?? null;
+      if (!provider) return null;
       const block = await provider.getBlock('latest');
       const ts = block?.timestamp;
       return typeof ts === 'number' && Number.isFinite(ts) && ts > 0 ? BigInt(ts) : null;
