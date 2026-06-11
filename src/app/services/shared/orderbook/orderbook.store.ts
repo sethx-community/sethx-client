@@ -278,11 +278,7 @@ export class OrderBookStore {
   private readonly _stableBooks = stableResourceValue(
     () => this._booksRes.value(),
     [] as Book[],
-    {
-      resetKey: () => `${this.bookOffset()}|${this.bookLimit()}`,
-      equal: structuralEqual,
-      keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
-    },
+    { resetKey: () => `${this.bookOffset()}|${this.bookLimit()}` },
   );
   private readonly _stableBookOrders = stableResourceValue(
     () => this._ordersRes.value(),

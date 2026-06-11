@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
 import { formatTokenAmount } from '../../../core/format/number-format';
 import type { ConfirmationField, RequirementRow } from '../../../core/modals/confirmation/confirmation-modal.component';
 import { AccountContractService } from '../../onchain/contracts/account-contract.service';
@@ -14,6 +14,8 @@ import { PortfolioService } from '../../onchain/portfolio.service';
 import { ETH_ADDRESS } from '../main.tokens';
 import { norm } from '../../../core/tokens/token-normalize';
 import { TransactionReceiptService } from '../../../shared/transaction-receipt';
+import { WalletConnectService } from '../../../wallet/wallet-connect.service';
+import { CONTRACT_ABIS } from '../../../contracts/generated';
 
 const ONE_E18 = 10n ** 18n;
 const ZERO_ADDRESS = ethers.ZeroAddress;
@@ -34,6 +36,7 @@ export class BinaryOptionsOrderBookActionsService {
   private readonly feeManager = inject(FeeManagerContractService);
   private readonly settings = inject(TradeSettingsService);
   private readonly portfolio = inject(PortfolioService);
+  private readonly wallet = inject(WalletConnectService);
 
   private readonly orderBookAddress = this.contracts.getContractAddress('BinaryMarginOptionsOrderBook');
   private readonly binaryContractAddress = this.contracts.getContractAddress('BinaryMarginOptionContract');
@@ -177,10 +180,50 @@ export class BinaryOptionsOrderBookActionsService {
     return intent === 0 ? this.premiumRaw(payoutAmount, askPrice) : 0n;
   }
 
-  async requestPlace(args: { marketKey: string; intent: number; payoutHuman: string; priceHuman: string; expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix?: bigint | null; quoteOnly?: boolean; newMarket?: { ticker: string; optionType: number; oracle: string; strikePriceHuman: string; marketExpiry: bigint } | null }) {
+
+  async requestCreateMarket(args: { ticker: string; optionType: number; oracle: string; strikePriceHuman: string; marketExpiry: bigint }): Promise<void> {
+    const ticker = String(args.ticker ?? '').trim();
+    if (!ticker) throw new Error('Enter a market ticker.');
+    if (![0, 1].includes(Number(args.optionType))) throw new Error('Select Above or Below.');
+    if (!ethers.isAddress(args.oracle)) throw new Error('Enter a valid approved oracle address.');
+    const strikePrice = ethers.parseUnits(String(args.strikePriceHuman ?? '0').replace(',', '.'), 18);
+    if (strikePrice <= 0n) throw new Error('Enter a strike price.');
+    if (!args.marketExpiry || args.marketExpiry <= 0n) throw new Error('Select a valid market expiry.');
+
+    this.pendingConfirmAction = async () => {
+      const provider = await this.wallet.getEthersProvider();
+      if (!provider) throw new Error('Wallet provider is not connected.');
+      const signer = await provider.getSigner?.().catch(() => null);
+      if (!signer) throw new Error('No wallet signer available.');
+      const contract = new Contract(this.binaryContractAddress, CONTRACT_ABIS.BinaryMarginOptionContract, signer) as any;
+      const tx = await contract['createMarket'](
+        ticker,
+        Number(args.optionType),
+        ethers.getAddress(args.oracle),
+        strikePrice,
+        args.marketExpiry,
+      );
+      const receipt = await tx.wait();
+      return receipt?.hash ?? tx.hash ?? null;
+    };
+
+    this.openConfirmModal({
+      title: 'Create binary option market',
+      confirmLabel: 'Create Market',
+      showConfirmButton: true,
+      fields: [
+        { label: 'Ticker', value: ticker },
+        { label: 'Condition', value: Number(args.optionType) === 0 ? 'Above' : 'Below' },
+        { label: 'Oracle', value: ethers.getAddress(args.oracle) },
+        { label: 'Strike', value: args.strikePriceHuman },
+        { label: 'Market expiry', value: new Date(Number(args.marketExpiry) * 1000).toLocaleString() },
+      ],
+    });
+  }
+
+  async requestPlace(args: { marketKey: string; intent: number; payoutHuman: string; priceHuman: string; expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix?: bigint | null; quoteOnly?: boolean }) {
     const marketKey = String(args.marketKey ?? '').toLowerCase();
-    const hasNewMarket = !!args.newMarket?.oracle && !!args.newMarket?.marketExpiry && !!args.newMarket?.strikePriceHuman;
-    if (!marketKey && !hasNewMarket) throw new Error('Select an existing binary market or enter a new market oracle, expiry and strike');
+    if (!marketKey) throw new Error('Select an existing binary market.');
     const payoutAmount = ethers.parseEther(String(args.payoutHuman ?? '0').replace(',', '.'));
     if (payoutAmount <= 0n) throw new Error('Enter a payout amount');
     const askPrice = ethers.parseEther(String(args.priceHuman ?? '0').replace(',', '.'));
@@ -211,21 +254,9 @@ export class BinaryOptionsOrderBookActionsService {
     const disabled = !!args.quoteOnly || disabledByExpiry || disabledByPastExpiry || insufficient;
 
     this.pendingConfirmAction = disabled ? null : async () => {
-      return marketKey ? await this.accountContract.placeOrderBinaryMarginOption({
+      return await this.accountContract.placeOrderBinaryMarginOption({
         orderBook: this.orderBookAddress,
         marketKey,
-        intent,
-        payoutAmount,
-        askPrice,
-        expiry,
-        feeToken: this.preferredFeeToken(),
-      }) : await this.accountContract.placeOrderBinaryMarginOptionForMarket({
-        orderBook: this.orderBookAddress,
-        ticker: args.newMarket!.ticker,
-        optionType: args.newMarket!.optionType,
-        oracle: ethers.getAddress(args.newMarket!.oracle),
-        strikePrice: ethers.parseUnits(String(args.newMarket!.strikePriceHuman).replace(',', '.'), 18),
-        marketExpiry: args.newMarket!.marketExpiry,
         intent,
         payoutAmount,
         askPrice,
@@ -250,7 +281,7 @@ export class BinaryOptionsOrderBookActionsService {
           { label: 'Premium value', value: this.fmt.formatEth(premium) },
           { label: economicLockLabel, value: intent === 1 ? this.fmt.formatEth(payoutAmount) : this.fmt.formatEth(economicLockRaw) },
           { label: 'Payment token', value: 'ETH' },
-          { label: 'Order expiry', value: expiry === 0n ? 'No extra order expiry; market expiry still applies' : `${new Date(Number(expiry) * 1000).toLocaleString()} (unix ${expiry.toString()})` },
+          { label: 'Order expiry', value: expiry === 0n ? 'No extra order expiry; market expiry still applies' : new Date(Number(expiry) * 1000).toLocaleString() },
           { label: 'Settlement rule', value: 'Above uses > strike. Below uses < strike. Equal does not pay holders.' },
         ];
     const fields = this.appendFeeFields(baseFields, fee);

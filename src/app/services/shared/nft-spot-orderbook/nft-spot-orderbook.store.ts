@@ -146,11 +146,7 @@ export class NftSpotOrderbookStore {
     },
   });
 
-  private readonly _stableLoadedMarkets = stableResourceValue(() => this._marketsRes.value(), [] as LoadedMarket[], {
-    resetKey: () => this.activeAccount(),
-    equal: structuralEqual,
-    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
-  });
+  private readonly _stableLoadedMarkets = stableResourceValue(() => this._marketsRes.value(), [] as LoadedMarket[], { resetKey: () => this.activeAccount(), equal: structuralEqual });
 
   readonly loadedMarkets = stableComputed(() => this._stableLoadedMarkets());
   readonly status = computed(() => this._marketsRes.status());

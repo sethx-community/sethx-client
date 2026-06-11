@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ethers } from 'ethers';
 import { formatUnitsHuman } from '../../../core/format/number-format';
 import { stableComputed } from '../../../core/signals/stable-resource';
 import {
@@ -10,7 +11,6 @@ import {
 
 import { ProtocolDataService, type ProtocolOracleInfo } from '../../../services/shared/data/protocol-data.service';
 import { PriceManagerContractService } from '../../../services/onchain/contracts/pricemanager-contract.service';
-import { TriggerService } from '../../../services/shared/trigger.service';
 
 @Component({
   selector: 'app-oracles',
@@ -21,7 +21,6 @@ import { TriggerService } from '../../../services/shared/trigger.service';
 export class OraclesComponent {
   readonly protocolData = inject(ProtocolDataService);
   readonly priceManager = inject(PriceManagerContractService);
-  readonly triggers = inject(TriggerService);
   readonly live = this.protocolData.liveOverview;
   readonly filter = signal('');
   readonly selectedOracle = signal<string | null>(null);
@@ -48,20 +47,10 @@ export class OraclesComponent {
 
   constructor() {
     this.protocolData.warmLiveReads();
-
-    effect(() => {
-      this.triggers.protocolTick();
-      void this.protocolData.refreshOracleInfo();
-    });
   }
 
   refresh(): void {
-    void this.refreshOracleReads();
-  }
-
-  private async refreshOracleReads(): Promise<void> {
-    await this.protocolData.refreshOracleInfo();
-    this.triggers.refreshDomains(['warnings']);
+    this.protocolData.warmLiveReads();
   }
 
   select(row: ProtocolOracleInfo): void {
@@ -188,7 +177,7 @@ export class OraclesComponent {
     try {
       await task();
       this.maintenanceMessage.set(`${row.label || this.short(row.oracle)} ${action === 'fetch-sync' ? 'fetched and synced' : action === 'fetch' ? 'fetched' : 'synced'}.`);
-      await this.refreshOracleReads();
+      this.protocolData.warmLiveReads();
     } catch (error: any) {
       this.maintenanceMessage.set(error?.shortMessage ?? error?.reason ?? error?.message ?? 'Oracle maintenance failed.');
     } finally {

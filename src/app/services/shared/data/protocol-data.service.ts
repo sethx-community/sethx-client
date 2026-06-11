@@ -12,7 +12,6 @@ import { GovernanceContractService } from '../../onchain/contracts/governance-co
 import { GovernanceDataService } from './governance-data.service';
 import { TreasuryDataService } from './treasury-data.service';
 import { SethxTokenAbi } from '../../../contracts/generated';
-import { structuralEqual } from '../../../core/signals/stable-resource';
 import { ETH_ADDRESS } from '../../../constants/main.tokens';
 
 export type ProtocolKnowledge = {
@@ -205,7 +204,7 @@ export class ProtocolDataService {
 
     const task = this.readOracleInfoSnapshot()
       .then((rows) => {
-        if (!this.oracleInfoEqualIgnoringClientCheck(this._oracleInfo(), rows)) this._oracleInfo.set(rows);
+        this._oracleInfo.set(rows);
         this._oracleReadStatus.set('loaded');
         return rows;
       })
@@ -219,15 +218,6 @@ export class ProtocolDataService {
 
     this.oracleRefreshPromise = task;
     return task;
-  }
-
-  private oracleInfoEqualIgnoringClientCheck(previous: ProtocolOracleInfo[], next: ProtocolOracleInfo[]): boolean {
-    const strip = (rows: ProtocolOracleInfo[]) => rows.map((row) => {
-      const comparable = { ...row } as Partial<ProtocolOracleInfo>;
-      delete comparable.clientCheckedAt;
-      return comparable;
-    });
-    return structuralEqual(strip(previous), strip(next));
   }
 
   private async loadProtocolPageReads(): Promise<void> {

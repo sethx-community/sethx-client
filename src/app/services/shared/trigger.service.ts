@@ -165,36 +165,45 @@ export class TriggerService {
   }
 
   domainsForUrl(url: string): RefreshDomain[] {
-    const path = this.normalizedPrimaryPath(url);
+    const segment = this.primaryRouteSegment(url);
 
-    if (path === "accounts") return ["wallet", "accounts"];
-    if (path === "tokens") return ["tokens", "portfolio", "prices"];
-    if (path === "assets") return ["portfolio", "vault", "prices"];
-    if (path === "token-spot") return ["orderbook", "portfolio", "prices"];
-    if (path === "nft-spot") return ["orderbook", "portfolio"];
-    if (path === "futures") return ["futures", "portfolio", "prices", "warnings"];
-    if (path === "options" || path === "binary-options" || path === "margin-options") {
-      return ["options", "portfolio", "prices", "warnings"];
+    switch (segment) {
+      case "accounts":
+        return ["wallet", "accounts"];
+      case "assets":
+        return ["portfolio", "vault", "prices", "warnings"];
+      case "token-spot":
+        return ["orderbook", "portfolio", "prices", "warnings"];
+      case "nft-spot":
+        return ["orderbook", "portfolio", "warnings"];
+      case "futures":
+        return ["futures", "portfolio", "prices", "warnings"];
+      case "options":
+      case "binary-options":
+      case "margin-options":
+        return ["options", "portfolio", "prices", "warnings"];
+      case "lending":
+        return ["lending", "portfolio", "vault", "prices", "warnings"];
+      case "treasury":
+        return ["treasury", "accounts", "portfolio", "warnings"];
+      case "protocol":
+        return ["protocol", "accounts", "warnings"];
+      case "fees":
+        return ["fees", "prices", "warnings"];
+      case "oracles":
+        return ["protocol", "prices", "warnings"];
+      case "warnings":
+        return ["warnings", "options", "futures", "lending", "portfolio", "prices"];
+      default:
+        return ["wallet", "accounts", "portfolio"];
     }
-    if (path === "lending") return ["lending", "portfolio", "vault", "prices", "warnings"];
-    if (path === "treasury") return ["treasury", "accounts", "portfolio", "warnings"];
-    if (path === "oracles") return ["protocol", "prices", "warnings"];
-    if (path === "fees") return ["fees", "prices"];
-    if (path === "warnings") {
-      return ["warnings", "protocol", "options", "futures", "lending", "portfolio", "prices"];
-    }
-    if (path === "protocol") return ["protocol", "accounts", "warnings"];
-    return ["wallet", "accounts", "portfolio"];
   }
 
-  private normalizedPrimaryPath(url: string): string {
-    const clean = String(url ?? "").toLowerCase().split("?")[0].split("#")[0];
-    const primaryOutlet = clean.match(/primary:([^/)]+)/)?.[1];
-    const segments = clean.replace(/^\/+/, "").split(/[(/]/).filter(Boolean);
-    const firstPath = segments[0] === "app" ? (segments[1] ?? "") : (segments[0] ?? "");
-    const path = primaryOutlet || firstPath;
-
-    return path;
+  private primaryRouteSegment(url: string): string {
+    const clean = String(url ?? "").toLowerCase().split(/[?#]/u, 1)[0];
+    const outletMatch = clean.match(/\/(?:\((?:[^:()]+:)?([^/)]+)|([^/(]+))/u);
+    const raw = outletMatch?.[1] ?? outletMatch?.[2] ?? "";
+    return raw.replace(/^\/+|\/+$/gu, "");
   }
 
   private allBackgroundDomains(): RefreshDomain[] {

@@ -38,6 +38,21 @@ function splitDecimal(value: string): { sign: string; whole: string; fraction: s
   return { sign, whole, fraction };
 }
 
+
+function shiftDecimalRight(value: string, places: number): string {
+  const { sign, whole, fraction } = splitDecimal(value);
+  const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, '') || '0';
+  const decimalIndex = whole.length + Math.max(0, places);
+
+  if (decimalIndex >= digits.length) {
+    return `${sign}${digits}${'0'.repeat(decimalIndex - digits.length)}`;
+  }
+
+  const nextWhole = digits.slice(0, decimalIndex).replace(/^0+(?=\d)/, '') || '0';
+  const nextFraction = digits.slice(decimalIndex).replace(/0+$/, '');
+  return `${sign}${nextWhole}${nextFraction ? `.${nextFraction}` : ''}`;
+}
+
 function trimFraction(fraction: string, maxDecimals: number, minDecimals: number): string {
   const safeMax = Math.max(0, maxDecimals);
   const safeMin = Math.max(0, Math.min(minDecimals, safeMax));
@@ -76,10 +91,10 @@ export function formatDecimal(
   }
 
   if (mode === 'scaled-small' && absNumeric > 0 && absNumeric < (options.scaledSmallBelow ?? 0.001)) {
-    const scale = absNumeric < 0.000001 ? 1_000_000 : 1_000;
-    const suffix = scale === 1_000_000 ? '/ M' : '/ K';
-    const scaled = numeric * scale;
-    return `${formatDecimal(String(scaled), {
+    const scalePlaces = absNumeric < 0.000001 ? 6 : 3;
+    const suffix = scalePlaces === 6 ? '/ M' : '/ K';
+    const scaled = shiftDecimalRight(raw, scalePlaces);
+    return `${formatDecimal(scaled, {
       maxDecimals: options.maxDecimals ?? 6,
       minDecimals: options.minDecimals ?? 0,
     })} ${suffix}`;

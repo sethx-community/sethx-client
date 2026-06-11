@@ -195,10 +195,7 @@ export class FuturesOrderBookStore {
     },
   });
 
-  private readonly _stableMarkets = stableResourceValue(() => this._marketsRes.value(), [] as ActiveFuturesMarketRow[], {
-    equal: structuralEqual,
-    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
-  });
+  private readonly _stableMarkets = stableResourceValue(() => this._marketsRes.value(), [] as ActiveFuturesMarketRow[], { equal: structuralEqual });
 
   readonly activeMarkets = stableComputed(() => this._stableMarkets());
 
@@ -281,18 +278,12 @@ export class FuturesOrderBookStore {
     },
   });
 
-  private readonly _stableBook = stableResourceValue(
-    () => this._bookRes.value(),
-    { buy: [] as FuturesOrder[], sell: [] as FuturesOrder[] },
-    { resetKey: () => this.selectedMarketKey(), equal: structuralEqual },
-  );
-
   readonly buyOrders = stableComputed(() => {
-    const rows = this._stableBook().buy;
+    const rows = this._bookRes.value()?.buy ?? [];
     return this.myOrdersOnly() ? rows.filter((o) => norm(o.user) === this.activeAccount()) : rows;
   });
   readonly sellOrders = stableComputed(() => {
-    const rows = this._stableBook().sell;
+    const rows = this._bookRes.value()?.sell ?? [];
     return this.myOrdersOnly() ? rows.filter((o) => norm(o.user) === this.activeAccount()) : rows;
   });
 

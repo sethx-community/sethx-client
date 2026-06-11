@@ -1,9 +1,35 @@
 import { Injectable } from '@angular/core';
-import { Contract } from 'ethers';
+import { Contract, ethers } from 'ethers';
 import { EthersContractService } from './ethers-contract.service';
 import { getContractAddress } from '../../../contracts/contract-registry';
+import { CONTRACT_ABIS } from '../../../contracts/generated';
 import { WalletConnectService } from '../../../wallet/wallet-connect.service';
 import { ErrorService } from '../../shared/error.service';
+
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const ETH_PSEUDO_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+function normalizeFeeAddress(value: string, label: string): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) throw new Error(`${label} is required for fee quote.`);
+
+  const lower = raw.toLowerCase();
+  if (
+    lower === 'eth' ||
+    lower === 'ether' ||
+    lower === 'native' ||
+    lower === ETH_PSEUDO_ADDRESS.toLowerCase()
+  ) {
+    return ZERO_ADDRESS;
+  }
+
+  if (!ethers.isAddress(raw)) {
+    throw new Error(`${label} is not a valid address: ${raw}`);
+  }
+
+  return ethers.getAddress(raw);
+}
 
 export type FeeOutput = {
   fixedAmount: bigint;
@@ -14,19 +40,7 @@ export type FeeOutput = {
 
 @Injectable({ providedIn: 'root' })
 export class FeeManagerContractService extends EthersContractService<Contract> {
-  protected readonly abi = [
-    'function getFeeForAccount(address paymentToken,address assetToken,uint256 assetValue,string context,address account,bool isMaker) view returns (tuple(uint256 fixedAmount,address fixedToken,uint256 percentageAmount,address percentageToken) fee)',
-    'function getRoleFeeConfig(string context) view returns (uint256 makerFixedFee,uint256 makerPercentageFee,uint256 takerFixedFee,uint256 takerPercentageFee,bool configured)',
-    'function accountDiscountBps(address account) view returns (uint256)',
-    'function sethxDiscountBps() view returns (uint256)',
-    'function sethxToken() view returns (address)',
-    'function getAcceptedPaymentTokens() view returns (address[])',
-    'function isAcceptedFeeToken(address token) view returns (bool)',
-    'function priceManager() view returns (address)',
-    'function pendingRoleUpdates(string context) view returns (uint256 makerFixedFee,uint256 makerPercentageFee,uint256 takerFixedFee,uint256 takerPercentageFee,uint256 executeAfter)',
-    'function pendingSethxDiscountUpdate() view returns (uint256 discountBps,uint256 executeAfter)',
-    'function feeUpdateDelay() view returns (uint256)',
-  ];
+  protected readonly abi = CONTRACT_ABIS.FeeManager;
   protected readonly defaultAddress = getContractAddress('FeeManager');
 
   constructor(wallet: WalletConnectService, error: ErrorService) {
@@ -49,9 +63,20 @@ export class FeeManagerContractService extends EthersContractService<Contract> {
     account: string,
     isMaker: boolean,
   ): Promise<FeeOutput> {
+    const normalizedPaymentToken = normalizeFeeAddress(paymentToken, 'Fee payment token');
+    const normalizedAssetToken = normalizeFeeAddress(assetToken, 'Fee asset token');
+    const normalizedAccount = normalizeFeeAddress(account, 'Fee account');
+
     const fee = await this.read(
       'getFeeForAccount' as any,
-      [paymentToken, assetToken, assetValue, context, account, isMaker] as any,
+      [
+        normalizedPaymentToken,
+        normalizedAssetToken,
+        assetValue,
+        context,
+        normalizedAccount,
+        isMaker,
+      ] as any,
     );
     return this.mapFeeOutput(fee);
   }

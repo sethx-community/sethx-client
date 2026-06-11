@@ -42,6 +42,13 @@ function normAddrOrEmpty(x: unknown): string {
   return s;
 }
 
+
+function stableFeeKey(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    typeof v === 'bigint' ? v.toString() : v,
+  );
+}
+
 function isHexAddress(x: string): boolean {
   // Use ethers.isAddress in your environment
   try {
@@ -79,9 +86,7 @@ export class FeeService {
     loader: async () => (await this.fees.getAcceptedPaymentTokens()) ?? [],
   });
 
-  private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[], {
-    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
-  });
+  private readonly _stableAcceptedPaymentTokens = stableResourceValue(() => this._acceptedTokensRes.value(), [] as string[]);
   readonly acceptedPaymentTokens = stableComputed(() => this._stableAcceptedPaymentTokens());
   readonly acceptedPaymentTokensStatus = computed(() =>
     this._acceptedTokensRes.status(),
@@ -122,7 +127,9 @@ export class FeeService {
       const account = normAddrOrEmpty(params.p.account ?? '0x0000000000000000000000000000000000000000');
 
       // ✅ HARD GUARD: do not call ethers with non-addresses (prevents ENS resolution)
-      if (!isHexAddress(paymentToken) || !isHexAddress(assetToken) || !isHexAddress(account)) return null;
+      if (!isHexAddress(paymentToken) || !isHexAddress(assetToken) || !isHexAddress(account)) {
+        throw new Error('Invalid fee quote address input.');
+      }
 
       return await this.fees.getFeeForAccount(
         paymentToken,
@@ -135,7 +142,7 @@ export class FeeService {
     },
   });
 
-  private readonly _stableFeeQuote = stableResourceValue(() => this._feeQuoteRes.value(), null as FeeOutput | null, { resetKey: () => JSON.stringify(this._quoteParams()) + '|' + this.settings.preferredFeeToken() });
+  private readonly _stableFeeQuote = stableResourceValue(() => this._feeQuoteRes.value(), null as FeeOutput | null, { resetKey: () => stableFeeKey({ p: this._quoteParams(), paymentToken: this.settings.preferredFeeToken() }) });
   readonly feeQuote = computed(() => this._stableFeeQuote());
   readonly feeQuoteStatus = computed(() => this._feeQuoteRes.status());
   readonly feeQuoteError = computed(() => this._feeQuoteRes.error() ?? null);

@@ -17,6 +17,8 @@ import { OptionsOrderBookReadService } from './contracts/options-orderbook-read.
 import { WalletConnectService } from '../../wallet/wallet-connect.service';
 import {
   displayUnixForExpiry,
+  encodeRelativeExpiry,
+  EXPIRY_PRESET_SECONDS,
   expiryPreviewLabel as sharedExpiryPreviewLabel,
   parseExpirySelection,
   resolveExpiryForContract,
@@ -224,8 +226,8 @@ export class OptionsOrderDraftService {
 
   readonly strikeHuman = signal<string>('');
   readonly optionExpiryUnix = signal<string>('');
-  // Order expiry is an absolute Unix timestamp. 0 lets the contract apply its default.
-  readonly orderExpiryUnix = signal<string>('0');
+  // Order expiry must be a real future timestamp and cannot be later than the option expiry.
+  readonly orderExpiryUnix = signal<string>(encodeRelativeExpiry(EXPIRY_PRESET_SECONDS['1d']));
 
   readonly sizeHuman = signal<string>('');
   readonly askHuman = signal<string>('');
@@ -361,7 +363,7 @@ export class OptionsOrderDraftService {
   readonly orderExpiryEtaLabel = computed(() =>
     sharedExpiryPreviewLabel(
       this.orderExpiryUnix(),
-      'Contract default after placement (contract receives 0)',
+      'Choose an order expiry',
     ),
   );
 
@@ -629,7 +631,8 @@ export class OptionsOrderDraftService {
     if (!this.askFixed()) return true;
     if (!this.strikeFixed()) return true;
     if (!this.optionExpiry()) return true;
-    if (this.orderExpiry() === null) return true;
+    const ordExp = this.orderExpiry();
+    if (ordExp === null || ordExp === 0n) return true;
     return false;
   });
 
@@ -928,6 +931,15 @@ export class OptionsOrderDraftService {
     });
   }
 
+
+  private validateOrderExpiryForOption(orderExpiry: bigint, optionExpiry: bigint, chainNow: bigint | null): string | null {
+    const now = chainNow ?? nowSec();
+    if (orderExpiry === 0n) return 'Choose an order expiry.';
+    if (orderExpiry <= now) return `Order expiry must be in the future. Chain time is ${formatUtcDateTime(now)}.`;
+    if (orderExpiry > optionExpiry) return 'Order expiry cannot be later than the option expiry.';
+    return null;
+  }
+
   async openConfirmation() {
     this.confirmError.set(null);
     this.confirmFields.set([]);
@@ -949,8 +961,13 @@ export class OptionsOrderDraftService {
     const ask = this.askFixed()!;
     const strikeInput = this.strikeFixed()!;
     const optExp = this.optionExpiry()!;
-    const ordExpPreview = this.orderExpiry()!;
-    const ordExp = ordExpPreview;
+    const chainNow = await this.latestChainTimestamp();
+    const ordExp = resolveExpiryForContract(this.orderExpiryUnix(), chainNow);
+    const ordExpError = this.validateOrderExpiryForOption(ordExp, optExp, chainNow);
+    if (ordExpError) {
+      this.confirmError.set(ordExpError);
+      return;
+    }
 
     // enforce standardized expiry shape early (best-effort; contract enforces too)
     try {
@@ -1271,9 +1288,10 @@ export class OptionsOrderDraftService {
 
     const chainNow = await this.latestChainTimestamp();
     const ordExp = resolveExpiryForContract(this.orderExpiryUnix(), chainNow);
-    const expiryError = validateResolvedExpiry(ordExp, chainNow);
-    if (expiryError) {
-      this.confirmError.set(expiryError);
+    const genericExpiryError = validateResolvedExpiry(ordExp, chainNow);
+    const optionExpiryError = genericExpiryError ?? this.validateOrderExpiryForOption(ordExp, optExp, chainNow);
+    if (optionExpiryError) {
+      this.confirmError.set(optionExpiryError);
       return;
     }
 

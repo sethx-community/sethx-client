@@ -3,15 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { OrderReviewFlowComponent } from '../../../shared/order-flow';
+import { ExpiryPickerComponent } from '../../../shared/expiry-picker/expiry-picker.component';
+import { EXPIRY_PRESET_SECONDS, parseExpirySelection } from '../../../shared/expiry/expiry-settings';
 import { BinaryOptionsOrderBookFacade } from '../../../services/shared/binary-options-orderbook/binary-options-orderbook.facade';
 import { BinaryOptionsOrderBookActionsService } from '../../../services/shared/binary-options-orderbook/binary-options-orderbook-actions.service';
 import { BinaryOptionsOrderBookStore } from '../../../services/shared/binary-options-orderbook/binary-options-orderbook.store';
+import { ProtocolDataService } from '../../../services/shared/data/protocol-data.service';
 import { BinaryOptionsOrderModalData } from '../../../../types/order_flow/order-flow.types';
 
 @Component({
   selector: 'app-binary-order-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderReviewFlowComponent],
+  imports: [CommonModule, FormsModule, OrderReviewFlowComponent, ExpiryPickerComponent],
   templateUrl: './binaryorder-modal.component.html',
   styleUrl: './binaryorder-modal.component.scss',
 })
@@ -19,6 +22,7 @@ export class BinaryOrderModalComponent implements OnInit {
   readonly ob = inject(BinaryOptionsOrderBookFacade);
   readonly actions = inject(BinaryOptionsOrderBookActionsService);
   readonly store = inject(BinaryOptionsOrderBookStore);
+  readonly protocol = inject(ProtocolDataService);
 
   @Input({ required: true }) data!: BinaryOptionsOrderModalData;
   @Input() onClose?: (result?: any) => void;
@@ -32,6 +36,8 @@ export class BinaryOrderModalComponent implements OnInit {
   readonly payoutHuman = signal('1');
   readonly priceHuman = signal('0.5');
   readonly expiryPreset = signal<'default' | '1h' | '1d' | '7d' | 'max' | 'custom'>('default');
+  readonly orderExpiryUnix = signal('0');
+  readonly marketExpiryMode = signal<'preset' | 'custom'>('preset');
   readonly customExpiryYear = signal('');
   readonly customExpiryMonth = signal('');
   readonly customExpiryWeekUnix = signal('');
@@ -61,6 +67,7 @@ export class BinaryOrderModalComponent implements OnInit {
 
     if ((intent === 'place' || intent === 'quote') && this.data.defaultIntent === undefined) this.intent.set('0');
     this.syncCustomExpiryFromMarket();
+    void this.protocol.refreshOracleInfo().catch(() => undefined);
   }
 
   title(): string {
@@ -76,12 +83,12 @@ export class BinaryOrderModalComponent implements OnInit {
 
   subtitle(): string {
     switch (this.data.intent) {
-      case 'quote': return 'Preview locked amount and fees for a binary option order.';
+      case 'quote': return this.newMarketMode() ? 'Choose the oracle, condition, strike, and expiry for the new market.' : 'Preview locked amount and fees for a binary option order.';
       case 'accept': return 'Fill an existing binary option order by order ID.';
       case 'cancel': return 'Cancel one of your resting binary orders.';
       case 'claim': return 'Claim or clear a holder position after oracle settlement.';
       case 'reclaim': return 'Reclaim writer margin after holder positions are claimed or cleared.';
-      default: return 'Create an ETH-settled Above / Below binary option order.';
+      default: return this.newMarketMode() ? 'Choose the oracle, condition, strike, and expiry for the new market.' : 'Create an ETH-settled Above / Below binary option order.';
     }
   }
 
@@ -96,8 +103,28 @@ export class BinaryOrderModalComponent implements OnInit {
   }
 
   newTicker(): string {
-    const pair = this.newOracle() ? 'ORACLE' : 'CUSTOM';
-    return `${pair}-${this.newOptionType() === '0' ? 'ABOVE' : 'BELOW'}-${this.customExpiryUnix() ?? 0n}-${this.newStrikeHuman()}`;
+    const pair = this.oraclePairLabel(this.newOracle());
+    const side = this.newOptionType() === '0' ? 'ABOVE' : 'BELOW';
+    const expiry = this.formatTickerDate(this.customExpiryUnix());
+    const strike = String(this.newStrikeHuman() || '').trim() || '0';
+    return `${pair} ${side} ${expiry} @ ${strike}`;
+  }
+
+  private oraclePairLabel(oracle: string): string {
+    const key = String(oracle ?? '').trim().toLowerCase();
+    if (!key) return 'Custom market';
+    const row = this.protocol.liveOverview().oracleInfo.find((item) => item.oracle.toLowerCase() === key);
+    const pair = String(row?.pair || row?.label || '').trim();
+    if (pair) return pair;
+    return `${key.slice(0, 6)}…${key.slice(-4)}`;
+  }
+
+  private formatTickerDate(value: bigint | null | undefined): string {
+    const seconds = typeof value === 'bigint' ? Number(value) : Number(value ?? 0);
+    if (!seconds || !Number.isFinite(seconds)) return 'No expiry';
+    const d = new Date(seconds * 1000);
+    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] ?? '';
+    return `${String(d.getUTCDate()).padStart(2, '0')} ${month} ${d.getUTCFullYear()} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
   }
 
   setNewMarketMode(value: unknown): void {
@@ -137,6 +164,61 @@ export class BinaryOrderModalComponent implements OnInit {
   maxOrderExpiryLabel(): string {
     const expiry = this.marketExpiry();
     return expiry > 0n ? this.formatExpiry(expiry) : 'No market expiry available';
+  }
+
+
+
+
+  validMarketExpiryOptions(): Array<{ unix: string; label: string }> {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const options: Array<{ unix: string; label: string }> = [];
+    const cursor = new Date();
+    cursor.setUTCHours(12, 0, 0, 0);
+    for (let i = 0; options.length < 12 && i < 120; i += 1) {
+      const day = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + i, 12, 0, 0, 0));
+      if (day.getUTCDay() !== 5) continue;
+      const unix = BigInt(Math.floor(day.getTime() / 1000));
+      if (unix <= now) continue;
+      options.push({ unix: unix.toString(), label: this.formatExpiry(unix) });
+    }
+    return options;
+  }
+
+  marketExpiryDropdownValue(): string {
+    return this.marketExpiryMode() === 'custom' ? 'custom' : (this.customExpiryWeekUnix() || this.validMarketExpiryOptions()[0]?.unix || 'custom');
+  }
+
+  selectMarketExpiryChoice(value: string | number): void {
+    const raw = String(value ?? '');
+    if (raw === 'custom') {
+      this.marketExpiryMode.set('custom');
+      this.selectFirstCustomFriday();
+      return;
+    }
+    this.marketExpiryMode.set('preset');
+    this.setCustomExpiryWeek(raw);
+  }
+
+  isCustomMarketExpiry(): boolean {
+    return this.marketExpiryMode() === 'custom';
+  }
+
+  useMarketExpiryForOrder(): void {
+    const expiry = this.newMarketMode() ? this.customExpiryUnix() : this.marketExpiry();
+    if (expiry && expiry > 0n) this.orderExpiryUnix.set(expiry.toString());
+  }
+
+  private orderExpiryArgs(): { expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix: bigint | null } {
+    const parsed = parseExpirySelection(this.orderExpiryUnix());
+    if (parsed.kind === 'default') return { expiryPreset: 'default', customExpiryUnix: null };
+    if (parsed.kind === 'relative') {
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['1h']) return { expiryPreset: '1h', customExpiryUnix: null };
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['1d']) return { expiryPreset: '1d', customExpiryUnix: null };
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['7d']) return { expiryPreset: '7d', customExpiryUnix: null };
+      return { expiryPreset: 'custom', customExpiryUnix: BigInt(Math.floor(Date.now() / 1000)) + parsed.seconds };
+    }
+    if (parsed.kind === 'absolute') return { expiryPreset: 'custom', customExpiryUnix: parsed.unix };
+    throw new Error('Select a valid order expiry.');
   }
 
 
@@ -208,6 +290,7 @@ export class BinaryOrderModalComponent implements OnInit {
       this.customExpiryYear.set(String(d.getUTCFullYear()));
       this.customExpiryMonth.set(String(d.getUTCMonth() + 1));
       this.customExpiryWeekUnix.set(expiry.toString());
+      this.marketExpiryMode.set(this.validMarketExpiryOptions().some((row) => row.unix === expiry.toString()) ? 'preset' : 'custom');
       return;
     }
     const now = new Date();
@@ -215,6 +298,7 @@ export class BinaryOrderModalComponent implements OnInit {
     this.customExpiryMonth.set(String(now.getUTCMonth() + 1));
     const months = this.expiryMonths();
     if (!months.some((row) => row.value === this.customExpiryMonth())) this.customExpiryMonth.set(months[0]?.value ?? '');
+    this.marketExpiryMode.set('preset');
     this.selectFirstCustomFriday();
   }
 
@@ -250,30 +334,59 @@ export class BinaryOrderModalComponent implements OnInit {
     } catch { return '—'; }
   }
 
+  reviewButtonLabel(): string {
+    switch (this.data.intent) {
+      case 'accept': return 'Review Accept';
+      case 'cancel': return 'Review Cancel';
+      case 'claim': return 'Review Claim';
+      case 'reclaim': return 'Review Reclaim';
+      case 'quote': return 'Get Fee Quote';
+      default: return 'Review Order';
+    }
+  }
+
+  async createMarket(): Promise<void> {
+    this.error.set(null);
+    const marketExpiry = this.customExpiryUnix();
+    if (!marketExpiry) {
+      this.error.set('Select a valid market expiry.');
+      return;
+    }
+    try {
+      await this.actions.requestCreateMarket({
+        ticker: this.newTicker(),
+        optionType: Number(this.newOptionType()),
+        oracle: this.newOracle(),
+        strikePriceHuman: this.newStrikeHuman(),
+        marketExpiry,
+      });
+    } catch (e: any) {
+      this.error.set(e?.reason ?? e?.message ?? 'Could not prepare market creation');
+    }
+  }
+
   async previewPlace(quoteOnly = false): Promise<void> {
     this.error.set(null);
-    const marketKey = this.newMarketMode() ? '' : this.marketKey();
-    if (!marketKey && !this.newMarketMode()) {
-      this.error.set('Choose an existing binary market or enter new market parameters.');
+    if (this.newMarketMode()) {
+      this.error.set('Use the Create Market button to continue.');
+      return;
+    }
+    const marketKey = this.marketKey();
+    if (!marketKey) {
+      this.error.set('Choose an existing binary market.');
       return;
     }
     if (marketKey) this.store.selectMarket(marketKey);
     try {
+      const orderExpiry = this.orderExpiryArgs();
       await this.actions.requestPlace({
         marketKey,
         intent: Number(this.intent()),
         payoutHuman: this.payoutHuman(),
         priceHuman: this.priceHuman(),
-        expiryPreset: this.expiryPreset(),
-        customExpiryUnix: this.customExpiryUnix(),
+        expiryPreset: orderExpiry.expiryPreset,
+        customExpiryUnix: orderExpiry.customExpiryUnix,
         quoteOnly,
-        newMarket: this.newMarketMode() && this.customExpiryUnix() ? {
-          ticker: this.newTicker(),
-          optionType: Number(this.newOptionType()),
-          oracle: this.newOracle(),
-          strikePriceHuman: this.newStrikeHuman(),
-          marketExpiry: this.customExpiryUnix()!,
-        } : null,
       });
     } catch (e: any) {
       this.error.set(e?.reason ?? e?.message ?? 'Could not build binary order preview');

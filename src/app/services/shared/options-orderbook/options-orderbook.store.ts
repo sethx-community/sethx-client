@@ -186,11 +186,7 @@ export class OptionsOrderBookStore {
     },
   });
 
-  private readonly _stableActiveMarkets = stableResourceValue(() => this._activeMarketsRes.value(), [] as ActiveMarketRow[], {
-    resetKey: () => `${this.marketOffset()}|${this.marketLimit()}`,
-    equal: structuralEqual,
-    keepPreviousWhen: (previous, next) => previous.length > 0 && next.length === 0,
-  });
+  private readonly _stableActiveMarkets = stableResourceValue(() => this._activeMarketsRes.value(), [] as ActiveMarketRow[], { resetKey: () => `${this.marketOffset()}|${this.marketLimit()}`, equal: structuralEqual });
   readonly activeMarkets = stableComputed(() => this._stableActiveMarkets());
 
   readonly filteredMarkets = stableComputed(() => {

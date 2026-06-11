@@ -3,15 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { OrderReviewFlowComponent } from '../../../shared/order-flow';
+import { ExpiryPickerComponent } from '../../../shared/expiry-picker/expiry-picker.component';
+import { EXPIRY_PRESET_SECONDS, parseExpirySelection } from '../../../shared/expiry/expiry-settings';
 import { MarginOptionsOrderBookFacade } from '../../../services/shared/margin-options-orderbook/margin-options-orderbook.facade';
 import { MarginOptionsOrderBookActionsService } from '../../../services/shared/margin-options-orderbook/margin-options-orderbook-actions.service';
 import { MarginOptionsOrderBookStore } from '../../../services/shared/margin-options-orderbook/margin-options-orderbook.store';
+import { ProtocolDataService } from '../../../services/shared/data/protocol-data.service';
 import { MarginOptionsOrderModalData } from '../../../../types/order_flow/order-flow.types';
 
 @Component({
   selector: 'app-margin-options-order-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderReviewFlowComponent],
+  imports: [CommonModule, FormsModule, OrderReviewFlowComponent, ExpiryPickerComponent],
   templateUrl: './marginoptionsorder-modal.component.html',
   styleUrl: './marginoptionsorder-modal.component.scss',
 })
@@ -19,6 +22,7 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   readonly ob = inject(MarginOptionsOrderBookFacade);
   readonly actions = inject(MarginOptionsOrderBookActionsService);
   readonly store = inject(MarginOptionsOrderBookStore);
+  readonly protocol = inject(ProtocolDataService);
 
   @Input({ required: true }) data!: MarginOptionsOrderModalData;
   @Input() onClose?: (result?: any) => void;
@@ -27,6 +31,8 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   readonly sizeHuman = signal('1');
   readonly priceHuman = signal('0.5');
   readonly expiryPreset = signal<'default' | '1h' | '1d' | '7d' | 'max' | 'custom'>('default');
+  readonly orderExpiryUnix = signal('0');
+  readonly marketExpiryMode = signal<'preset' | 'custom'>('preset');
   readonly customExpiryYear = signal('');
   readonly customExpiryMonth = signal('');
   readonly customExpiryWeekUnix = signal('');
@@ -35,7 +41,7 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   readonly newOracle = signal('');
   readonly newOptionType = signal<'0' | '1'>('0');
   readonly newStrikeHuman = signal('0.00025');
-  readonly newCollateralBps = signal('10000');
+  readonly newCollateralPercent = signal('100');
   readonly selectedMarket = computed(() => {
     const key = this.selectedMarketKey() || this.store.selectedMarketKey() || '';
     return this.store.activeMarkets().find((m) => m.marketKey.toLowerCase() === key.toLowerCase()) ?? this.store.selectedMarket();
@@ -57,6 +63,7 @@ export class MarginOptionsOrderModalComponent implements OnInit {
     if (this.data.defaultSizeHuman) this.sizeHuman.set(this.data.defaultSizeHuman);
     if (this.data.defaultPriceHuman) this.priceHuman.set(this.data.defaultPriceHuman);
     this.syncCustomExpiryFromMarket();
+    void this.protocol.refreshOracleInfo().catch(() => undefined);
   }
 
   title(): string {
@@ -64,7 +71,9 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   }
 
   subtitle(): string {
-    return 'Create or preview margin option orders using the shared account, fee-token, and confirmation flow.';
+    return this.newMarketMode()
+      ? 'Choose the oracle, strike, expiry, and collateral coverage for the new market.'
+      : 'Select a market and enter the order details.';
   }
 
   marketSummary(): string {
@@ -74,8 +83,28 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   }
 
   newTicker(): string {
-    const pair = this.newOracle() ? 'ORACLE' : 'CUSTOM';
-    return `${pair}-${this.newOptionType() === '0' ? 'CALL' : 'PUT'}-${this.customExpiryUnix() ?? 0n}-${this.newStrikeHuman()}`;
+    const pair = this.oraclePairLabel(this.newOracle());
+    const side = this.newOptionType() === '0' ? 'CALL' : 'PUT';
+    const expiry = this.formatTickerDate(this.customExpiryUnix());
+    const strike = String(this.newStrikeHuman() || '').trim() || '0';
+    return `${pair} ${side} ${expiry} @ ${strike}`;
+  }
+
+  private oraclePairLabel(oracle: string): string {
+    const key = String(oracle ?? '').trim().toLowerCase();
+    if (!key) return 'Custom market';
+    const row = this.protocol.liveOverview().oracleInfo.find((item) => item.oracle.toLowerCase() === key);
+    const pair = String(row?.pair || row?.label || '').trim();
+    if (pair) return pair;
+    return `${key.slice(0, 6)}…${key.slice(-4)}`;
+  }
+
+  private formatTickerDate(value: bigint | null | undefined): string {
+    const seconds = typeof value === 'bigint' ? Number(value) : Number(value ?? 0);
+    if (!seconds || !Number.isFinite(seconds)) return 'No expiry';
+    const d = new Date(seconds * 1000);
+    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] ?? '';
+    return `${String(d.getUTCDate()).padStart(2, '0')} ${month} ${d.getUTCFullYear()} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
   }
 
   setNewMarketMode(value: unknown): void {
@@ -94,6 +123,11 @@ export class MarginOptionsOrderModalComponent implements OnInit {
 
   marketExpiry(): bigint {
     return this.selectedMarket()?.market.expiry ?? 0n;
+  }
+
+  maxOrderExpiryLabel(): string {
+    const expiry = this.newMarketMode() ? this.customExpiryUnix() : this.marketExpiry();
+    return expiry && expiry > 0n ? this.formatExpiry(expiry) : 'No market expiry available';
   }
 
   formatExpiry(x: bigint | number | string | null | undefined): string {
@@ -120,6 +154,61 @@ export class MarginOptionsOrderModalComponent implements OnInit {
   setExpiryPreset(value: unknown): void {
     const v = String(value) as 'default' | '1h' | '1d' | '7d' | 'max' | 'custom';
     if (['default', '1h', '1d', '7d', 'max', 'custom'].includes(v)) this.expiryPreset.set(v);
+  }
+
+
+
+
+  validMarketExpiryOptions(): Array<{ unix: string; label: string }> {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const options: Array<{ unix: string; label: string }> = [];
+    const cursor = new Date();
+    cursor.setUTCHours(12, 0, 0, 0);
+    for (let i = 0; options.length < 12 && i < 120; i += 1) {
+      const day = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + i, 12, 0, 0, 0));
+      if (day.getUTCDay() !== 5) continue;
+      const unix = BigInt(Math.floor(day.getTime() / 1000));
+      if (unix <= now) continue;
+      options.push({ unix: unix.toString(), label: this.formatExpiry(unix) });
+    }
+    return options;
+  }
+
+  marketExpiryDropdownValue(): string {
+    return this.marketExpiryMode() === 'custom' ? 'custom' : (this.customExpiryWeekUnix() || this.validMarketExpiryOptions()[0]?.unix || 'custom');
+  }
+
+  selectMarketExpiryChoice(value: string | number): void {
+    const raw = String(value ?? '');
+    if (raw === 'custom') {
+      this.marketExpiryMode.set('custom');
+      this.selectFirstCustomFriday();
+      return;
+    }
+    this.marketExpiryMode.set('preset');
+    this.setCustomExpiryWeek(raw);
+  }
+
+  isCustomMarketExpiry(): boolean {
+    return this.marketExpiryMode() === 'custom';
+  }
+
+  useMarketExpiryForOrder(): void {
+    const expiry = this.newMarketMode() ? this.customExpiryUnix() : this.marketExpiry();
+    if (expiry && expiry > 0n) this.orderExpiryUnix.set(expiry.toString());
+  }
+
+  private orderExpiryArgs(): { expiryPreset: 'default' | '1h' | '1d' | '7d' | 'max' | 'custom'; customExpiryUnix: bigint | null } {
+    const parsed = parseExpirySelection(this.orderExpiryUnix());
+    if (parsed.kind === 'default') return { expiryPreset: 'default', customExpiryUnix: null };
+    if (parsed.kind === 'relative') {
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['1h']) return { expiryPreset: '1h', customExpiryUnix: null };
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['1d']) return { expiryPreset: '1d', customExpiryUnix: null };
+      if (parsed.seconds === EXPIRY_PRESET_SECONDS['7d']) return { expiryPreset: '7d', customExpiryUnix: null };
+      return { expiryPreset: 'custom', customExpiryUnix: BigInt(Math.floor(Date.now() / 1000)) + parsed.seconds };
+    }
+    if (parsed.kind === 'absolute') return { expiryPreset: 'custom', customExpiryUnix: parsed.unix };
+    throw new Error('Select a valid order expiry.');
   }
 
 
@@ -191,6 +280,7 @@ export class MarginOptionsOrderModalComponent implements OnInit {
       this.customExpiryYear.set(String(d.getUTCFullYear()));
       this.customExpiryMonth.set(String(d.getUTCMonth() + 1));
       this.customExpiryWeekUnix.set(expiry.toString());
+      this.marketExpiryMode.set(this.validMarketExpiryOptions().some((row) => row.unix === expiry.toString()) ? 'preset' : 'custom');
       return;
     }
     const now = new Date();
@@ -198,6 +288,7 @@ export class MarginOptionsOrderModalComponent implements OnInit {
     this.customExpiryMonth.set(String(now.getUTCMonth() + 1));
     const months = this.expiryMonths();
     if (!months.some((row) => row.value === this.customExpiryMonth())) this.customExpiryMonth.set(months[0]?.value ?? '');
+    this.marketExpiryMode.set('preset');
     this.selectFirstCustomFriday();
   }
 
@@ -237,26 +328,48 @@ export class MarginOptionsOrderModalComponent implements OnInit {
     this.actions.closeConfirmModal();
   }
 
-  preview(): void {
+  reviewButtonLabel(): string {
+    return this.data.intent === 'quote' ? 'Get Fee Quote' : 'Review Order';
+  }
+
+  createMarket(): void {
     this.error.set(null);
     try {
       const marketExpiry = this.customExpiryUnix();
+      if (!marketExpiry) throw new Error('Select a valid market expiry.');
+      const collateralPercent = Number(String(this.newCollateralPercent() || '100').replace(',', '.'));
+      if (!Number.isFinite(collateralPercent) || collateralPercent <= 0 || collateralPercent > 100) {
+        throw new Error('Collateral coverage must be between 0 and 100%.');
+      }
+      void this.actions.requestCreateMarket({
+        ticker: this.newTicker(),
+        optionType: Number(this.newOptionType()),
+        oracle: this.newOracle(),
+        strikePriceHuman: this.newStrikeHuman(),
+        marketExpiry,
+        collateralBps: BigInt(Math.round(collateralPercent * 100)),
+      }).catch((e: any) => this.error.set(e?.message ?? 'Unable to prepare market creation'));
+    } catch (e: any) {
+      this.error.set(e?.message ?? 'Unable to prepare market creation');
+    }
+  }
+
+  preview(): void {
+    this.error.set(null);
+    try {
+      if (this.newMarketMode()) {
+        this.error.set('Use the Create Market button to continue.');
+        return;
+      }
+      const orderExpiry = this.orderExpiryArgs();
       void this.actions.requestPlace({
-        marketKey: this.newMarketMode() ? '' : (this.selectedMarketKey() || this.store.selectedMarketKey()),
+        marketKey: this.selectedMarketKey() || this.store.selectedMarketKey(),
         intent: Number(this.intent()),
         sizeHuman: this.sizeHuman(),
         priceHuman: this.priceHuman(),
-        expiryPreset: this.expiryPreset(),
-        customExpiryUnix: this.expiryPreset() === 'max' ? marketExpiry : this.customExpiryUnix(),
+        expiryPreset: orderExpiry.expiryPreset,
+        customExpiryUnix: orderExpiry.customExpiryUnix,
         quoteOnly: this.data.intent === 'quote',
-        newMarket: this.newMarketMode() && marketExpiry ? {
-          ticker: this.newTicker(),
-          optionType: Number(this.newOptionType()),
-          oracle: this.newOracle(),
-          strikePriceHuman: this.newStrikeHuman(),
-          marketExpiry,
-          collateralBps: BigInt(Number(this.newCollateralBps() || '10000')),
-        } : null,
       }).catch((e: any) => this.error.set(e?.message ?? 'Unable to build margin option preview'));
     } catch (e: any) {
       this.error.set(e?.message ?? 'Unable to build margin option preview');

@@ -15,20 +15,27 @@
 
       <section class="rounded-lg border border-trade-border bg-background/70 p-4 text-xs space-y-3">
         @if (data.intent === 'place' || data.intent === 'quote') {
-          <div>
-            <div class="sethx-field-label">Market</div>
-            <select class="sethx-input" [ngModel]="marketKey()" (ngModelChange)="selectMarket($event)">
-              <option value="">Select existing market…</option>
-              @for (market of marketOptions(); track market.marketKey) {
-                <option [value]="market.marketKey">{{ store.condition(market.market.optionType, store.tokenLabel(market.market.baseToken), market.market.strikePrice) }}</option>
-              }
-            </select>
-            <input class="sethx-input mt-2 font-mono" [ngModel]="marketKey()" (ngModelChange)="selectMarket($event)" placeholder="Or paste market key" />
-            <label class="mt-3 flex items-center gap-2 text-frame">
-              <input type="checkbox" [ngModel]="newMarketMode()" (ngModelChange)="setNewMarketMode($event)" />
-              Create new binary market / edit market parameters
-            </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="sethx-button-secondary text-[11px]" [class.border-textlight]="!newMarketMode()" [class.text-textlight]="!newMarketMode()" (click)="setNewMarketMode(false)">
+              Existing market
+            </button>
+            <button type="button" class="sethx-button-secondary text-[11px]" [class.border-textlight]="newMarketMode()" [class.text-textlight]="newMarketMode()" (click)="setNewMarketMode(true)">
+              Create market
+            </button>
           </div>
+
+          @if (!newMarketMode()) {
+            <div>
+              <div class="sethx-field-label">Market</div>
+              <select class="sethx-input" [ngModel]="marketKey()" (ngModelChange)="selectMarket($event)">
+                <option value="">Select existing market…</option>
+                @for (market of marketOptions(); track market.marketKey) {
+                  <option [value]="market.marketKey">{{ store.condition(market.market.optionType, store.tokenLabel(market.market.baseToken), market.market.strikePrice) }}</option>
+                }
+              </select>
+              <input class="sethx-input mt-2 font-mono" [ngModel]="marketKey()" (ngModelChange)="selectMarket($event)" placeholder="Or paste market key" />
+            </div>
+          }
         }
         <div class="flex justify-between gap-4">
           <span class="text-frame">Selected market</span>
@@ -55,9 +62,47 @@
               <div class="sethx-field-label">Strike</div>
               <input class="sethx-input" [ngModel]="newStrikeHuman()" (ngModelChange)="newStrikeHuman.set($event)" />
             </div>
-            <div class="col-span-2">
-              <div class="sethx-field-label">Market expiry</div>
-              <div class="text-white text-xs pt-2">{{ customExpiryLabel() }}</div>
+            <div class="col-span-2 rounded-lg border border-trade-border/70 bg-background/50 p-3 space-y-3">
+              <div>
+                <div class="sethx-field-label">Market expiry</div>
+                <select class="sethx-input" [ngModel]="marketExpiryDropdownValue()" (ngModelChange)="selectMarketExpiryChoice($event)">
+                  @for (e of validMarketExpiryOptions(); track e.unix) {
+                    <option [value]="e.unix">{{ e.label }}</option>
+                  }
+                  <option value="custom">Custom Friday…</option>
+                </select>
+                <div class="text-[11px] text-frame mt-1">Binary option markets expire on a Friday at 12:00 UTC.</div>
+              </div>
+              @if (isCustomMarketExpiry()) {
+                <div class="space-y-3">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <div class="sethx-field-label">Year</div>
+                      <select class="sethx-select" [ngModel]="customExpiryYear()" (ngModelChange)="setCustomExpiryYear($event)">
+                        @for (year of expiryYears(); track year) { <option [value]="year">{{ year }}</option> }
+                      </select>
+                    </div>
+                    <div>
+                      <div class="sethx-field-label">Month</div>
+                      <select class="sethx-select" [ngModel]="customExpiryMonth()" (ngModelChange)="setCustomExpiryMonth($event)">
+                        @for (month of expiryMonths(); track month.value) { <option [value]="month.value">{{ month.label }}</option> }
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="sethx-field-label">Friday expiry</div>
+                    <select class="sethx-select" [ngModel]="customExpiryWeekUnix()" (ngModelChange)="setCustomExpiryWeek($event)">
+                      @for (week of expiryWeeks(); track week.value) { <option [value]="week.value">{{ week.label }}</option> }
+                    </select>
+                  </div>
+                </div>
+              }
+              <div class="text-[11px] text-frame">Selected market expiry: <span class="text-white">{{ customExpiryLabel() }}</span></div>
+            </div>
+            <div class="col-span-2 flex justify-end pt-1">
+              <button type="button" class="sethx-button-secondary min-w-[150px] border-textlight text-textlight" (click)="createMarket()">
+                Create Market
+              </button>
             </div>
           </div>
         }
@@ -67,7 +112,7 @@
         </div>
       </section>
 
-      @if (data.intent === 'place' || data.intent === 'quote') {
+      @if ((data.intent === 'place' || data.intent === 'quote') && !newMarketMode()) {
         <section class="space-y-4">
           <div>
             <div class="sethx-field-label">Intent</div>
@@ -110,34 +155,18 @@
           </div>
 
           @if (data.intent === 'place') {
-            <div>
-              <div class="sethx-field-label">Order expiry</div>
-              <select class="sethx-input" [ngModel]="expiryPreset()" (ngModelChange)="setExpiryPreset($event)">
-                <option value="default">No extra expiry</option>
-                <option value="1h">1 hour</option>
-                <option value="1d">1 day</option>
-                <option value="7d">7 days</option>
-                <option value="max">Max until market expiry</option>
-                <option value="custom">Custom Friday expiry</option>
-              </select>
-              @if (expiryPreset() === 'custom') {
-                <div class="mt-2 grid grid-cols-2 gap-3">
-                  <select class="sethx-select" [ngModel]="customExpiryYear()" (ngModelChange)="setCustomExpiryYear($event)">
-                    @for (year of expiryYears(); track year) { <option [value]="year">{{ year }}</option> }
-                  </select>
-                  <select class="sethx-select" [ngModel]="customExpiryMonth()" (ngModelChange)="setCustomExpiryMonth($event)">
-                    @for (month of expiryMonths(); track month.value) { <option [value]="month.value">{{ month.label }}</option> }
-                  </select>
-                </div>
-                <div class="col-span-2">
-                  <select class="sethx-select" [ngModel]="customExpiryWeekUnix()" (ngModelChange)="setCustomExpiryWeek($event)">
-                    @for (week of expiryWeeks(); track week.value) { <option [value]="week.value">{{ week.label }}</option> }
-                  </select>
-                </div>
-                <div class="col-span-2 text-[11px] text-frame mt-1">Choose a valid Friday at 12:00 UTC. For a new market this is the market expiry; for an existing market it is the custom order expiry and must not be after the market expiry.</div>
-              }
-              <div class="text-[11px] text-frame mt-1">
-                Resting order expiry must not be after the binary market expiry. Max: {{ maxOrderExpiryLabel() }}.
+            <div class="space-y-2">
+              <app-expiry-picker
+                label="Order expiry"
+                helper="Use the default expiry, or pick a custom date/time when you want the order to expire earlier than the market."
+                [value]="orderExpiryUnix()"
+                (valueChange)="orderExpiryUnix.set($event)"
+              />
+              <button type="button" class="sethx-button-secondary text-[11px]" (click)="useMarketExpiryForOrder()">
+                Use market expiry
+              </button>
+              <div class="text-[11px] text-frame">
+                Resting order expiry must not be after the binary option market expiry. Max: {{ maxOrderExpiryLabel() }}.
               </div>
             </div>
           }
@@ -152,7 +181,7 @@
               class="sethx-input font-mono"
               [ngModel]="orderId()"
               (ngModelChange)="orderId.set($event)"
-              placeholder="uint256 order id"
+              placeholder="Order ID"
             />
           </div>
 
@@ -188,14 +217,11 @@
 
     <div class="px-6 py-4 border-t border-trade-border/60 flex justify-end gap-3 mt-auto">
       <button type="button" class="sethx-button-secondary min-w-[110px]" (click)="close()">Cancel</button>
-      <button type="button" class="sethx-button-secondary min-w-[150px] border-textlight text-textlight" (click)="preview()">
-        @if (data.intent === 'accept') { Review Accept }
-        @else if (data.intent === 'cancel') { Review Cancel }
-        @else if (data.intent === 'claim') { Review Claim }
-        @else if (data.intent === 'reclaim') { Review Reclaim }
-        @else if (data.intent === 'quote') { Get Fee Quote }
-        @else { Review Order }
-      </button>
+      @if (!newMarketMode()) {
+        <button type="button" class="sethx-button-secondary min-w-[150px] border-textlight text-textlight" (click)="preview()">
+          {{ reviewButtonLabel() }}
+        </button>
+      }
     </div>
   </div>
 </div>

@@ -12,14 +12,6 @@ export type StableResourceOptions<T = unknown> = {
    * updated, so components keep the same reference and do not repaint lists.
    */
   equal?: (previous: T, next: T) => boolean;
-  /**
-   * Return true to ignore a resolved value and keep the previous committed
-   * value. This is useful for list resources where a transient provider/RPC
-   * miss can resolve to an empty list during a block refresh. Do not use it
-   * for account-specific balances/positions where an empty list can be the
-   * correct final state after a user action.
-   */
-  keepPreviousWhen?: (previous: T, next: T) => boolean;
 };
 
 export type StableComputedOptions<T = unknown> = {
@@ -152,7 +144,6 @@ export function stableResourceValue<T>(
     if (next === undefined) return;
 
     const previous = untracked(() => committed());
-    if (options.keepPreviousWhen?.(previous, next)) return;
     if (equal(previous, next)) return;
 
     committed.set(next);

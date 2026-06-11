@@ -2,7 +2,7 @@
   <div class="sethx-modal-header">
     <div>
       <h2 class="sethx-section-title text-base">{{ isQuote ? 'Options Fee Quote' : 'Place Options Order' }}</h2>
-      <p class="sethx-panel-copy mt-1">The form captures option-specific inputs; the shared review handles fees, locks, balances, receipt, and confirmation.</p>
+      <p class="sethx-panel-copy mt-1">Review the option details, required locks, and fees before signing.</p>
     </div>
     <button type="button" class="sethx-modal-close" (click)="close()" aria-label="Close">✕</button>
   </div>
@@ -127,7 +127,8 @@
 
         <app-expiry-picker
           label="Order expiry"
-          helper="Default sends 0 and lets the options orderbook apply its default expiry. This is separate from protocol option expiry."
+          helper="Choose when this order should expire. It must be before or at the option expiry."
+          [allowDefault]="false"
           [value]="vm.orderExpiryUnix()"
           (valueChange)="vm.orderExpiryUnix.set($event)"
         />
